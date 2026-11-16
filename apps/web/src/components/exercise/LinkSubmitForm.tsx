@@ -1,15 +1,10 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useId, useRef, useState, type FormEvent } from 'react';
-import {
-  linkSubmissionSchema,
-  type LinkSubmissionInput,
-  type ProblemDetails,
-  type SubmissionView,
-} from '@hub/shared';
+import { linkSubmissionSchema, type LinkSubmissionInput, type SubmissionView } from '@hub/shared';
 import { sendJson } from '@/lib/client-api';
 import { SUBMISSION_STATUS_LABEL } from '@/lib/labels';
+import { useMutation } from '@/lib/use-mutation';
 import { ProblemAlert } from './ProblemAlert';
 
 /**
@@ -28,14 +23,12 @@ export function LinkSubmitForm({
   urlLabel: string;
   urlPlaceholder: string;
 }) {
-  const router = useRouter();
+  const { run, busy, problem, setProblem } = useMutation();
   const fieldId = useId();
   const attemptKey = useRef<string | null>(null);
   const [url, setUrl] = useState('');
   const [note, setNote] = useState('');
   const [urlError, setUrlError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
-  const [problem, setProblem] = useState<ProblemDetails | null>(null);
   const [submitted, setSubmitted] = useState<SubmissionView | null>(null);
 
   function edit(setter: (value: string) => void, value: string) {
@@ -56,25 +49,21 @@ export function LinkSubmitForm({
     }
     setUrlError(null);
 
-    attemptKey.current ??= crypto.randomUUID();
-    setPending(true);
+    const key = (attemptKey.current ??= crypto.randomUUID());
     const body: LinkSubmissionInput = parsed.data;
-    const result = await sendJson<SubmissionView>(
-      `/exercises/${encodeURIComponent(exerciseId)}/submissions`,
-      'POST',
-      body,
-      { 'Idempotency-Key': attemptKey.current },
+    const result = await run(() =>
+      sendJson<SubmissionView>(
+        `/exercises/${encodeURIComponent(exerciseId)}/submissions`,
+        'POST',
+        body,
+        { 'Idempotency-Key': key },
+      ),
     );
-    setPending(false);
-    if (!result.ok) {
-      setProblem(result.problem);
-      return;
-    }
+    if (!result.ok) return;
     attemptKey.current = null;
     setSubmitted(result.data);
     setUrl('');
     setNote('');
-    router.refresh();
   }
 
   const urlId = `${fieldId}-url`;
@@ -122,11 +111,11 @@ export function LinkSubmitForm({
 
       <button
         type="submit"
-        disabled={pending}
-        aria-busy={pending}
+        disabled={busy}
+        aria-busy={busy}
         className="rounded-lg bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700 disabled:opacity-60"
       >
-        {pending ? 'Đang nộp…' : 'Nộp bài'}
+        {busy ? 'Đang nộp…' : 'Nộp bài'}
       </button>
 
       <div aria-live="polite">

@@ -1,18 +1,10 @@
 import { Body, Controller, Get, Put } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { z } from 'zod';
+import { approvedEmailsUpdateSchema } from '@hub/shared';
+import type { z } from 'zod';
 import { AuthUser, CurrentUser, Roles } from '../../common/auth.decorators';
 import { ZodPipe } from '../../common/zod';
 import { ApprovedEmailsService } from './approved-emails.service';
-
-const updateSchema = z
-  .object({
-    emails: z.array(z.string().trim().email()).min(1).max(5000),
-    /** `append` (default) adds to the list; `replace` makes this the whole list */
-    mode: z.enum(['append', 'replace']).default('append'),
-    note: z.string().trim().max(200).optional(),
-  })
-  .strict();
 
 /** Club member email list (SECURITY §1). Admin only: it is personal data. */
 @ApiTags('admin')
@@ -29,7 +21,7 @@ export class ApprovedEmailsController {
   @Put()
   update(
     @CurrentUser() actor: AuthUser,
-    @Body(new ZodPipe(updateSchema)) body: z.infer<typeof updateSchema>,
+    @Body(new ZodPipe(approvedEmailsUpdateSchema)) body: z.infer<typeof approvedEmailsUpdateSchema>,
   ) {
     return this.approvedEmails
       .update(actor.id, body.emails, body.mode, body.note)

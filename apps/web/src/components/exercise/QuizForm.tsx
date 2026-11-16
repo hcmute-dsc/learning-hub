@@ -1,9 +1,9 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
-import type { ExerciseView, ProblemDetails, QuizResult } from '@hub/shared';
+import type { ExerciseView, QuizResult } from '@hub/shared';
 import { sendJson } from '@/lib/client-api';
+import { useMutation } from '@/lib/use-mutation';
 import { formatPercent } from '@/lib/format';
 import { CompletedNotice } from './CompletedNotice';
 import { ProblemAlert } from './ProblemAlert';
@@ -28,11 +28,9 @@ export function QuizForm({
   quiz: Quiz;
   completed: boolean;
 }) {
-  const router = useRouter();
+  const { run, busy, problem, setProblem } = useMutation();
   const [draft, setDraft] = useState<QuizDraft>({});
   const [result, setResult] = useState<QuizResult | null>(null);
-  const [problem, setProblem] = useState<ProblemDetails | null>(null);
-  const [pending, setPending] = useState(false);
 
   const total = quiz.questions.length;
   const answered = countAnswered(quiz.questions, draft);
@@ -41,21 +39,15 @@ export function QuizForm({
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    setPending(true);
-    setProblem(null);
-    const response = await sendJson<QuizResult>(
-      `/exercises/${encodeURIComponent(exerciseId)}/quiz-attempts`,
-      'POST',
-      toAttemptInput(quiz.questions, draft),
+    // useMutation also reloads the server-rendered exercise state and attempt history.
+    const response = await run(() =>
+      sendJson<QuizResult>(
+        `/exercises/${encodeURIComponent(exerciseId)}/quiz-attempts`,
+        'POST',
+        toAttemptInput(quiz.questions, draft),
+      ),
     );
-    setPending(false);
-    if (!response.ok) {
-      setProblem(response.problem);
-      return;
-    }
-    setResult(response.data);
-    // The exercise state and the attempt history are server-rendered: reload them.
-    router.refresh();
+    if (response.ok) setResult(response.data);
   }
 
   function retry() {
@@ -99,11 +91,11 @@ export function QuizForm({
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="submit"
-            disabled={pending || answered < total}
-            aria-busy={pending}
+            disabled={busy || answered < total}
+            aria-busy={busy}
             className="rounded-lg bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700 disabled:opacity-60"
           >
-            {pending ? 'Đang chấm…' : 'Nộp bài'}
+            {busy ? 'Đang chấm…' : 'Nộp bài'}
           </button>
           <span className="muted text-sm" aria-live="polite">
             Đã trả lời {answered}/{total} câu

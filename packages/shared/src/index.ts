@@ -100,3 +100,4 @@ export const meSchema = z.object({
 export type Me = z.infer<typeof meSchema>;
 
 export * from './learning';
+export * from './admin';

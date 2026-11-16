@@ -1,9 +1,9 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
-import type { ProblemDetails, SelfCheckInput } from '@hub/shared';
+import type { SelfCheckInput } from '@hub/shared';
 import { sendJson } from '@/lib/client-api';
+import { useMutation } from '@/lib/use-mutation';
 import { ProblemAlert } from './ProblemAlert';
 
 /**
@@ -15,16 +15,17 @@ import { ProblemAlert } from './ProblemAlert';
 export function SelfCheckForm({
   exerciseId,
   checklist,
-  completed,
+  completed: completedOnServer,
 }: {
   exerciseId: string;
   checklist: string[];
   completed: boolean;
 }) {
-  const router = useRouter();
+  const { run, busy, problem } = useMutation();
+  const [savedNow, setSavedNow] = useState(false);
+  // Done as soon as the API said yes, even before the refreshed page arrives.
+  const completed = completedOnServer || savedNow;
   const [ticked, setTicked] = useState<boolean[]>(() => checklist.map(() => completed));
-  const [pending, setPending] = useState(false);
-  const [problem, setProblem] = useState<ProblemDetails | null>(null);
 
   const tickedCount = ticked.filter(Boolean).length;
   const allTicked = tickedCount === checklist.length;
@@ -37,20 +38,11 @@ export function SelfCheckForm({
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    setPending(true);
-    setProblem(null);
     const body: SelfCheckInput = { confirmed: true };
-    const result = await sendJson(
-      `/exercises/${encodeURIComponent(exerciseId)}/self-check`,
-      'POST',
-      body,
+    const result = await run(() =>
+      sendJson(`/exercises/${encodeURIComponent(exerciseId)}/self-check`, 'POST', body),
     );
-    setPending(false);
-    if (!result.ok) {
-      setProblem(result.problem);
-      return;
-    }
-    router.refresh();
+    if (result.ok) setSavedNow(true);
   }
 
   return (
@@ -86,12 +78,12 @@ export function SelfCheckForm({
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="submit"
-            disabled={!allTicked || pending}
-            aria-busy={pending}
+            disabled={!allTicked || busy}
+            aria-busy={busy}
             aria-describedby="self-check-count"
             className="rounded-lg bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700 disabled:opacity-60"
           >
-            {pending ? 'Đang lưu…' : 'Tôi đã hoàn thành'}
+            {busy ? 'Đang lưu…' : 'Tôi đã hoàn thành'}
           </button>
           <span id="self-check-count" className="muted text-sm">
             Đã đánh dấu {tickedCount}/{checklist.length} mục

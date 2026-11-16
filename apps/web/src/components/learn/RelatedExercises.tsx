@@ -15,7 +15,7 @@ export function RelatedExercises({ exercises }: { exercises: LessonView['exercis
       <ul className="mt-3 divide-y divide-[var(--border)] text-sm">
         {exercises.map((x) => (
           <li key={x.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-            <Link href={exerciseHref(x.id)} className="hover:underline">
+            <Link prefetch={false} href={exerciseHref(x.id)} className="hover:underline">
               <span aria-hidden>🛠️ </span>
               {x.title}
             </Link>

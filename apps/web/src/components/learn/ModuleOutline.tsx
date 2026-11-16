@@ -43,7 +43,7 @@ export function ModuleOutline({
       <ul className="mt-3 divide-y divide-[var(--border)] text-sm">
         {module.lessons.map((l) => (
           <li key={l.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-            <Link href={lessonHref(l.id)} className="min-w-0 hover:underline">
+            <Link prefetch={false} href={lessonHref(l.id)} className="min-w-0 hover:underline">
               <span aria-hidden>📖 </span>
               <span className="sr-only">Bài học: </span>
               {l.title}
@@ -56,7 +56,7 @@ export function ModuleOutline({
         ))}
         {module.exercises.map((x) => (
           <li key={x.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-            <Link href={exerciseHref(x.id)} className="min-w-0 hover:underline">
+            <Link prefetch={false} href={exerciseHref(x.id)} className="min-w-0 hover:underline">
               <span aria-hidden>🛠️ </span>
               <span className="sr-only">Bài tập: </span>
               {x.title}

@@ -1,11 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import type { NextItem, ProblemDetails } from '@hub/shared';
+import type { NextItem, TrackProgress } from '@hub/shared';
 import { ProblemAlert } from '@/components/exercise/ProblemAlert';
 import { sendJson } from '@/lib/client-api';
+import { useMutation } from '@/lib/use-mutation';
 import { itemHref } from './links';
 
 /**
@@ -24,14 +24,18 @@ export function EnrollButton({
   completed: boolean;
   next: NextItem | null;
 }) {
-  const router = useRouter();
-  const [pending, setPending] = useState(false);
-  const [problem, setProblem] = useState<ProblemDetails | null>(null);
+  const { run, busy, problem } = useMutation();
+  // Filled from the enroll response, so the button changes on the first click even
+  // before the refreshed page arrives (see lib/use-mutation.ts).
+  const [justEnrolled, setJustEnrolled] = useState<TrackProgress | null>(null);
+  const isEnrolled = enrolled || justEnrolled !== null;
+  const nextItem = justEnrolled ? justEnrolled.next : next;
+  const isCompleted = justEnrolled ? justEnrolled.status === 'completed' : completed;
 
-  if (enrolled) {
-    if (!next) {
+  if (isEnrolled) {
+    if (!nextItem) {
       // No next item and not completed only happens for a track with no items yet.
-      return completed ? (
+      return isCompleted ? (
         <p className="font-medium">
           <span aria-hidden>🎉 </span>Bạn đã hoàn thành lộ trình này.
         </p>
@@ -41,24 +45,19 @@ export function EnrollButton({
     }
     return (
       <Link
-        href={itemHref(next)}
+        href={itemHref(nextItem)}
         className="inline-block rounded-lg bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700"
       >
-        Tiếp tục: {next.title} →
+        Tiếp tục: {nextItem.title} →
       </Link>
     );
   }
 
   async function enroll() {
-    setPending(true);
-    setProblem(null);
-    const result = await sendJson(`/tracks/${encodeURIComponent(slug)}/enrollments`, 'POST', {});
-    setPending(false);
-    if (!result.ok) {
-      setProblem(result.problem);
-      return;
-    }
-    router.refresh();
+    const result = await run(() =>
+      sendJson<TrackProgress>(`/tracks/${encodeURIComponent(slug)}/enrollments`, 'POST', {}),
+    );
+    if (result.ok) setJustEnrolled(result.data);
   }
 
   return (
@@ -66,11 +65,11 @@ export function EnrollButton({
       <button
         type="button"
         onClick={enroll}
-        disabled={pending}
-        aria-busy={pending}
+        disabled={busy}
+        aria-busy={busy}
         className="rounded-lg bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700 disabled:opacity-60"
       >
-        {pending ? 'Đang ghi danh…' : 'Bắt đầu học'}
+        {busy ? 'Đang ghi danh…' : 'Bắt đầu học'}
       </button>
       <ProblemAlert problem={problem} />
     </div>
