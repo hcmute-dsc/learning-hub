@@ -24,6 +24,14 @@ export const EXERCISE_STATES = [
 ] as const;
 export type ExerciseState = (typeof EXERCISE_STATES)[number];
 
+/** Lesson progress of one member, stored in lesson_progress (DATABASE §3.11). */
+export const LESSON_STATUSES = ['not_started', 'in_progress', 'completed'] as const;
+export type LessonStatus = (typeof LESSON_STATUSES)[number];
+
+/** Exercise difficulty from the content repo (CONTENT-SPECIFICATION). */
+export const DIFFICULTIES = ['easy', 'medium', 'hard'] as const;
+export type Difficulty = (typeof DIFFICULTIES)[number];
+
 export interface ItemRef {
   id: string;
   title: string;
@@ -44,7 +52,10 @@ export interface ProgressCount {
   total: number;
 }
 
-/** The next thing to open in a track ("Tiếp tục học"). null when everything is done. */
+/**
+ * The next thing to open in a track ("Tiếp tục học"): the first item not done, skipping
+ * locked exercises unless only locked ones are left. null only when nothing is left to do.
+ */
 export interface NextItem {
   kind: 'lesson' | 'exercise';
   id: string;
@@ -73,8 +84,12 @@ export interface TrackProgress {
  */
 export interface TrackItemsProgress {
   enrolled: boolean;
-  lessons: Record<string, 'not_started' | 'in_progress' | 'completed'>;
+  /** true when the track has items and every one is completed, or the enrollment is stored as completed */
+  completed: boolean;
+  lessons: Record<string, LessonStatus>;
   exercises: Record<string, ExerciseState>;
+  /** "Tiếp tục" target, same rule as TrackProgress.next */
+  next: NextItem | null;
 }
 
 // ------------------------------------------------------------------ E4: lessons
@@ -92,7 +107,7 @@ export interface LessonView {
   /** Reading order inside the track: lessons then exercises of each module, by position */
   previous: NextItem | null;
   next: NextItem | null;
-  progress: 'not_started' | 'in_progress' | 'completed';
+  progress: LessonStatus;
   /** Exercises whose `lesson:` is this lesson */
   exercises: (ItemRef & { type: ExerciseType; state: ExerciseState })[];
   /** Source for "Sửa trên GitHub" links */
@@ -118,7 +133,7 @@ export interface ExerciseView {
   slug: string;
   title: string;
   type: ExerciseType;
-  difficulty: 'easy' | 'medium' | 'hard';
+  difficulty: Difficulty;
   statementMd: string;
   requiresReview: boolean;
   state: ExerciseState;
@@ -171,7 +186,10 @@ export interface QuizResult {
   }[];
 }
 
-/** POST /api/v1/exercises/:id/self-check  body: every checklist item ticked → completed */
+/**
+ * POST /api/v1/exercises/:id/self-check  body: { confirmed: true } → completed.
+ * Honour-based (USER-FLOWS): the API never sees the checklist, the web only uses it as a reminder.
+ */
 export const selfCheckSchema = z.object({ confirmed: z.literal(true) }).strict();
 export type SelfCheckInput = z.infer<typeof selfCheckSchema>;
 

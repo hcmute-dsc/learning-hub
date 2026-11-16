@@ -23,17 +23,19 @@ packages/content/              parser + validator for content repos (pure, no Ne
 content-example/               small content repo used for local dev and tests
 ```
 
-| API module | Owns                                                                                                  | Read first                                |
-| ---------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| `identity` | GitHub sign-in, sessions, the global auth guard                                                       | `auth.controller.ts`, `auth.guard.ts`     |
-| `users`    | users, roles, approving `pending` accounts                                                            | `users.service.ts`                        |
-| `catalog`  | reading published tracks/modules/lessons/exercises; `CatalogWriter` is the only code that writes them | `catalog.service.ts`, `catalog.writer.ts` |
-| `content`  | sync a content repo → draft version → publish                                                         | `content.service.ts`, `domain/plan.ts`    |
-| `audit`    | writes `audit_logs` from domain events                                                                | `audit.listener.ts`                       |
+| API module    | Owns                                                                                                                                              | Read first                                  |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| `identity`    | GitHub sign-in, sessions, the global auth guard                                                                                                   | `auth.controller.ts`, `auth.guard.ts`       |
+| `users`       | users, roles, approving `pending` accounts                                                                                                        | `users.service.ts`                          |
+| `catalog`     | reading published tracks/modules/lessons/exercises; `CatalogWriter` is the only code that writes them                                             | `catalog.service.ts`, `catalog.writer.ts`   |
+| `content`     | sync a content repo → draft version → publish                                                                                                     | `content.service.ts`, `domain/plan.ts`      |
+| `learning`    | enrollments, lesson progress, track progress and completion; depends on `submissions` and `catalog`                                               | `progress.ts`, `enrollment.service.ts`      |
+| `submissions` | submissions and each exercise's state for a member, including prerequisite locks (`exercise-state.ts`); depends on `catalog`, never on `learning` | `exercise-state.ts`, `submission-writer.ts` |
+| `audit`       | writes `audit_logs` from domain events                                                                                                            | `audit.listener.ts`                         |
 
 ## Rules that keep the code maintainable
 
-1. **One-way dependencies.** A module may use another module's exported service, and never the reverse. For example, `content` uses `catalog`, but `catalog` never imports `content`.
+1. **One-way dependencies.** A module may use another module's exported service, and never the reverse. For example, `content` uses `catalog`, but `catalog` never imports `content`; and `learning` → `submissions` → `catalog`.
 2. **Business code never imports `integrations/`.** It depends on a _port_ (an interface in `modules/<name>/ports/`), and the integration binds the adapter. See `identity/ports/identity-provider.ts` and `content/ports/content-source.ts`.
 3. **Business rules are pure functions with tests.** Examples: `checkAccess` (auth.guard.ts), `initialStatus` (users.service.ts), `planChanges` (content/domain/plan.ts) and the whole `packages/content`. If a rule needs a database to be tested, split it.
 4. **Errors are `DomainError`s with a stable `code`.** The global filter turns them into `problem+json`. Do not throw raw `Error` for things a user can cause.

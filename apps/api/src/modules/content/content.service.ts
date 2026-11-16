@@ -125,9 +125,11 @@ export class ContentService {
   async publish(actorId: string | null, versionId: string): Promise<VersionView> {
     const version = await this.prisma.contentVersion.findUnique({ where: { id: versionId } });
     if (!version) throw DomainError.notFound('Content version');
-    if (version.status !== 'draft') {
+    // `superseded` = it was live before: publishing it again is a rollback to that commit.
+    // The diff is recomputed below against today's catalog, so this is safe.
+    if (version.status !== 'draft' && version.status !== 'superseded') {
       throw DomainError.conflict(
-        `Only a draft can be published (this version is ${version.status})`,
+        `Only a draft or an older (superseded) version can be published (this version is ${version.status})`,
       );
     }
     if (version.sourceRepo !== this.source.sourceRepo) {

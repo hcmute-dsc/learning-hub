@@ -189,4 +189,13 @@ export class CatalogReader {
     for (const r of rows) map.get(r.exerciseId)!.push(r.requiredExerciseId);
     return map;
   }
+
+  /** exerciseId → requires_review, for many exercises at once (used by exercise states). */
+  async reviewFlags(exerciseIds: string[]): Promise<Map<string, boolean>> {
+    const rows = await this.prisma.exercise.findMany({
+      where: { id: { in: exerciseIds } },
+      select: { id: true, requiresReview: true },
+    });
+    return new Map(rows.map((e) => [e.id, e.requiresReview]));
+  }
 }

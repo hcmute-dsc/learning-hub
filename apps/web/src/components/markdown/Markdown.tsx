@@ -1,0 +1,77 @@
+import type { ComponentPropsWithoutRef } from 'react';
+import ReactMarkdown, { defaultUrlTransform, type Components } from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
+import rehypeSanitize from 'rehype-sanitize';
+import remarkGfm from 'remark-gfm';
+import { rewriteContentUrl, type ContentOrigin } from './content-url';
+
+/**
+ * Renders Markdown from a content repo (lessons, exercise statements).
+ *
+ * SECURITY §3: content is written by club members, so it is untrusted. Raw HTML is
+ * parsed (rehype-raw, so authors can use <details>/<summary> like on GitHub) and then
+ * sanitized with the default GitHub-like schema (rehype-sanitize) BEFORE React renders
+ * it. Unsafe URL protocols are dropped by react-markdown's defaultUrlTransform.
+ *
+ * Works in Server and Client Components (no hooks).
+ */
+export function Markdown({
+  source,
+  origin = null,
+}: {
+  source: string;
+  /** Where the file lives, to resolve its relative links; null keeps them as is */
+  origin?: ContentOrigin | null;
+}) {
+  return (
+    <div className="markdown">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeRaw, rehypeSanitize]}
+        urlTransform={(url, key, node) => {
+          const safe = defaultUrlTransform(url);
+          if (!safe) return safe;
+          const kind = key === 'src' && node.tagName === 'img' ? 'image' : 'link';
+          return rewriteContentUrl(safe, kind, origin);
+        }}
+        components={COMPONENTS}
+      >
+        {source}
+      </ReactMarkdown>
+    </div>
+  );
+}
+
+/**
+ * The page title is the only <h1>, so Markdown headings move one level down to keep
+ * the heading order correct for screen readers (FRONTEND-DESIGN §9).
+ */
+const COMPONENTS: Components = {
+  h1: ({ node: _node, ...props }) => <h2 {...props} />,
+  h2: ({ node: _node, ...props }) => <h3 {...props} />,
+  h3: ({ node: _node, ...props }) => <h4 {...props} />,
+  h4: ({ node: _node, ...props }) => <h5 {...props} />,
+  h5: ({ node: _node, ...props }) => <h6 {...props} />,
+  a: ({ node: _node, ...props }) => <MarkdownLink {...props} />,
+  img: ({ node: _node, ...props }) => <MarkdownImage {...props} />,
+  // Code blocks can be wide: let them scroll and be reachable by keyboard (FRONTEND-DESIGN §9).
+  pre: ({ node: _node, ...props }) => <pre tabIndex={0} {...props} />,
+};
+
+function MarkdownLink(props: ComponentPropsWithoutRef<'a'>) {
+  const external = typeof props.href === 'string' && /^https?:\/\//.test(props.href);
+  // SECURITY §3: links to other sites never get access to window.opener or the referrer.
+  return <a {...props} rel={external ? 'noopener noreferrer' : undefined} />;
+}
+
+/**
+ * GitHub convention: an image URL ending in #gh-dark-mode-only / #gh-light-mode-only
+ * is shown in one color scheme only. The CSS classes live in globals.css.
+ */
+function MarkdownImage({ alt, ...props }: ComponentPropsWithoutRef<'img'>) {
+  const src = typeof props.src === 'string' ? props.src : '';
+  let className: string | undefined;
+  if (src.endsWith('#gh-dark-mode-only')) className = 'gh-dark-mode-only';
+  if (src.endsWith('#gh-light-mode-only')) className = 'gh-light-mode-only';
+  return <img {...props} alt={alt ?? ''} className={className} loading="lazy" />;
+}

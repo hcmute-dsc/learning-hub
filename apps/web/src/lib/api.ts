@@ -1,6 +1,6 @@
 import 'server-only';
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import type { Me, ProblemDetails } from '@hub/shared';
 
 const API = process.env.API_INTERNAL_URL ?? 'http://localhost:4000';
@@ -35,6 +35,22 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
       code: 'INTERNAL_ERROR',
     },
   );
+}
+
+/**
+ * `api` for a page's main resource: 404 (missing or archived) and 422 (malformed id or
+ * slug, rejected by the API's ZodPipe) both show the not-found page instead of the
+ * error page. Every other error is rethrown.
+ */
+export async function apiOrNotFound<T>(path: string): Promise<T> {
+  try {
+    return await api<T>(path);
+  } catch (e) {
+    if (e instanceof ApiError && (e.problem.status === 404 || e.problem.status === 422)) {
+      notFound();
+    }
+    throw e;
+  }
 }
 
 /** Current user or null (never redirects). */

@@ -1,15 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { TRACK_LEVELS, type Paginated, type TrackLevel, type TrackSummary } from '@hub/shared';
+import { TRACK_LEVELS, type Paginated, type TrackSummary } from '@hub/shared';
 import { api } from '@/lib/api';
+import { LEVEL_LABEL } from '@/lib/labels';
 
 export const metadata: Metadata = { title: 'Lộ trình' };
-
-const LEVEL_LABEL: Record<TrackLevel, string> = {
-  beginner: 'Cơ bản',
-  intermediate: 'Trung cấp',
-  advanced: 'Nâng cao',
-};
 
 export default async function TracksPage({
   searchParams,

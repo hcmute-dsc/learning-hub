@@ -1,5 +1,5 @@
 import type { SubmissionStatus } from '@hub/shared';
-import { exerciseState } from './exercise-state';
+import { exerciseState, statesWithPrerequisites } from './exercise-state';
 
 const base = { requiresReview: false, statuses: [] as SubmissionStatus[], prerequisitesMet: true };
 
@@ -35,5 +35,42 @@ describe('exerciseState', () => {
     expect(exerciseState({ ...base, requiresReview: true, statuses: ['changes_requested'] })).toBe(
       'needs_changes',
     );
+  });
+});
+
+describe('statesWithPrerequisites', () => {
+  // b needs a; c needs b (a chain)
+  const prerequisites = new Map<string, string[]>([
+    ['a', []],
+    ['b', ['a']],
+    ['c', ['b']],
+  ]);
+  const run = (submissionsById: Map<string, SubmissionStatus[]>) =>
+    statesWithPrerequisites({
+      ids: ['a', 'b', 'c'],
+      prerequisites,
+      requiresReview: new Map(),
+      submissionsById,
+    });
+
+  it('locks an exercise whose prerequisite is missing and names it in lockedBy', () => {
+    const states = run(new Map<string, SubmissionStatus[]>());
+    expect(states.get('a')).toEqual({ state: 'not_started', lockedBy: [] });
+    expect(states.get('b')).toEqual({ state: 'locked', lockedBy: ['a'] });
+  });
+
+  it('opens an exercise once its prerequisite is completed', () => {
+    const states = run(new Map<string, SubmissionStatus[]>([['a', ['passed']]]));
+    expect(states.get('b')).toEqual({ state: 'not_started', lockedBy: [] });
+  });
+
+  it('a prerequisite that is itself locked still locks (one level deep)', () => {
+    const states = run(new Map<string, SubmissionStatus[]>());
+    expect(states.get('c')).toEqual({ state: 'locked', lockedBy: ['b'] });
+  });
+
+  it('a completed exercise has no lockedBy even if a prerequisite is missing', () => {
+    const states = run(new Map<string, SubmissionStatus[]>([['b', ['passed']]]));
+    expect(states.get('b')).toEqual({ state: 'completed', lockedBy: [] });
   });
 });
