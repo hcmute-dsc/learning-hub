@@ -98,3 +98,5 @@ export const meSchema = z.object({
   roles: z.array(z.enum(ROLES)),
 });
 export type Me = z.infer<typeof meSchema>;
+
+export * from './learning';
