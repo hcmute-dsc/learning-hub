@@ -7,30 +7,15 @@ import { ENV, type Env } from '../../infrastructure/config/env';
 import { newId } from '../../infrastructure/ids';
 import { DomainError } from '../../common/errors';
 import { ROLE_IDS } from './roles';
+import { approvalReason, type SignInFacts } from './approval';
 import { UserEvents } from './users.events';
 
-export interface GithubSignIn {
+export interface GithubSignIn extends SignInFacts {
   githubId: bigint;
-  login: string;
   name: string | null;
+  /** primary verified email */
   email: string | null;
   avatarUrl: string | null;
-  isOrgMember: boolean | null;
-}
-
-/**
- * Status of a brand-new account (CRITIQUE §3.2): org members, allowlisted logins
- * and the bootstrap admin start `active`; everyone else waits as `pending`.
- */
-export function initialStatus(
-  input: { login: string; isOrgMember: boolean | null },
-  env: Pick<Env, 'ALLOWLIST_GITHUB_LOGINS' | 'BOOTSTRAP_ADMIN_GITHUB_LOGIN'>,
-): UserStatus {
-  const login = input.login.toLowerCase();
-  if (input.isOrgMember === true) return 'active';
-  if (env.ALLOWLIST_GITHUB_LOGINS.includes(login)) return 'active';
-  if (env.BOOTSTRAP_ADMIN_GITHUB_LOGIN === login) return 'active';
-  return 'pending';
 }
 
 @Injectable()
@@ -42,35 +27,54 @@ export class UsersService {
     @Inject(ENV) private readonly env: Env,
   ) {}
 
-  /** Create or refresh the user after a successful GitHub sign-in. */
+  /**
+   * Create or refresh the user after a successful GitHub sign-in.
+   * New accounts (and accounts still `pending`) become `active` when the approval
+   * rule says so; otherwise they wait for an admin/mentor (USER-FLOWS §1).
+   */
   async upsertFromGithub(input: GithubSignIn): Promise<{ id: string; status: UserStatus }> {
     const now = this.clock.now();
+    const approvedMatch = await this.findApprovedEmail(input.verifiedEmails);
+    const reason = approvalReason(
+      input,
+      (email) => email === approvedMatch,
+      this.env.BOOTSTRAP_ADMIN_GITHUB_LOGIN,
+    );
+    // Keep the email that matched the club list, so later list updates find this user.
+    const email = approvedMatch ?? input.email;
+
     const existing = await this.prisma.user.findUnique({ where: { githubId: input.githubId } });
     if (existing) {
+      const becomesActive = existing.status === 'pending' && reason !== null;
       const updated = await this.prisma.user.update({
         where: { id: existing.id },
         data: {
           githubLogin: input.login,
           avatarUrl: input.avatarUrl,
-          email: existing.email ?? input.email,
+          email: approvedMatch ?? existing.email ?? input.email,
           lastLoginAt: now,
-          // an org member who was waiting is let in automatically
-          ...(existing.status === 'pending' && input.isOrgMember ? { status: 'active' } : {}),
+          ...(becomesActive ? { status: 'active' } : {}),
         },
       });
+      if (becomesActive) {
+        await this.events.emitAsync(UserEvents.Approved, {
+          actorId: null,
+          userId: existing.id,
+          reason,
+        });
+      }
       return { id: updated.id, status: updated.status as UserStatus };
     }
 
-    const status = initialStatus(input, this.env);
-    const isBootstrapAdmin = this.env.BOOTSTRAP_ADMIN_GITHUB_LOGIN === input.login.toLowerCase();
-    const roleCodes: Role[] = isBootstrapAdmin ? ['member', 'admin'] : ['member'];
+    const status: UserStatus = reason ? 'active' : 'pending';
+    const roleCodes: Role[] = reason === 'bootstrap_admin' ? ['member', 'admin'] : ['member'];
     const user = await this.prisma.user.create({
       data: {
         id: newId(),
         githubId: input.githubId,
         githubLogin: input.login,
         displayName: input.name?.trim() || input.login,
-        email: input.email,
+        email,
         avatarUrl: input.avatarUrl,
         status,
         lastLoginAt: now,
@@ -81,8 +85,19 @@ export class UsersService {
       userId: user.id,
       status,
       roles: roleCodes,
+      reason,
     });
     return { id: user.id, status };
+  }
+
+  /** The first of these emails that is on the club's approved list, or null. */
+  private async findApprovedEmail(emails: string[]): Promise<string | null> {
+    if (!emails.length) return null;
+    const match = await this.prisma.approvedEmail.findFirst({
+      where: { email: { in: emails } },
+      select: { email: true },
+    });
+    return match?.email ?? null;
   }
 
   async getMe(userId: string): Promise<Me> {

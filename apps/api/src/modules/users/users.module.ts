@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
+import { ApprovedEmailsController } from './approved-emails.controller';
+import { ApprovedEmailsService } from './approved-emails.service';
 import { AdminUsersController } from './users.controller';
 import { UsersService } from './users.service';
 
 @Module({
-  controllers: [AdminUsersController],
-  providers: [UsersService],
+  controllers: [AdminUsersController, ApprovedEmailsController],
+  providers: [UsersService, ApprovedEmailsService],
   exports: [UsersService],
 })
 export class UsersModule {}

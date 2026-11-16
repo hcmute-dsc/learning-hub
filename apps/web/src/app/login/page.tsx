@@ -17,7 +17,7 @@ export default async function LoginPage({
       <h1 className="text-2xl font-bold">Đăng nhập</h1>
       <p className="muted mt-2 text-sm">
         Learning Hub dùng tài khoản GitHub vì bài tập được nộp qua GitHub. Chúng mình chỉ đọc hồ sơ
-        công khai, email và việc bạn có thuộc org <code>hcmute-dsc</code> hay không.
+        công khai và các email đã xác minh, để đối chiếu với danh sách thành viên CLB.
       </p>
       {error && (
         <p role="alert" className="mt-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
@@ -31,8 +31,8 @@ export default async function LoginPage({
         Đăng nhập với GitHub
       </a>
       <p className="muted mt-4 text-xs">
-        Chưa có GitHub? Tạo tài khoản miễn phí tại github.com rồi quay lại. Thành viên mới sẽ chờ
-        Ban chủ nhiệm duyệt.
+        Chưa có GitHub? Tạo tài khoản miễn phí tại github.com rồi quay lại. Nếu email bạn đăng ký
+        với CLB (ví dụ email trường) chưa có trên GitHub, hãy thêm nó vào GitHub và xác minh.
       </p>
     </section>
   );

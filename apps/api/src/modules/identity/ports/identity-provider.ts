@@ -3,9 +3,12 @@ export interface ExternalProfile {
   githubId: bigint;
   login: string;
   name: string | null;
+  /** Primary verified email, lower-cased (null if GitHub did not give one) */
   email: string | null;
+  /** Every verified email on the account, lower-cased. Used for the approval list. */
+  verifiedEmails: string[];
   avatarUrl: string | null;
-  /** true/false when the org check ran; null when it could not be determined */
+  /** Only when an org check is configured: true/false, or null if it could not be determined */
   isOrgMember: boolean | null;
 }
 

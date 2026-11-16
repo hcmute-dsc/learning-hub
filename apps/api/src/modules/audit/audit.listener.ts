@@ -31,16 +31,32 @@ export class AuditListener {
   }
 
   @OnEvent(UserEvents.Registered)
-  onRegistered(e: { userId: string; status: string; roles: string[] }) {
+  onRegistered(e: { userId: string; status: string; roles: string[]; reason?: string | null }) {
     return this.write('user.register', 'user', e.userId, null, {
       status: e.status,
       roles: e.roles,
+      reason: e.reason ?? null,
     });
   }
 
   @OnEvent(UserEvents.Approved)
-  onApproved(e: { actorId: string; userId: string }) {
-    return this.write('user.approve', 'user', e.userId, e.actorId);
+  onApproved(e: { actorId: string | null; userId: string; reason?: string }) {
+    return this.write('user.approve', 'user', e.userId, e.actorId, {
+      reason: e.reason ?? 'manual',
+    });
+  }
+
+  /** Counts only: the list itself is personal data and stays out of the audit log. */
+  @OnEvent(UserEvents.ApprovedEmailsChanged)
+  onApprovedEmailsChanged(e: {
+    actorId: string;
+    mode: string;
+    submitted: number;
+    total: number;
+    activated: number;
+  }) {
+    const { actorId, ...counts } = e;
+    return this.write('approved_emails.update', 'approved_emails', 'list', actorId, counts);
   }
 
   @OnEvent(UserEvents.RolesChanged)

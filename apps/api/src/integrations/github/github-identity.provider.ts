@@ -8,18 +8,38 @@ import type {
 
 const GITHUB = 'https://github.com';
 const API = 'https://api.github.com';
-const SCOPES = 'read:user user:email read:org';
 
-/** GitHub OAuth adapter. Translates GitHub responses only; no business rules here. */
+interface GithubUser {
+  id: number;
+  login: string;
+  name: string | null;
+  avatar_url: string | null;
+}
+
+interface GithubEmail {
+  email: string;
+  primary: boolean;
+  verified: boolean;
+}
+
+/**
+ * GitHub OAuth adapter. It only translates GitHub responses into ExternalProfile;
+ * deciding who is approved is the users module's job (SECURITY §1).
+ */
 @Injectable()
 export class GithubIdentityProvider implements IdentityProvider {
   constructor(@Inject(ENV) private readonly env: Env) {}
+
+  /** Least privilege: `read:org` is requested only when the optional org check is on. */
+  private get scopes(): string {
+    return ['read:user', 'user:email', ...(this.env.GITHUB_ORG ? ['read:org'] : [])].join(' ');
+  }
 
   authorizeUrl(input: { state: string; codeChallenge: string; redirectUri: string }): string {
     const url = new URL('/login/oauth/authorize', GITHUB);
     url.searchParams.set('client_id', this.env.GITHUB_CLIENT_ID);
     url.searchParams.set('redirect_uri', input.redirectUri);
-    url.searchParams.set('scope', SCOPES);
+    url.searchParams.set('scope', this.scopes);
     url.searchParams.set('state', input.state);
     url.searchParams.set('code_challenge', input.codeChallenge);
     url.searchParams.set('code_challenge_method', 'S256');
@@ -32,10 +52,46 @@ export class GithubIdentityProvider implements IdentityProvider {
     codeVerifier: string;
     redirectUri: string;
   }): Promise<ExternalProfile> {
+    const token = await this.exchangeCode(input);
+    const headers = {
+      Accept: 'application/vnd.github+json',
+      Authorization: `Bearer ${token}`,
+      'X-GitHub-Api-Version': '2022-11-28',
+      'User-Agent': 'learning-hub',
+    };
+
+    const user = await this.getJson<GithubUser>(
+      `${API}/user`,
+      headers,
+      'Could not read GitHub profile',
+    );
+    const emails = await this.getJson<GithubEmail[]>(
+      `${API}/user/emails`,
+      headers,
+      'Could not read GitHub emails',
+    );
+    const verified = emails.filter((e) => e.verified);
+
+    return {
+      githubId: BigInt(user.id),
+      login: user.login,
+      name: user.name,
+      email: verified.find((e) => e.primary)?.email.toLowerCase() ?? null,
+      verifiedEmails: verified.map((e) => e.email.toLowerCase()),
+      avatarUrl: user.avatar_url,
+      isOrgMember: this.env.GITHUB_ORG ? await this.checkOrgMember(user.login, headers) : null,
+    };
+  }
+
+  private async exchangeCode(input: {
+    code: string;
+    codeVerifier: string;
+    redirectUri: string;
+  }): Promise<string> {
     if (!this.env.GITHUB_CLIENT_ID || !this.env.GITHUB_CLIENT_SECRET) {
       throw new DomainError('UPSTREAM_ERROR', 503, 'GitHub sign-in is not configured');
     }
-    const tokenRes = await fetch(`${GITHUB}/login/oauth/access_token`, {
+    const res = await fetch(`${GITHUB}/login/oauth/access_token`, {
       method: 'POST',
       headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -46,58 +102,32 @@ export class GithubIdentityProvider implements IdentityProvider {
         code_verifier: input.codeVerifier,
       }),
     });
-    const token = (await tokenRes.json()) as { access_token?: string; error?: string };
-    if (!tokenRes.ok || !token.access_token) {
+    const body = (await res.json()) as { access_token?: string };
+    if (!res.ok || !body.access_token) {
       throw new DomainError('UPSTREAM_ERROR', 502, 'GitHub rejected the sign-in code');
     }
-    const headers = {
-      Accept: 'application/vnd.github+json',
-      Authorization: `Bearer ${token.access_token}`,
-      'X-GitHub-Api-Version': '2022-11-28',
-      'User-Agent': 'learning-hub',
-    };
+    return body.access_token;
+  }
 
-    const userRes = await fetch(`${API}/user`, { headers });
-    if (!userRes.ok) throw new DomainError('UPSTREAM_ERROR', 502, 'Could not read GitHub profile');
-    const user = (await userRes.json()) as {
-      id: number;
-      login: string;
-      name: string | null;
-      email: string | null;
-      avatar_url: string | null;
-    };
+  private async getJson<T>(
+    url: string,
+    headers: Record<string, string>,
+    error: string,
+  ): Promise<T> {
+    const res = await fetch(url, { headers });
+    if (!res.ok) throw new DomainError('UPSTREAM_ERROR', 502, error);
+    return (await res.json()) as T;
+  }
 
-    let email = user.email;
-    if (!email) {
-      const emailsRes = await fetch(`${API}/user/emails`, { headers });
-      if (emailsRes.ok) {
-        const emails = (await emailsRes.json()) as {
-          email: string;
-          primary: boolean;
-          verified: boolean;
-        }[];
-        email = emails.find((e) => e.primary && e.verified)?.email ?? null;
-      }
-    }
-
-    // 204 = member, 404 = not a member (or hidden), 302 = requester not an org member.
-    let isOrgMember: boolean | null = null;
-    if (this.env.GITHUB_ORG) {
-      const memberRes = await fetch(
-        `${API}/orgs/${encodeURIComponent(this.env.GITHUB_ORG)}/members/${encodeURIComponent(user.login)}`,
-        { headers, redirect: 'manual' },
-      );
-      if (memberRes.status === 204) isOrgMember = true;
-      else if (memberRes.status === 404 || memberRes.status === 302) isOrgMember = false;
-    }
-
-    return {
-      githubId: BigInt(user.id),
-      login: user.login,
-      name: user.name,
-      email: email ? email.toLowerCase() : null,
-      avatarUrl: user.avatar_url,
-      isOrgMember,
-    };
+  /** 204 = member, 404/302 = not a member (or membership hidden), other = unknown. */
+  private async checkOrgMember(
+    login: string,
+    headers: Record<string, string>,
+  ): Promise<boolean | null> {
+    const url = `${API}/orgs/${encodeURIComponent(this.env.GITHUB_ORG)}/members/${encodeURIComponent(login)}`;
+    const res = await fetch(url, { headers, redirect: 'manual' });
+    if (res.status === 204) return true;
+    if (res.status === 404 || res.status === 302) return false;
+    return null;
   }
 }

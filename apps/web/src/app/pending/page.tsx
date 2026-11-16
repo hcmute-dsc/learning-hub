@@ -10,8 +10,9 @@ export default function PendingPage() {
       </p>
       <h1 className="mt-2 text-2xl font-bold">Tài khoản đang chờ duyệt</h1>
       <p className="muted mt-2 text-sm">
-        Bạn chưa thuộc org GitHub của CLB, nên Ban chủ nhiệm hoặc mentor cần duyệt tài khoản trước.
-        Hãy nhắn trên Discord của CLB để được duyệt nhanh hơn.
+        Chưa có email nào trên tài khoản GitHub của bạn khớp với danh sách thành viên CLB. Nếu bạn
+        đăng ký CLB bằng email khác (ví dụ email trường), hãy thêm email đó vào GitHub (Settings →
+        Emails), xác minh, rồi đăng nhập lại. Hoặc nhắn Ban chủ nhiệm trên Discord để được duyệt.
       </p>
     </section>
   );

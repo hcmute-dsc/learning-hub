@@ -1,15 +1,5 @@
 import { z } from 'zod';
 
-const csv = z
-  .string()
-  .optional()
-  .transform((v) =>
-    (v ?? '')
-      .split(',')
-      .map((s) => s.trim().toLowerCase())
-      .filter(Boolean),
-  );
-
 export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   API_PORT: z.coerce.number().int().positive().default(4000),
@@ -17,8 +7,8 @@ export const envSchema = z.object({
   WEB_ORIGIN: z.string().url().default('http://localhost:3000'),
   GITHUB_CLIENT_ID: z.string().default(''),
   GITHUB_CLIENT_SECRET: z.string().default(''),
-  GITHUB_ORG: z.string().default('hcmute-dsc'),
-  ALLOWLIST_GITHUB_LOGINS: csv,
+  /** Optional extra rule: members of this GitHub org are approved too. Empty = off. */
+  GITHUB_ORG: z.string().default(''),
   BOOTSTRAP_ADMIN_GITHUB_LOGIN: z
     .string()
     .optional()

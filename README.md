@@ -8,7 +8,7 @@ Design docs live in the sibling repo `learning-hub-docs` (PRD, architecture, dat
 
 MVP-Lite **E1 (foundation)**, **E2 (identity & roles)** and **E3 (content from Git)** are implemented. Also included:
 
-- GitHub OAuth sign-in with PKCE and `state`. New accounts start `pending` unless they are in the `hcmute-dsc` org or the allowlist.
+- GitHub OAuth sign-in with PKCE and `state`. New accounts start `pending` unless one of their verified GitHub emails is on the club's email list (`/api/v1/admin/approved-emails`). Admins and mentors can also approve them by hand.
 - Server-side sessions: the DB stores only a hashed token.
 - Global guards for session, roles, Origin (CSRF) and rate limits.
 - Errors use `problem+json`. Audit logs are written from domain events.
