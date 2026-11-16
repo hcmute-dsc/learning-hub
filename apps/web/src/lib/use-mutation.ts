@@ -13,6 +13,11 @@ import type { SendResult } from './client-api';
  * moment later. Without `startTransition` the button would be enabled again while the
  * old state is still on screen, so members clicked twice (bug reported 17/11/2026).
  * `busy` stays true until the refreshed page has rendered.
+ *
+ * Do NOT add a route-level `loading.tsx` to pages that use this hook: with Next 15.5 its
+ * Suspense boundary kept the refreshed data from ever being shown, so server-rendered
+ * parts (attempt history, sidebar, badges) only updated after a second click (found
+ * 17/11/2026 by comparing /tracks, which had no loading.tsx, with the other pages).
  */
 export function useMutation() {
   const router = useRouter();

@@ -56,6 +56,12 @@ const COMPONENTS: Components = {
   img: ({ node: _node, ...props }) => <MarkdownImage {...props} />,
   // Code blocks can be wide: let them scroll and be reachable by keyboard (FRONTEND-DESIGN §9).
   pre: ({ node: _node, ...props }) => <pre tabIndex={0} {...props} />,
+  // Wide tables scroll inside their own box instead of squeezing the columns.
+  table: ({ node: _node, ...props }) => (
+    <div className="table-wrap" tabIndex={0}>
+      <table {...props} />
+    </div>
+  ),
 };
 
 function MarkdownLink(props: ComponentPropsWithoutRef<'a'>) {

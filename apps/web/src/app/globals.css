@@ -6,7 +6,9 @@
 @theme {
   --font-sans:
     system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu, Cantarell, 'Noto Sans', sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  /* Windows first: 'ui-monospace' resolves badly there and spaced out inline code. */
+  --font-mono:
+    'Cascadia Code', Consolas, ui-monospace, SFMono-Regular, Menlo, 'Liberation Mono', monospace;
   --color-brand-50: #fef1ec;
   --color-brand-100: #fbd9cc;
   --color-brand-500: #f0622d;
@@ -49,13 +51,17 @@ body {
   color: var(--text);
 }
 
-.surface {
-  background: var(--surface);
-  border: 1px solid var(--border);
-}
+/* In the components layer so Tailwind utilities (e.g. a gradient background or a
+   colored border on a card) can still override them. */
+@layer components {
+  .surface {
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
 
-.muted {
-  color: var(--muted);
+  .muted {
+    color: var(--muted);
+  }
 }
 
 :focus-visible {
@@ -157,15 +163,34 @@ body {
   padding: 0;
   font-size: inherit;
 }
-.markdown table {
-  display: block;
+/* Tables get a scrolling wrapper (Markdown.tsx) instead of `display: block` on the
+   table itself: a block table shrinks its columns and wrapped words one per line. */
+.markdown .table-wrap {
   overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.markdown table {
+  width: 100%;
   border-collapse: collapse;
+}
+.markdown .table-wrap th,
+.markdown .table-wrap td {
+  border-width: 0 0 1px 0;
+}
+.markdown .table-wrap tr:last-child td {
+  border-bottom: 0;
+}
+.markdown thead {
+  background: var(--code-bg);
 }
 .markdown th,
 .markdown td {
   border: 1px solid var(--border);
-  padding: 0.4em 0.75em;
+  padding: 0.5em 0.85em;
+  text-align: left;
+  vertical-align: top;
+  min-width: 6rem;
 }
 .markdown th {
   font-weight: 600;
@@ -225,4 +250,75 @@ body {
   font-size: 0.85rem;
   color: rgb(255 255 255 / 0.12);
   white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- Motion
+   Small, CSS-only motion (no animation library to maintain). All of it switches off
+   for people who ask for less motion: see the prefers-reduced-motion rule above.
+   Stagger: give each child `style={{ '--i': index }}` to delay it a little. */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes grow-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.motion-fade-up {
+  animation: fade-up 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+.motion-pop {
+  animation: pop-in 0.35s cubic-bezier(0.3, 1.5, 0.5, 1) both;
+  animation-delay: calc(var(--i, 0) * 15ms);
+}
+.motion-grow-x {
+  transform-origin: left center;
+  animation: grow-x 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: 0.15s;
+}
+/* Cards that are links lift slightly on hover; buttons press in. */
+.lift {
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+.lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgb(15 23 42 / 0.1);
+  border-color: var(--color-brand-500);
+}
+.press {
+  transition: transform 0.1s ease;
+}
+.press:active {
+  transform: scale(0.97);
+}
+/* A card that lifts AND presses keeps the lift's smooth shadow/border transition. */
+.lift.press {
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
 }

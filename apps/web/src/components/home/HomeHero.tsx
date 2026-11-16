@@ -35,7 +35,7 @@ export function HomeHero() {
         ))}
       </div>
 
-      <div className="relative mx-auto max-w-6xl px-4 py-24 sm:py-32">
+      <div className="motion-fade-up relative mx-auto max-w-6xl px-4 py-24 sm:py-32">
         <p className="font-mono text-sm font-semibold text-brand-500">&gt;DSC_ Learning Hub</p>
         <h1 className="mt-3 max-w-3xl text-4xl font-bold tracking-tight sm:text-6xl">
           Học đi đôi với hành<span className="text-brand-500">_</span>
@@ -47,7 +47,7 @@ export function HomeHero() {
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
             href="/tracks"
-            className="rounded-lg bg-brand-600 px-5 py-3 font-semibold text-white hover:bg-brand-700"
+            className="press rounded-lg bg-brand-600 px-5 py-3 font-semibold text-white hover:bg-brand-700"
           >
             Xem lộ trình
           </Link>

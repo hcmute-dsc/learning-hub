@@ -1,9 +1,15 @@
-import Link from 'next/link';
-import type { Difficulty, ExerciseState, ExerciseType, LessonStatus } from '@hub/shared';
-import { ExerciseStateBadge } from '@/components/exercise/ExerciseStateBadge';
-import { EXERCISE_TYPE_LABEL } from '@/lib/labels';
-import { LessonStatusBadge } from './LessonStatusBadge';
+import type { Difficulty, ExerciseType, TrackItemsProgress } from '@hub/shared';
+import { ProgressBar } from '@/components/learn/ProgressBar';
+import { ItemRow } from '@/components/track/ItemRow';
+import { exerciseTone, lessonTone } from '@/components/track/track-items';
+import {
+  DIFFICULTY_LABEL,
+  EXERCISE_STATE_LABEL,
+  EXERCISE_TYPE_LABEL,
+  LESSON_PROGRESS_LABEL,
+} from '@/lib/labels';
 import { exerciseHref, lessonHref, moduleAnchor } from './links';
+import { countDone } from './track-progress';
 
 export interface ModuleOutlineData {
   id: string;
@@ -15,59 +21,104 @@ export interface ModuleOutlineData {
 }
 
 /**
- * One module of a track: its lessons, then its exercises (reading order), each with a
- * status badge when the member's progress is known (INFORMATION-ARCHITECTURE §5).
+ * One module of a track as a card: number, title, its own progress, then its lessons
+ * and exercises in reading order (INFORMATION-ARCHITECTURE §5).
  */
 export function ModuleOutline({
   module,
   index,
-  lessonStatus,
-  exerciseState,
+  progress,
+  enrolled,
 }: {
   module: ModuleOutlineData;
   index: number;
-  lessonStatus?: Record<string, LessonStatus>;
-  exerciseState?: Record<string, ExerciseState>;
+  progress: Pick<TrackItemsProgress, 'lessons' | 'exercises'>;
+  /** Before enrolling every lesson is "not started"; showing that on each row is only noise. */
+  enrolled: boolean;
 }) {
+  const anchor = moduleAnchor(module.slug);
+  const count = countDone([module], progress);
+  const finished = enrolled && count.total > 0 && count.done === count.total;
+
   return (
     // The id is a stable anchor: lesson and exercise breadcrumbs link to /tracks/x#module-y.
+    // scroll-mt keeps the module title below the sticky site header after the jump.
     <section
-      id={moduleAnchor(module.slug)}
-      aria-labelledby={`${moduleAnchor(module.slug)}-title`}
-      className="surface scroll-mt-4 rounded-xl p-5"
+      id={anchor}
+      aria-labelledby={`${anchor}-title`}
+      className="surface scroll-mt-20 rounded-2xl p-4 sm:p-6"
     >
-      <h2 id={`${moduleAnchor(module.slug)}-title`} className="font-semibold">
-        <span className="muted font-mono">{String(index + 1).padStart(2, '0')}</span> {module.title}
-      </h2>
-      {module.summary && <p className="muted mt-1 text-sm">{module.summary}</p>}
-      <ul className="mt-3 divide-y divide-[var(--border)] text-sm">
-        {module.lessons.map((l) => (
-          <li key={l.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-            <Link prefetch={false} href={lessonHref(l.id)} className="min-w-0 hover:underline">
-              <span aria-hidden>📖 </span>
-              <span className="sr-only">Bài học: </span>
-              {l.title}
-            </Link>
-            <span className="flex items-center gap-2">
-              {l.estMinutes && <span className="muted">{l.estMinutes} phút</span>}
-              {lessonStatus && <LessonStatusBadge status={lessonStatus[l.id] ?? 'not_started'} />}
-            </span>
-          </li>
-        ))}
-        {module.exercises.map((x) => (
-          <li key={x.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-            <Link prefetch={false} href={exerciseHref(x.id)} className="min-w-0 hover:underline">
-              <span aria-hidden>🛠️ </span>
-              <span className="sr-only">Bài tập: </span>
-              {x.title}
-            </Link>
-            <span className="flex items-center gap-2">
-              <span className="muted">{EXERCISE_TYPE_LABEL[x.type]}</span>
-              {exerciseState && <ExerciseStateBadge state={exerciseState[x.id] ?? 'not_started'} />}
-            </span>
-          </li>
-        ))}
-      </ul>
+      <div className="flex items-start gap-4">
+        <span
+          aria-hidden
+          className={`grid h-10 w-10 shrink-0 place-items-center rounded-full font-mono font-bold ${
+            finished
+              ? 'bg-emerald-600 text-white dark:bg-emerald-500 dark:text-emerald-950'
+              : 'bg-brand-500/15 text-brand-600'
+          }`}
+        >
+          {finished ? '✓' : String(index + 1).padStart(2, '0')}
+        </span>
+        <div className="min-w-0 flex-1">
+          <h3 id={`${anchor}-title`} className="text-lg font-semibold leading-snug">
+            <span className="sr-only">Chương {index + 1}: </span>
+            {module.title}
+            {finished && <span className="sr-only"> (đã hoàn thành)</span>}
+          </h3>
+          {module.summary && <p className="muted mt-1 text-sm">{module.summary}</p>}
+          {enrolled && count.total > 0 && (
+            <div className="mt-3 flex items-center gap-3 text-sm">
+              <div className="max-w-48 flex-1">
+                <ProgressBar
+                  percent={count.percent}
+                  label={`Tiến độ chương ${module.title}`}
+                  showValue={false}
+                />
+              </div>
+              <span className="muted font-mono tabular-nums">
+                {count.done}/{count.total}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {count.total > 0 && (
+        <ul className="mt-4 space-y-2">
+          {module.lessons.map((l) => {
+            const status = progress.lessons[l.id] ?? 'not_started';
+            return (
+              <ItemRow
+                key={l.id}
+                kind="lesson"
+                href={lessonHref(l.id)}
+                title={l.title}
+                tone={lessonTone(status)}
+                statusText={enrolled ? LESSON_PROGRESS_LABEL[status].text : null}
+                meta={l.estMinutes ? `${l.estMinutes} phút` : null}
+              />
+            );
+          })}
+          {module.exercises.map((x) => {
+            const state = progress.exercises[x.id] ?? 'not_started';
+            return (
+              <ItemRow
+                key={x.id}
+                kind="exercise"
+                href={exerciseHref(x.id)}
+                title={x.title}
+                tone={exerciseTone(state)}
+                // A lock is real even before enrolling, so exercise states always show.
+                statusText={
+                  enrolled || state !== 'not_started' ? EXERCISE_STATE_LABEL[state].text : null
+                }
+                meta={DIFFICULTY_LABEL[x.difficulty]}
+                chip={EXERCISE_TYPE_LABEL[x.type]}
+              />
+            );
+          })}
+        </ul>
+      )}
     </section>
   );
 }

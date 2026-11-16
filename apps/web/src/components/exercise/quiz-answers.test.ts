@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type { QuizQuestionView } from '@hub/shared';
 import {
   countAnswered,
+  countCorrect,
   describeCorrectAnswer,
+  optionState,
   toAttemptInput,
   toggleOption,
   type QuizDraft,
@@ -52,5 +54,39 @@ describe('describeCorrectAnswer', () => {
 
   it('lists accepted short answers', () => {
     expect(describeCorrectAnswer(text, ['main', 'master'])).toBe('main / master');
+  });
+});
+
+describe('optionState', () => {
+  it('shows the selection before grading', () => {
+    expect(optionState(1, 1, null)).toBe('selected');
+    expect(optionState(1, 0, null)).toBe('idle');
+    expect(optionState([0, 2], 2, null)).toBe('selected');
+  });
+
+  it('marks right, wrong and missed options after grading', () => {
+    expect(optionState(1, 1, 1)).toBe('correct');
+    expect(optionState(0, 0, 1)).toBe('wrong');
+    expect(optionState(0, 1, 1)).toBe('missed');
+    expect(optionState([0], 2, [0, 2])).toBe('missed');
+    expect(optionState([0], 1, [0, 2])).toBe('idle');
+  });
+});
+
+describe('countCorrect', () => {
+  it('counts correct questions', () => {
+    const question = { correctAnswer: 0, explanation: null };
+    expect(
+      countCorrect({
+        submissionId: 's',
+        attempt: 1,
+        score: 0.5,
+        passed: false,
+        questions: [
+          { id: 'q1', correct: true, ...question },
+          { id: 'q2', correct: false, ...question },
+        ],
+      }),
+    ).toBe(1);
   });
 });

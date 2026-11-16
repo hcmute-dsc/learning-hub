@@ -8,7 +8,7 @@ import { SelfCheckForm } from './SelfCheckForm';
 
 /** The action panel of an exercise, chosen by `type` (INFORMATION-ARCHITECTURE §6). */
 export function ExerciseActions({ exercise }: { exercise: ExerciseView }) {
-  if (exercise.state === 'locked') return <LockedNotice lockedBy={exercise.lockedBy} />;
+  if (exercise.state === 'locked') return <LockedNotice />;
 
   if (exercise.type === 'quiz' && exercise.quiz) {
     return (

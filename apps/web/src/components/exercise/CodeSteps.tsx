@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
 import type { ExerciseView } from '@hub/shared';
 import { LinkSubmitForm } from './LinkSubmitForm';
+import { Step, Stepper } from './Stepper';
 
 type Code = NonNullable<ExerciseView['code']>;
 
@@ -11,18 +11,20 @@ type Code = NonNullable<ExerciseView['code']>;
 export function CodeSteps({ exerciseId, code }: { exerciseId: string; code: Code }) {
   const byPullRequest = code.submitKind === 'github_pr';
   return (
-    <ol className="space-y-5">
-      <Step number={1} title="Tạo repo của lộ trình từ template">
+    <Stepper>
+      <Step number={1} title="Tạo repo từ template">
         {code.starterRepo ? (
-          <p>
-            <a
-              href={`https://github.com/${code.starterRepo}/generate`}
-              rel="noopener noreferrer"
-              className="inline-block rounded-lg border border-[var(--border)] px-3 py-1.5 font-medium hover:border-brand-500"
-            >
-              Tạo repo từ <code className="font-mono">{code.starterRepo}</code> ↗
-            </a>
-          </p>
+          <a
+            href={`https://github.com/${code.starterRepo}/generate`}
+            rel="noopener noreferrer"
+            className="press inline-flex max-w-full items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--code-bg)] px-3 py-2 font-medium hover:border-brand-500"
+          >
+            <span className="min-w-0 truncate">
+              Tạo repo từ <code className="font-mono">{code.starterRepo}</code>
+            </span>
+            <span aria-hidden>↗</span>
+            <span className="sr-only">(mở GitHub)</span>
+          </a>
         ) : (
           <p className="muted">Lộ trình này không có template: dùng repo của riêng bạn.</p>
         )}
@@ -31,19 +33,18 @@ export function CodeSteps({ exerciseId, code }: { exerciseId: string; code: Code
         </p>
       </Step>
 
-      <Step
-        number={2}
-        title={byPullRequest ? 'Làm bài và mở pull request' : 'Làm bài và push commit'}
-      >
-        <p>
-          Làm bài trong thư mục <code className="font-mono">{code.starterPath}</code>
+      <Step number={2} title="Làm bài trong thư mục của bài tập">
+        <p className="rounded-lg bg-[var(--code-bg)] px-3 py-2 font-mono text-sm break-all">
+          {code.starterPath}
+        </p>
+        <p className="mt-2">
           {byPullRequest
-            ? ', rồi mở một pull request vào nhánh chính của repo bạn.'
-            : ', rồi push commit lên repo của bạn.'}
+            ? 'Xong thì mở một pull request vào nhánh chính của repo bạn.'
+            : 'Xong thì commit và push lên repo của bạn.'}
         </p>
       </Step>
 
-      <Step number={3} title="Nộp đường dẫn">
+      <Step number={3} title="Nộp link" last>
         <LinkSubmitForm
           exerciseId={exerciseId}
           urlLabel={byPullRequest ? 'URL pull request' : 'URL commit'}
@@ -54,26 +55,6 @@ export function CodeSteps({ exerciseId, code }: { exerciseId: string; code: Code
           }
         />
       </Step>
-    </ol>
-  );
-}
-
-function Step({ number, title, children }: { number: number; title: string; children: ReactNode }) {
-  return (
-    <li className="flex gap-3">
-      <span
-        aria-hidden
-        className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-50 font-mono text-sm font-bold text-brand-700"
-      >
-        {number}
-      </span>
-      <div className="min-w-0 flex-1 text-sm">
-        <h3 className="font-semibold">
-          <span className="sr-only">Bước {number}: </span>
-          {title}
-        </h3>
-        <div className="mt-1">{children}</div>
-      </div>
-    </li>
+    </Stepper>
   );
 }

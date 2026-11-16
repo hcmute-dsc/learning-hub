@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 export interface CardItem {
   icon: string;
@@ -28,8 +28,12 @@ export function CardGrid({
       </h2>
       {intro && <p className="muted mx-auto mt-2 max-w-2xl text-center">{intro}</p>}
       <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map((item) => (
-          <li key={item.title} className="surface flex flex-col rounded-xl p-5 shadow-sm">
+        {items.map((item, index) => (
+          <li
+            key={item.title}
+            className={`surface motion-fade-up flex flex-col rounded-xl p-5 shadow-sm ${item.link ? 'lift' : ''}`}
+            style={{ '--i': index } as CSSProperties}
+          >
             <span aria-hidden className="text-2xl">
               {item.icon}
             </span>

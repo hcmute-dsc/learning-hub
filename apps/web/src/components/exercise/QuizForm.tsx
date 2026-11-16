@@ -39,7 +39,6 @@ export function QuizForm({
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    // useMutation also reloads the server-rendered exercise state and attempt history.
     const response = await run(() =>
       sendJson<QuizResult>(
         `/exercises/${encodeURIComponent(exerciseId)}/quiz-attempts`,
@@ -47,6 +46,7 @@ export function QuizForm({
         toAttemptInput(quiz.questions, draft),
       ),
     );
+    // The result comes straight from the response, so one click shows the score.
     if (response.ok) setResult(response.data);
   }
 
@@ -57,10 +57,11 @@ export function QuizForm({
   }
 
   return (
-    <form onSubmit={submit} className="space-y-5" aria-describedby="quiz-pass-score">
+    <form onSubmit={submit} className="space-y-4" aria-describedby="quiz-pass-score">
       <p id="quiz-pass-score" className="muted text-sm">
-        Cần đạt {formatPercent(quiz.passScore)} số điểm để hoàn thành.
+        {total} câu hỏi · cần đạt {formatPercent(quiz.passScore)} để hoàn thành.
       </p>
+
       {quiz.questions.map((question, index) => (
         <QuizQuestion
           key={question.id}
@@ -77,31 +78,51 @@ export function QuizForm({
       </div>
       <ProblemAlert problem={problem} />
 
-      {result ? (
-        !completed && (
-          <button
-            type="button"
-            onClick={retry}
-            className="rounded-lg border border-[var(--border)] px-4 py-2 font-medium"
-          >
-            Làm lại
-          </button>
-        )
-      ) : (
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="submit"
-            disabled={busy || answered < total}
-            aria-busy={busy}
-            className="rounded-lg bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700 disabled:opacity-60"
-          >
-            {busy ? 'Đang chấm…' : 'Nộp bài'}
-          </button>
-          <span className="muted text-sm" aria-live="polite">
-            Đã trả lời {answered}/{total} câu
-          </span>
+      {/* Stays in view at the bottom of the panel (or the screen on phones) while scrolling.
+          The negative margin matches the panel padding (p-5 in exercises/[id]/page.tsx). */}
+      {!(result && completed) && (
+        <div className="sticky bottom-0 -mx-5 -mb-5 rounded-b-2xl border-t border-[var(--border)] bg-[var(--surface)] px-5 py-4">
+          {result ? (
+            <button
+              type="button"
+              onClick={retry}
+              className="press w-full rounded-lg border-2 border-brand-600 px-4 py-2 font-semibold text-brand-700 hover:bg-brand-500/10"
+            >
+              <span aria-hidden>↻ </span>Làm lại
+            </button>
+          ) : (
+            <div className="space-y-2.5">
+              <AnswerProgress answered={answered} total={total} />
+              <button
+                type="submit"
+                disabled={busy || answered < total}
+                aria-busy={busy}
+                className="press w-full rounded-lg bg-brand-600 px-4 py-2.5 font-semibold text-white shadow-sm hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {busy ? 'Đang chấm…' : 'Nộp bài'}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </form>
+  );
+}
+
+/** "Đã trả lời x/y câu" with a thin bar that fills as questions are answered. */
+function AnswerProgress({ answered, total }: { answered: number; total: number }) {
+  const percent = total === 0 ? 0 : Math.round((answered / total) * 100);
+  return (
+    <div className="flex items-center gap-3 text-sm">
+      <div aria-hidden className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--border)]">
+        <div
+          className="h-full rounded-full bg-brand-500 transition-[width] duration-300 ease-out"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+      <span className="muted shrink-0 tabular-nums" aria-live="polite">
+        Đã trả lời {answered}/{total} câu
+      </span>
+    </div>
   );
 }

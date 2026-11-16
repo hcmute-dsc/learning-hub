@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Me } from '@hub/shared';
 import { BrandLogo } from './BrandLogo';
+import { NavLink } from './NavLink';
 
 // `phone: false` hides a link on small screens to keep the bar on one line;
 // the dashboard is still where sign-in lands, so phones lose nothing.
@@ -35,13 +36,9 @@ export function SiteHeader({ me }: { me: Me | null }) {
           </span>
         </Link>
         {links.map((n) => (
-          <Link
-            key={n.href}
-            href={n.href}
-            className={`whitespace-nowrap font-medium hover:text-brand-600 ${n.phone ? '' : 'hidden sm:inline'}`}
-          >
+          <NavLink key={n.href} href={n.href} className={n.phone ? '' : 'hidden sm:inline'}>
             {n.label}
-          </Link>
+          </NavLink>
         ))}
         <div className="ml-auto flex items-center gap-3">
           {me ? (
@@ -56,7 +53,7 @@ export function SiteHeader({ me }: { me: Me | null }) {
           ) : (
             <Link
               href="/login"
-              className="rounded-md bg-brand-600 px-3 py-1.5 font-medium text-white hover:bg-brand-700"
+              className="press rounded-md bg-brand-600 px-3 py-1.5 font-medium text-white hover:bg-brand-700"
             >
               Đăng nhập
             </Link>

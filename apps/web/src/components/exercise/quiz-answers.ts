@@ -63,3 +63,39 @@ export function describeCorrectAnswer(
 export function optionLetter(index: number): string {
   return String.fromCharCode(65 + (index % 26));
 }
+
+/** True when option `index` is part of the member's answer to a single/multiple question. */
+export function isChosen(value: QuizDraft[string] | undefined, index: number): boolean {
+  return Array.isArray(value) ? value.includes(index) : value === index;
+}
+
+/**
+ * How one option row looks. Before grading: `selected` or `idle`. After grading:
+ * `correct` (chosen and right), `wrong` (chosen but not right), `missed` (right but
+ * not chosen) or `idle`.
+ */
+export type OptionState = 'idle' | 'selected' | 'correct' | 'wrong' | 'missed';
+
+export function optionState(
+  value: QuizDraft[string] | undefined,
+  index: number,
+  correctAnswer: QuizResult['questions'][number]['correctAnswer'] | null,
+): OptionState {
+  const chosen = isChosen(value, index);
+  if (correctAnswer === null) return chosen ? 'selected' : 'idle';
+
+  const right = Array.isArray(correctAnswer)
+    ? (correctAnswer as (number | string)[]).includes(index)
+    : correctAnswer === index;
+  if (chosen) return right ? 'correct' : 'wrong';
+  return right ? 'missed' : 'idle';
+}
+
+/** Number of correct questions in a graded attempt, for the score summary. */
+export function countCorrect(result: QuizResult): number {
+  let count = 0;
+  for (const question of result.questions) {
+    if (question.correct) count += 1;
+  }
+  return count;
+}

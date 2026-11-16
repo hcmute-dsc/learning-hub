@@ -1,11 +1,18 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import type { Me, TrackProgress } from '@hub/shared';
-import { EnrollmentCard } from '@/components/learn/EnrollmentCard';
+import { MyTracks } from '@/components/dashboard/MyTracks';
+import { StartCards, type StartCard } from '@/components/dashboard/StartCards';
+import { WelcomeHeader } from '@/components/dashboard/WelcomeHeader';
+import { encouragement, pickContinueTrack } from '@/components/dashboard/dashboard';
+import { itemHref } from '@/components/learn/links';
 import { api } from '@/lib/api';
+import { CLUB_LINKS } from '@/lib/club';
 
 export const metadata: Metadata = { title: 'Bảng điều khiển' };
 
+const MENTORING_URL = 'https://mentoring.hcmute-dsc.io.vn';
+
+/** Member home, laid out like Exercism's dashboard: start cards left, my tracks right. */
 export default async function DashboardPage() {
   const [{ data: me }, { data: enrollments }] = await Promise.all([
     api<{ data: Me }>('/auth/me'),
@@ -13,41 +20,50 @@ export default async function DashboardPage() {
   ]);
 
   return (
-    <section>
-      <h1 className="text-2xl font-bold">Chào {me.displayName} 👋</h1>
-
-      <section aria-labelledby="continue-learning" className="mt-6">
-        <h2 id="continue-learning" className="font-semibold">
-          Tiếp tục học
-        </h2>
-        {enrollments.length === 0 ? (
-          // FRONTEND-DESIGN §8: an empty state always says what to do next.
-          <div className="surface mt-3 rounded-xl p-5">
-            <p className="muted text-sm">Bạn chưa tham gia lộ trình nào.</p>
-            <Link
-              href="/tracks"
-              className="mt-3 inline-block rounded-lg bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700"
-            >
-              Khám phá lộ trình →
-            </Link>
-          </div>
-        ) : (
-          <ul className="mt-3 grid gap-4 md:grid-cols-2">
-            {enrollments.map((track) => (
-              <li key={track.trackId}>
-                <EnrollmentCard track={track} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section aria-labelledby="my-roles" className="surface mt-6 rounded-xl p-5">
-        <h2 id="my-roles" className="font-semibold">
-          Vai trò của bạn
-        </h2>
-        <p className="muted mt-1 text-sm">{me.roles.join(', ')}</p>
-      </section>
-    </section>
+    <div className="space-y-8">
+      <WelcomeHeader name={me.displayName} message={encouragement(enrollments)} />
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <StartCards cards={startCards(enrollments)} />
+        <MyTracks enrollments={enrollments} />
+      </div>
+    </div>
   );
+}
+
+function startCards(enrollments: TrackProgress[]): StartCard[] {
+  const cards: StartCard[] = [];
+  const current = pickContinueTrack(enrollments);
+  if (current?.next) {
+    cards.push({
+      emoji: '🚀',
+      title: 'Tiếp tục học',
+      description: `${current.title}: ${current.next.title}`,
+      href: itemHref(current.next),
+      cta: 'Học tiếp',
+    });
+  }
+  cards.push(
+    {
+      emoji: '🧭',
+      title: 'Khám phá lộ trình',
+      description: 'Tìm lộ trình mới với bài học ngắn và bài tập thực hành.',
+      href: '/tracks',
+      cta: 'Xem lộ trình',
+    },
+    {
+      emoji: '🤝',
+      title: 'Tham gia mentoring',
+      description: 'Được anh chị đi trước hướng dẫn và review bài làm của bạn.',
+      href: MENTORING_URL,
+      cta: 'Đến trang mentoring',
+    },
+    {
+      emoji: '✍️',
+      title: 'Đóng góp nội dung',
+      description: 'Viết bài học hoặc bài tập cho các thế hệ thành viên sau.',
+      href: CLUB_LINKS.content,
+      cta: 'Mở kho nội dung',
+    },
+  );
+  return cards;
 }
