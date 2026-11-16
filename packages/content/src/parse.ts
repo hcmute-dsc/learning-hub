@@ -74,6 +74,7 @@ function parseTrack(ctx: Context, trackPath: string): TrackNode | null {
     outcomes: data.outcomes,
     maintainers: data.maintainers,
     license: data.license,
+    starterRepo: data.starterRepo ?? null,
     sourcePath: trackPath,
     hash: contentHash(trackFields), // the module list is hashed in each module
     modules: [],

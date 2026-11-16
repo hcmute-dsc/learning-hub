@@ -63,6 +63,8 @@ export interface TrackNode {
   outcomes: string[];
   maintainers: string[];
   license: string;
+  /** owner/repo of the track's starter template, when it has `code` exercises */
+  starterRepo: string | null;
   sourcePath: string;
   hash: string;
   modules: ModuleNode[];

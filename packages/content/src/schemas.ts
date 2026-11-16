@@ -33,6 +33,12 @@ export const trackFileSchema = z
     outcomes: z.array(z.string().min(1)).min(1),
     maintainers: z.array(githubHandle).min(1, 'a track needs at least one maintainer'),
     license: z.string().min(1),
+    /** One starter repo per track (decided 16/11/2026): members create ONE repo from it
+     * in their own account and solve every `code` exercise in its own folder. */
+    starterRepo: z
+      .string()
+      .regex(/^[\w.-]+\/[\w.-]+$/, 'use <owner>/<repo>')
+      .optional(),
     source: z.object({ repo: z.string(), commit: z.string().optional() }).optional(),
     position: z.number().int().default(0),
     status: z.enum(['active', 'archived']).default('active'),
@@ -131,7 +137,10 @@ export const quizSpecSchema = z
 
 export const codeSpecSchema = z
   .object({
-    starterTemplate: z.string().regex(/^[\w.-]+\/[\w.-]+$/, 'use <owner>/<repo>'),
+    /** Folder of this exercise inside the track's `starterRepo` */
+    starterPath: z
+      .string()
+      .regex(/^[\w.-]+(\/[\w.-]+)*$/, 'a folder path like first-pull-request or week-1/hello'),
     checker: z.object({ workflow: z.string().min(1), tests: z.string().min(1) }).strict(),
     runtime: z
       .object({

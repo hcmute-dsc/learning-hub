@@ -5,7 +5,8 @@ import type { ContentIssue, ContentTree, ExerciseNode } from './types';
  * Checks that need the whole tree, run after every file was parsed on its own:
  *   1. orphan files     — exist but are not listed, so they would never be published
  *   2. unique ids/slugs — uid unique everywhere, slug unique inside its parent
- *   3. references       — `lesson:` and `prerequisites:` point to things that exist
+ *   3. references       — `lesson:` and `prerequisites:` point to things that exist,
+ *                         and `code` exercises have a starter repo on their track
  *   4. no cycles        — exercise prerequisites form a DAG
  *
  * `earlier` = issues found while parsing. Files that already have a problem are not
@@ -145,6 +146,11 @@ function findBrokenReferences(tree: ContentTree): ContentIssue[] {
 
       // An exercise may only require exercises (that is what locks it).
       for (const e of m.exercises) {
+        if (e.type === 'code' && !t.starterRepo)
+          issues.push({
+            path: e.sourcePath,
+            message: `code exercises need \`starterRepo\` in ${t.sourcePath}`,
+          });
         if (e.lessonSlug && !lessonSlugsHere.has(e.lessonSlug))
           issues.push({
             path: e.sourcePath,

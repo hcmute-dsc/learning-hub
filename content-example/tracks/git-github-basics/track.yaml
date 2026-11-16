@@ -10,5 +10,7 @@ outcomes:
   - Tạo commit, branch và mở pull request trên GitHub
 maintainers: [github:TienNHM]
 license: CC-BY-SA-4.0
+# One starter repo for the whole track; each code exercise is a folder in it
+starterRepo: hcmute-dsc/git-github-exercises
 position: 5
 modules: [01-first-steps]

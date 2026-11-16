@@ -139,6 +139,8 @@ model Track {
   estHours         Int?     @map("est_hours") @db.SmallInt
   position         Int      @default(0)
   tags             String[] @default([])
+  /// owner/repo of the track's starter template (one per track, has a folder per code exercise)
+  starterRepo      String?  @map("starter_repo")
   /// active | archived
   status           String   @default("active")
   contentVersionId String   @map("content_version_id") @db.Uuid

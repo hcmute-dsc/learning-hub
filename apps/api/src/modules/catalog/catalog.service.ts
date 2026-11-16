@@ -96,6 +96,7 @@ export class CatalogService {
       language: track.language,
       estHours: track.estHours,
       tags: track.tags,
+      starterRepo: track.starterRepo,
       source: {
         repo: track.contentVersion.sourceRepo,
         commitSha: track.contentVersion.commitSha,

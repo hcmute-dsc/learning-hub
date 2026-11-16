@@ -510,6 +510,15 @@ describe('parseContent error cases', () => {
     expectIssue(r, WHAT_IS_GIT, 'missing front matter');
   });
 
+  it('requires a track starterRepo for code exercises, and keeps it on the track', () => {
+    const ok = parseWith(() => {});
+    expect(ok.tree.tracks.find((t) => t.slug === 'git-github-basics')!.starterRepo).toBe(
+      'hcmute-dsc/git-github-exercises',
+    );
+    const r = parseWith((f) => edit(f, `${GIT}/track.yaml`, /^starterRepo: .*$/m, ''));
+    expectIssue(r, FIRST_PR, 'code exercises need `starterRepo`');
+  });
+
   it('reports only the broken module.yaml, not every file below it as an orphan', () => {
     const r = parseWith((f) => edit(f, `${GIT_MOD}/module.yaml`, /^uid: .*$/m, 'uid: not-a-uuid'));
     expectIssue(r, `${GIT_MOD}/module.yaml`, 'uid must be a UUID');

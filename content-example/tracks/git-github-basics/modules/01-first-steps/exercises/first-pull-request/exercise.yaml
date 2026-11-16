@@ -7,7 +7,7 @@ lesson: first-commit
 prerequisites:
   - git-github-basics/first-steps/install-git
 spec:
-  starterTemplate: hcmute-dsc/git-first-pr-template
+  starterPath: first-pull-request
   checker:
     workflow: check-exercise.yml
     tests: exercises/git-github-basics/first-pull-request

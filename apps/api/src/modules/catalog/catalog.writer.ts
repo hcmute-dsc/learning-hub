@@ -66,6 +66,7 @@ export class CatalogWriter {
           estHours: t.estHours,
           position: t.position,
           tags: t.tags,
+          starterRepo: t.starterRepo,
           status: t.status,
           sourcePath: t.sourcePath,
           contentHash: t.hash,
