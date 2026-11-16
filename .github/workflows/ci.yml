@@ -31,12 +31,13 @@ jobs:
       DATABASE_URL: postgresql://hub:hub@localhost:5432/learning_hub?schema=public
       NODE_ENV: test
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
-          cache: pnpm
+      # Corepack ships with Node and installs the pnpm version pinned in package.json
+      # (`packageManager`), so no third-party setup action has to be kept up to date.
+      - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: pnpm format:check
       - run: pnpm --filter "./packages/*" build
