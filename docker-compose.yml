@@ -1,0 +1,22 @@
+# Local development: only the database runs in Docker. Run api/web with `pnpm dev`.
+services:
+  db:
+    image: postgres:16
+    container_name: learning-hub-db
+    environment:
+      POSTGRES_USER: hub
+      POSTGRES_PASSWORD: hub
+      POSTGRES_DB: learning_hub
+      TZ: UTC
+    ports:
+      - '5434:5432'
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U hub -d learning_hub']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  db-data:
