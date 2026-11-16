@@ -35,6 +35,9 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
+          # v5 would auto-cache because package.json has `packageManager`, but pnpm only
+          # exists after `corepack enable` below, so the auto-cache must be off.
+          package-manager-cache: false
       # Corepack ships with Node and installs the pnpm version pinned in package.json
       # (`packageManager`), so no third-party setup action has to be kept up to date.
       - run: corepack enable
