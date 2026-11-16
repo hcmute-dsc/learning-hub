@@ -1,6 +1,7 @@
+import type { SubmissionStatus } from '@hub/shared';
 import { exerciseState } from './exercise-state';
 
-const base = { requiresReview: false, statuses: [], prerequisitesMet: true } as const;
+const base = { requiresReview: false, statuses: [] as SubmissionStatus[], prerequisitesMet: true };
 
 describe('exerciseState', () => {
   it('is not_started without submissions, locked when a prerequisite is missing', () => {
