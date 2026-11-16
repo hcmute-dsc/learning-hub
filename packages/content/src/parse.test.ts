@@ -15,7 +15,7 @@ const EXAMPLE_ROOT = join(__dirname, '..', '..', '..', 'content-example');
 
 const GIT = 'tracks/git-github-basics';
 const GIT_MOD = `${GIT}/modules/01-first-steps`;
-const SQL = 'tracks/sql-30-days';
+const SQL = 'tracks/sql-sample';
 const SQL_MOD = `${SQL}/modules/01-foundations`;
 
 const WHAT_IS_GIT = `${GIT_MOD}/lessons/what-is-git.md`;
@@ -91,7 +91,7 @@ describe('parseContent on content-example', () => {
     expect(git.estHours).toBe(6);
     expect(git.status).toBe('active');
     expect(git.sourcePath).toBe(`${GIT}/track.yaml`);
-    expect(sql.slug).toBe('sql-30-days');
+    expect(sql.slug).toBe('sql-sample');
     expect(sql.position).toBe(10);
     expect(sql.modules[0].summary).toBeNull();
   });
@@ -138,7 +138,7 @@ describe('parseContent on content-example', () => {
     const pr = idx.get('git-github-basics/first-steps/first-pull-request')!;
     expect(pr.lessonSlug).toBe('first-commit');
     expect(pr.prerequisites).toEqual(['git-github-basics/first-steps/install-git']);
-    expect(idx.get('sql-30-days/foundations/select-where-basic')!.lessonSlug).toBe('select-where');
+    expect(idx.get('sql-sample/foundations/select-where-basic')!.lessonSlug).toBe('select-where');
 
     const firstCommit = git.modules[0].lessons[1];
     expect(firstCommit.prerequisites).toEqual(['git-github-basics/first-steps/what-is-git']);
@@ -171,7 +171,7 @@ describe('parseContent on content-example', () => {
       'git-github-basics/first-steps/first-pull-request',
       'git-github-basics/first-steps/git-basics-quiz',
       'git-github-basics/first-steps/install-git',
-      'sql-30-days/foundations/select-where-basic',
+      'sql-sample/foundations/select-where-basic',
     ]);
   });
 
@@ -298,7 +298,7 @@ describe('parseContent error cases', () => {
 
   it('reports a duplicate track slug', () => {
     const r = parseWith((f) =>
-      edit(f, `${SQL}/track.yaml`, 'slug: sql-30-days', 'slug: git-github-basics'),
+      edit(f, `${SQL}/track.yaml`, 'slug: sql-sample', 'slug: git-github-basics'),
     );
     expectIssue(
       r,

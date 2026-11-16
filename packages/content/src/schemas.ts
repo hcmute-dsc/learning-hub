@@ -161,7 +161,8 @@ export const projectSpecSchema = z
         z
           .object({
             criterion: z.string().min(1),
-            weight: z.number().int().min(1).max(10).default(1),
+            // Points or relative weight, e.g. a 100-point rubric (SQL final project)
+            weight: z.number().int().min(1).max(100).default(1),
           })
           .strict(),
       )

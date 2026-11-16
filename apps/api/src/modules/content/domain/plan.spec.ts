@@ -114,11 +114,11 @@ describe('planChanges', () => {
   it('reports a changed uid as a conflict instead of creating a duplicate', () => {
     const tree = example();
     const db = snapshotOf(tree);
-    const track = db.track.find((t) => t.slug === 'sql-30-days')!;
+    const track = db.track.find((t) => t.slug === 'sql-sample')!;
     track.id = '00000000-0000-7000-8000-000000000999'; // the DB knows this slug under another uid
     const plan = planChanges(tree, db);
     expect(plan.conflicts).toHaveLength(1);
-    expect(plan.conflicts[0]).toMatchObject({ path: 'tracks/sql-30-days/track.yaml' });
+    expect(plan.conflicts[0]).toMatchObject({ path: 'tracks/sql-sample/track.yaml' });
     expect(plan.conflicts[0].message).toContain('already belongs to');
   });
 

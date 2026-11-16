@@ -1,6 +1,6 @@
 uid: 0193a000-0000-7000-8000-000000000002
-slug: sql-30-days
-title: 30 ngày học SQL
+slug: sql-sample
+title: SQL (ví dụ)
 summary: Từ SELECT cơ bản tới index, transaction và window function với PostgreSQL 16.
 language: vi
 level: beginner
