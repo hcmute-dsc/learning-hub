@@ -1,0 +1,28 @@
+{
+  "name": "@hub/content",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Parse and validate learning-hub-content (track/module/lesson/exercise files). Pure: no Nest, no DB, no GitHub.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "hub-content-validate": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch --preserveWatchOutput",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "validate": "node dist/cli.js"
+  },
+  "dependencies": {
+    "yaml": "^2.6.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}

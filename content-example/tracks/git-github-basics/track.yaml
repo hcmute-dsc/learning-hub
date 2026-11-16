@@ -1,0 +1,14 @@
+uid: 0193a000-0000-7000-8000-000000000001
+slug: git-github-basics
+title: Làm quen Git & GitHub
+summary: Commit, branch, pull request — nền tảng để nộp bài trên Learning Hub.
+language: vi
+level: beginner
+estimatedHours: 6
+tags: [git, github]
+outcomes:
+  - Tạo commit, branch và mở pull request trên GitHub
+maintainers: [github:TienNHM]
+license: CC-BY-SA-4.0
+position: 5
+modules: [01-first-steps]

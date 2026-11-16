@@ -1,0 +1,6 @@
+# Generated files: never hand-formatted
+pnpm-lock.yaml
+**/dist
+**/.next
+**/coverage
+apps/api/prisma/migrations

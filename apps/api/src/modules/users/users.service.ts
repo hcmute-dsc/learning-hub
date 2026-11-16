@@ -77,7 +77,11 @@ export class UsersService {
         roles: { create: roleCodes.map((code) => ({ roleId: ROLE_IDS[code] })) },
       },
     });
-    this.events.emit(UserEvents.Registered, { userId: user.id, status, roles: roleCodes });
+    await this.events.emitAsync(UserEvents.Registered, {
+      userId: user.id,
+      status,
+      roles: roleCodes,
+    });
     return { id: user.id, status };
   }
 
@@ -119,7 +123,7 @@ export class UsersService {
     if (!user || user.deletedAt) throw DomainError.notFound('User');
     if (user.status !== 'pending') throw DomainError.conflict('User is not pending');
     await this.prisma.user.update({ where: { id: userId }, data: { status: 'active' } });
-    this.events.emit(UserEvents.Approved, { actorId, userId });
+    await this.events.emitAsync(UserEvents.Approved, { actorId, userId });
   }
 
   /** Replace a user's roles. Admins cannot remove their own admin role. */
@@ -134,6 +138,6 @@ export class UsersService {
         data: unique.map((code) => ({ userId, roleId: ROLE_IDS[code], grantedBy: actorId })),
       }),
     ]);
-    this.events.emit(UserEvents.RolesChanged, { actorId, userId, roles: unique });
+    await this.events.emitAsync(UserEvents.RolesChanged, { actorId, userId, roles: unique });
   }
 }

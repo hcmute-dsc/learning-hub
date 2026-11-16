@@ -1,0 +1,19 @@
+uid: 0193a000-0000-7000-8000-000000000201
+slug: git-basics-quiz
+title: Kiểm tra nhanh về Git
+type: quiz
+difficulty: easy
+lesson: what-is-git
+spec:
+  passScore: 0.5
+  questions:
+    - id: q1
+      type: single
+      prompt: Lệnh nào tạo một commit?
+      options: [git add, git commit, git push]
+      answer: 1
+      explanation: '`git add` chỉ đưa thay đổi vào vùng chờ; `git commit` mới tạo commit.'
+    - id: q2
+      type: short_text
+      prompt: Lệnh nào khởi tạo một repo mới?
+      answer: [git init]

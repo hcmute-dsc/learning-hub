@@ -24,6 +24,16 @@ export const envSchema = z.object({
     .optional()
     .transform((v) => (v ? v.trim().toLowerCase() : undefined)),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
+  // Content source (CONTENT-SPECIFICATION §8): a local folder for dev, or a GitHub repo
+  CONTENT_SOURCE: z.enum(['local', 'github']).default('local'),
+  CONTENT_LOCAL_DIR: z.string().default('../../content-example'),
+  CONTENT_REPO: z
+    .string()
+    .regex(/^[\w.-]+\/[\w.-]+$/)
+    .default('hcmute-dsc/learning-hub-content'),
+  CONTENT_BRANCH: z.string().default('main'),
+  /** Optional: raises GitHub rate limits / reads a private repo. Read-only scope. */
+  CONTENT_GITHUB_TOKEN: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

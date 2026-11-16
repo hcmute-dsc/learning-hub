@@ -6,7 +6,7 @@ Design docs live in the sibling repo `learning-hub-docs` (PRD, architecture, dat
 
 ## Status
 
-MVP-Lite **E1 (foundation)** and **E2 (identity & roles)** are scaffolded. Also included:
+MVP-Lite **E1 (foundation)**, **E2 (identity & roles)** and **E3 (content from Git)** are implemented. Also included:
 
 - GitHub OAuth sign-in with PKCE and `state`. New accounts start `pending` unless they are in the `hcmute-dsc` org or the allowlist.
 - Server-side sessions: the DB stores only a hashed token.
@@ -15,7 +15,11 @@ MVP-Lite **E1 (foundation)** and **E2 (identity & roles)** are scaffolded. Also 
 - The full MVP schema is defined in Prisma, with CHECK constraints and partial unique indexes added in a separate SQL migration.
 - A read-only catalog API (`GET /api/v1/tracks`, `GET /api/v1/tracks/:slug`), and web pages for landing, login, pending, dashboard and tracks.
 
-Next (see `MVP-BACKLOG.md`): E3 content sync from Git, E4 enrollments/lessons, E5 submissions.
+Content pipeline (E3): `packages/content` parses and validates a content repo. `POST /api/v1/admin/content/sync` (or the `content:sync` CLI) records a draft version with a diff and does not change the catalog. Publish re-reads the same commit and applies the diff in one transaction.
+
+Next (see `MVP-BACKLOG.md`): create `learning-hub-content` and import SQL Challenge, then E4 enrollments/lessons and E5 submissions.
+
+New here? Read [CONTRIBUTING.md](CONTRIBUTING.md): where things are, and the rules that keep the code easy to hand over.
 
 ## Layout
 
@@ -23,6 +27,8 @@ Next (see `MVP-BACKLOG.md`): E3 content sync from Git, E4 enrollments/lessons, E
 apps/api        NestJS modular monolith (src/modules/*, src/integrations/*, prisma/)
 apps/web        Next.js App Router + Tailwind; proxies /api/* to the api (same origin)
 packages/shared Zod schemas, types, constants shared by api and web
+packages/content parser + validator for content repos (`hub-content-validate`)
+content-example small content repo for local dev and tests
 ```
 
 Rule: business modules (`src/modules`) never import from `src/integrations`. They depend on ports (for example `modules/identity/ports/identity-provider.ts`), and the integration module binds the adapter.
@@ -35,9 +41,11 @@ Requirements: Node 22+, pnpm 9 (`corepack enable` or `npx pnpm@9`), Docker.
 pnpm install
 cp .env.example apps/api/.env       # fill GITHUB_CLIENT_ID/SECRET and BOOTSTRAP_ADMIN_GITHUB_LOGIN
 docker compose up -d db             # Postgres 16 on localhost:5434
-pnpm --filter @hub/shared build
+pnpm --filter "./packages/*" build
 pnpm --filter @hub/api exec prisma migrate deploy
-pnpm db:seed                        # roles + 2 demo tracks
+pnpm db:seed                        # roles only
+pnpm --filter @hub/api build
+pnpm --filter @hub/api content:sync -- --publish   # demo content from content-example
 pnpm dev                            # api :4000, web :3000
 ```
 

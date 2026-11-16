@@ -1,0 +1,9 @@
+uid: 0193a000-0000-7000-8000-000000000204
+slug: select-where-basic
+title: Lọc khách hàng theo thành phố
+type: self_check
+difficulty: easy
+lesson: select-where
+spec:
+  checklist:
+    - Truy vấn trả về đúng 4 khách hàng ở TP. Hồ Chí Minh

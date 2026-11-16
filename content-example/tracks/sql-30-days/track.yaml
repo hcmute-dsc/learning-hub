@@ -1,0 +1,16 @@
+uid: 0193a000-0000-7000-8000-000000000002
+slug: sql-30-days
+title: 30 ngày học SQL
+summary: Từ SELECT cơ bản tới index, transaction và window function với PostgreSQL 16.
+language: vi
+level: beginner
+estimatedHours: 30
+tags: [sql, postgresql, database]
+outcomes:
+  - Viết truy vấn SELECT, JOIN, GROUP BY đúng
+maintainers: [github:TienNHM]
+license: CC-BY-SA-4.0
+source:
+  repo: hcmute-dsc/sql-challenge
+position: 10
+modules: [01-foundations]

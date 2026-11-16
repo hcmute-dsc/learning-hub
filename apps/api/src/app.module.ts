@@ -10,6 +10,7 @@ import { loadEnv } from './infrastructure/config/env';
 import { InfrastructureModule } from './infrastructure/infrastructure.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
+import { ContentModule } from './modules/content/content.module';
 import { HealthController } from './modules/health/health.controller';
 import { IdentityModule } from './modules/identity/identity.module';
 import { UsersModule } from './modules/users/users.module';
@@ -42,6 +43,7 @@ const env = loadEnv();
     IdentityModule,
     UsersModule,
     CatalogModule,
+    ContentModule,
     AuditModule,
   ],
   controllers: [HealthController],

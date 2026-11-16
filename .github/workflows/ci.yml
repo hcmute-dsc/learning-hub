@@ -39,10 +39,14 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm format:check
-      - run: pnpm --filter @hub/shared build
+      - run: pnpm --filter "./packages/*" build
+      - run: node packages/content/dist/cli.js content-example
       - run: pnpm typecheck
       - run: pnpm test
       # Migrations must apply cleanly to an empty database; the seed must run on top.
       - run: pnpm --filter @hub/api exec prisma migrate deploy
       - run: pnpm --filter @hub/api prisma:seed
       - run: pnpm build
+      # Sync + publish the example content twice: the second run must be a no-op.
+      - run: pnpm --filter @hub/api content:sync -- --publish
+      - run: pnpm --filter @hub/api content:sync -- --publish

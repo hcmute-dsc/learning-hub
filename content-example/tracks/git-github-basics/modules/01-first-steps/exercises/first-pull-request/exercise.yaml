@@ -1,0 +1,19 @@
+uid: 0193a000-0000-7000-8000-000000000203
+slug: first-pull-request
+title: Mở pull request đầu tiên
+type: code
+difficulty: easy
+lesson: first-commit
+prerequisites:
+  - git-github-basics/first-steps/install-git
+spec:
+  starterTemplate: hcmute-dsc/git-first-pr-template
+  checker:
+    workflow: check-exercise.yml
+    tests: exercises/git-github-basics/first-pull-request
+  runtime:
+    language: shell
+    timeoutSeconds: 60
+  submit:
+    kind: github_pr
+    allowedPaths: [ABOUT.md]

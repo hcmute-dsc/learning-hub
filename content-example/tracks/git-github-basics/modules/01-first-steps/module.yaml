@@ -1,0 +1,6 @@
+uid: 0193a000-0000-7000-8000-000000000011
+slug: first-steps
+title: Những bước đầu tiên
+summary: Cài Git, commit đầu tiên và pull request đầu tiên.
+lessons: [what-is-git, first-commit]
+exercises: [git-basics-quiz, install-git, first-pull-request]

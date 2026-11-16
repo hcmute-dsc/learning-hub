@@ -13,12 +13,14 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:seed": "ts-node --transpile-only prisma/seed.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "content:sync": "node dist/cli/content-sync.js"
   },
   "prisma": {
     "seed": "ts-node --transpile-only prisma/seed.ts"
   },
   "dependencies": {
+    "@hub/content": "workspace:*",
     "@hub/shared": "workspace:*",
     "@nestjs/common": "^10.4.15",
     "@nestjs/core": "^10.4.15",

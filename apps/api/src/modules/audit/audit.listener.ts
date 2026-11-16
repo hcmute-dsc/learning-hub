@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { ContentEvents, type ContentVersionEvent } from '../content/content.events';
 import { UserEvents } from '../users/users.events';
 
 /**
@@ -29,7 +30,7 @@ export class AuditListener {
     }
   }
 
-  @OnEvent(UserEvents.Registered, { async: true })
+  @OnEvent(UserEvents.Registered)
   onRegistered(e: { userId: string; status: string; roles: string[] }) {
     return this.write('user.register', 'user', e.userId, null, {
       status: e.status,
@@ -37,13 +38,35 @@ export class AuditListener {
     });
   }
 
-  @OnEvent(UserEvents.Approved, { async: true })
+  @OnEvent(UserEvents.Approved)
   onApproved(e: { actorId: string; userId: string }) {
     return this.write('user.approve', 'user', e.userId, e.actorId);
   }
 
-  @OnEvent(UserEvents.RolesChanged, { async: true })
+  @OnEvent(UserEvents.RolesChanged)
   onRolesChanged(e: { actorId: string; userId: string; roles: string[] }) {
     return this.write('role.set', 'user', e.userId, e.actorId, { roles: e.roles });
+  }
+
+  @OnEvent(ContentEvents.Synced)
+  onContentSynced(e: ContentVersionEvent) {
+    return this.write('content.sync', 'content_version', e.versionId, e.actorId, {
+      commitSha: e.commitSha,
+      status: e.status,
+    });
+  }
+
+  @OnEvent(ContentEvents.Published)
+  onContentPublished(e: ContentVersionEvent) {
+    return this.write('content.publish', 'content_version', e.versionId, e.actorId, {
+      commitSha: e.commitSha,
+    });
+  }
+
+  @OnEvent(ContentEvents.Rejected)
+  onContentRejected(e: ContentVersionEvent) {
+    return this.write('content.reject', 'content_version', e.versionId, e.actorId, {
+      commitSha: e.commitSha,
+    });
   }
 }

@@ -1,0 +1,10 @@
+uid: 0193a000-0000-7000-8000-000000000202
+slug: install-git
+title: Cài Git và cấu hình tên, email
+type: self_check
+difficulty: easy
+lesson: what-is-git
+spec:
+  checklist:
+    - '`git --version` in ra phiên bản'
+    - Đã chạy `git config --global user.name` và `user.email`
