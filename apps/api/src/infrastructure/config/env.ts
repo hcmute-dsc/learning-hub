@@ -30,6 +30,20 @@ export const envSchema = z.object({
   CONTENT_BRANCH: z.string().default('main'),
   /** Optional: raises GitHub rate limits / reads a private repo. Read-only scope. */
   CONTENT_GITHUB_TOKEN: z.string().optional(),
+  /** Target time for a mentor review, shown in the queue (E7; per semester, BACKEND-DESIGN). */
+  REVIEW_TARGET_HOURS: z.coerce.number().int().min(1).max(720).default(72),
+  /** Discord channel webhook for club notifications (E9). Empty = notifications off. */
+  DISCORD_WEBHOOK_URL: z
+    .string()
+    .url()
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
+  /** Discord webhook for ops alerts: server errors (E11). Empty = alerts off. */
+  DISCORD_ALERT_WEBHOOK_URL: z
+    .string()
+    .url()
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
 });
 
 export type Env = z.infer<typeof envSchema>;

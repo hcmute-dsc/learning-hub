@@ -6,6 +6,10 @@ export const SubmissionEvents = {
   Passed: 'submission.passed',
   /** a project waits in the mentor review queue (notifications later) */
   AwaitingReview: 'submission.awaiting_review',
+  /** a mentor approved it (E7): the exercise is completed, like Passed */
+  Approved: 'submission.approved',
+  /** a mentor asked for changes (E7): the member submits again */
+  ChangesRequested: 'submission.changes_requested',
 } as const;
 
 export interface SubmissionEvent {
