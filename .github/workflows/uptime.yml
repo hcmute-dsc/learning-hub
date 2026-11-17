@@ -1,0 +1,65 @@
+name: Uptime
+
+# Every 15 minutes: is the site up, and does the web app still reach the API?
+# On failure: post to the ops Discord channel (secret DISCORD_ALERT_WEBHOOK_URL, optional)
+# and fail the job, so GitHub also emails the repo admins. See deploy/README.md.
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SITE: https://learn.hcmute-dsc.io.vn
+      DISCORD_ALERT_WEBHOOK_URL: ${{ secrets.DISCORD_ALERT_WEBHOOK_URL }}
+    # Only curl and jq from the runner image: no third-party actions to keep pinned.
+    steps:
+      - name: Check the site and the API
+        run: |
+          set -u
+          failures=""
+
+          # expect URL STATUS: up to 3 tries 20 s apart, so one slow answer is not an alert
+          expect() {
+            local code="000"
+            for attempt in 1 2 3; do
+              code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$1" || true)
+              if [ "$code" = "$2" ]; then
+                echo "OK   $1 -> $code"
+                return 0
+              fi
+              if [ "$attempt" -lt 3 ]; then sleep 20; fi
+            done
+            echo "FAIL $1 -> $code (expected $2)"
+            failures="${failures}- \`$1\` trả về $code (cần $2)"$'\n'
+          }
+
+          expect "$SITE/" 200
+          # 401 = the web app forwarded /api to the API and the API answered (no session)
+          expect "$SITE/api/v1/tracks" 401
+
+          if [ -z "$failures" ]; then
+            exit 0
+          fi
+
+          if [ -n "$DISCORD_ALERT_WEBHOOK_URL" ]; then
+            run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            content=$(printf '🔴 **Learning Hub không trả lời đúng**\n%s<%s>' "$failures" "$run_url")
+            jq -n --arg content "$content" '{content: $content, allowed_mentions: {parse: []}}' |
+              curl -s -o /dev/null --max-time 10 -H 'content-type: application/json' \
+                --data @- "$DISCORD_ALERT_WEBHOOK_URL" ||
+              echo "Could not post to Discord"
+          else
+            echo "DISCORD_ALERT_WEBHOOK_URL is not set: no Discord alert"
+          fi
+          exit 1

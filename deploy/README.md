@@ -228,6 +228,42 @@ Chạy thử ngay: `sudo -u learnhub /opt/learning-hub/backup.sh`.
 
 Bản sao lưu chỉ nằm trên VPS. Nên định kỳ chép về máy khác (ví dụ `scp learnhub@VPS_IP:/opt/learning-hub/backups/*.sql.gz .`), vì hỏng VPS là mất cả hai.
 
+## Bước 12. Thông báo Discord (không bắt buộc)
+
+Learning Hub gửi tin vào 2 kênh Discord. Để trống URL thì tắt, mọi thứ khác vẫn chạy bình thường.
+
+| Kênh                                         | Biến                        | Ai đọc                      |
+| -------------------------------------------- | --------------------------- | --------------------------- |
+| Kênh CLB (ví dụ `#learning-hub`)             | `DISCORD_WEBHOOK_URL`       | mentor và thành viên        |
+| Kênh vận hành, riêng tư (ví dụ `#hub-alert`) | `DISCORD_ALERT_WEBHOOK_URL` | tech lead và người trực web |
+
+**Tạo webhook** (cần quyền Manage Webhooks trên server Discord): chuột phải vào kênh → **Edit Channel → Integrations → Webhooks → New Webhook** → đặt tên (ví dụ `Learning Hub`) → **Copy Webhook URL**. Làm 2 lần, mỗi kênh một webhook.
+
+URL webhook là mật khẩu: ai có nó đều gửi tin vào kênh được. Không dán vào chat, issue hay code. Lộ thì vào lại chỗ trên, **Delete Webhook** rồi tạo cái mới.
+
+**Đặt vào đâu:**
+
+1. `/opt/learning-hub/.env` trên VPS (cho API): điền `DISCORD_WEBHOOK_URL=` và `DISCORD_ALERT_WEBHOOK_URL=`, rồi **Actions → Deploy → Run workflow** để API đọc lại `.env`.
+2. GitHub (cho workflow kiểm tra uptime): repo → **Settings → Secrets and variables → Actions → Secrets** (secret của repo, không phải của environment `production`) → thêm `DISCORD_ALERT_WEBHOOK_URL` = URL webhook kênh vận hành.
+
+**Ý nghĩa từng tin:**
+
+| Tin                                    | Kênh     | Khi nào                                                                                                      | Cần làm gì                                                                                          |
+| -------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| 📝 **Bài chờ review**                  | CLB      | thành viên nộp project cần mentor chấm                                                                       | mentor bấm link `/review/…` để nhận review                                                          |
+| **Review xong** — ✅ Đạt / 🔁 Cần sửa  | CLB      | mentor chấm xong                                                                                             | không; thành viên xem nhận xét trên web                                                             |
+| 📚 **Nội dung mới đã được publish**    | CLB      | admin publish một phiên bản nội dung mới                                                                     | không; thành viên vào `/tracks` xem bài mới                                                         |
+| 🚨 **Lỗi 500 trên API**                | vận hành | API gặp lỗi chưa xử lý. Cùng một lỗi chỉ báo 1 lần mỗi 10 phút, tối đa 10 tin mỗi giờ (số tin bị gộp có ghi) | tìm `requestId` trong log: `docker compose -f docker-compose.prod.yml logs api \| grep <requestId>` |
+| 🔴 **Learning Hub không trả lời đúng** | vận hành | workflow **Uptime** (15 phút một lần) thấy trang chủ không trả `200` hoặc `/api/v1/tracks` không trả `401`   | xem mục [Lỗi thường gặp](#lỗi-thường-gặp); job đỏ trong tab Actions cũng gửi email cho admin repo   |
+
+Tin không bao giờ chứa email hay dữ liệu cá nhân, chỉ có tên bài, tên lộ trình và login GitHub. Tin lỗi chỉ có method, đường dẫn (không có query string), `requestId` và câu báo lỗi; chi tiết đầy đủ nằm trong log API.
+
+Kiểm tra: **Actions → Uptime → Run workflow**. Job xanh là site đang chạy. Thử một webhook bằng tay:
+
+```bash
+curl -H 'content-type: application/json' -d '{"content":"thử webhook"}' "URL_WEBHOOK"
+```
+
 ---
 
 ## Việc thường ngày
@@ -281,6 +317,9 @@ docker compose -f docker-compose.prod.yml up -d
 | Đăng nhập GitHub báo `redirect_uri` sai                    | Callback URL của OAuth app phải đúng `https://learn.hcmute-dsc.io.vn/api/v1/auth/github/callback`           |
 | Đăng nhập xong vẫn bị đá ra                                | site phải chạy HTTPS: cookie `__Host-sid` chỉ dùng được qua HTTPS                                           |
 | Lỗi 403 "Origin" khi bấm nút                               | `WEB_ORIGIN` trong `.env` phải đúng `https://learn.hcmute-dsc.io.vn` (không có `/` cuối)                    |
+| Không có tin Discord nào                                   | `DISCORD_WEBHOOK_URL` / `DISCORD_ALERT_WEBHOOK_URL` trống hoặc sai, hoặc chưa Deploy lại sau khi sửa `.env` |
+| Link trong tin Discord trỏ sai trang                       | link lấy từ `WEB_ORIGIN` trong `.env`                                                                       |
+| Workflow Uptime đỏ nhưng site vẫn mở được                  | xem log của job: thường do `/api/v1/tracks` trả `502` (container `api` chết) chứ không phải `401`           |
 
 ## Bàn giao cho tech lead mới
 
