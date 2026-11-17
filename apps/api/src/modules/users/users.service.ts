@@ -1,6 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import type { Me, Role, Theme, UserStatus } from '@hub/shared';
+import {
+  ADMIN_USERS_LIMIT,
+  type AdminUserRow,
+  type Me,
+  type Role,
+  type Theme,
+  type UserStatus,
+} from '@hub/shared';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { Clock } from '../../infrastructure/clock';
 import { ENV, type Env } from '../../infrastructure/config/env';
@@ -139,6 +146,43 @@ export class UsersService {
       orderBy: { lastLoginAt: { sort: 'desc', nulls: 'last' } },
     });
     return user ? { ...toMe(user), createdAt: user.createdAt } : null;
+  }
+
+  /**
+   * Every account for the admin table (admin only: contains emails, SECURITY §1).
+   * Pending first, then newest. `onEmailList` tells whether the account's email is on
+   * the club list, so the admin sees why an account is (not) approved.
+   */
+  async listAllForAdmin(): Promise<AdminUserRow[]> {
+    const users = await this.prisma.user.findMany({
+      where: { deletedAt: null },
+      include: { roles: { include: { role: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: ADMIN_USERS_LIMIT,
+    });
+    const emails = users.map((u) => u.email).filter((e): e is string => !!e);
+    const listed = new Set(
+      (
+        await this.prisma.approvedEmail.findMany({
+          where: { email: { in: emails } },
+          select: { email: true },
+        })
+      ).map((r) => r.email),
+    );
+    const rows = users.map((u) => ({
+      id: u.id,
+      githubLogin: u.githubLogin,
+      displayName: u.displayName,
+      avatarUrl: u.avatarUrl,
+      email: u.email,
+      status: u.status as UserStatus,
+      roles: u.roles.map((r) => r.role.code as Role),
+      onEmailList: !!u.email && listed.has(u.email),
+      createdAt: u.createdAt.toISOString(),
+      lastLoginAt: u.lastLoginAt?.toISOString() ?? null,
+    }));
+    // Stable sort: pending accounts on top, each group stays newest first.
+    return rows.sort((a, b) => Number(b.status === 'pending') - Number(a.status === 'pending'));
   }
 
   async listPending(): Promise<Me[]> {

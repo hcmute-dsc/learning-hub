@@ -13,6 +13,13 @@ const setRolesSchema = z.object({ roles: z.array(z.enum(ROLES)).max(ROLES.length
 export class AdminUsersController {
   constructor(private readonly users: UsersService) {}
 
+  /** All accounts with their emails: admin only (personal data, SECURITY §1). */
+  @Get()
+  @Roles('admin')
+  listAll() {
+    return this.users.listAllForAdmin().then((data) => ({ data }));
+  }
+
   @Get('pending')
   @Roles('mentor')
   listPending() {

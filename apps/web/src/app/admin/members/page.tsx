@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import type { ApprovedEmailList, Me } from '@hub/shared';
+import type { AdminUserRow, ApprovedEmailList, Me } from '@hub/shared';
+import { AccountsTable } from '@/components/admin/AccountsTable';
 import { ApprovedEmailsForm } from '@/components/admin/ApprovedEmailsForm';
 import { PendingAccounts } from '@/components/admin/PendingAccounts';
 import { api } from '@/lib/api';
@@ -9,17 +10,19 @@ import { formatDateTime } from '@/lib/format';
 export const metadata: Metadata = { title: 'Thành viên' };
 
 /**
- * Admin "Thành viên": approve waiting accounts (mentor + admin) and manage the club's
- * email list (admin only — personal data, SECURITY §1). The API checks the roles again.
+ * Admin "Thành viên": approve waiting accounts (mentor + admin); see every account with
+ * its email and manage the club's email list (admin only — personal data, SECURITY §1).
+ * The API checks the roles again.
  */
 export default async function MembersAdminPage() {
   const { data: me } = await api<{ data: Me }>('/auth/me');
   const isAdmin = me.roles.includes('admin');
   if (!isAdmin && !me.roles.includes('mentor')) notFound();
 
-  const [pending, list] = await Promise.all([
+  const [pending, list, accounts] = await Promise.all([
     api<{ data: Me[] }>('/admin/users/pending').then((r) => r.data),
     isAdmin ? api<{ data: ApprovedEmailList }>('/admin/approved-emails').then((r) => r.data) : null,
+    isAdmin ? api<{ data: AdminUserRow[] }>('/admin/users').then((r) => r.data) : null,
   ]);
 
   return (
@@ -40,6 +43,20 @@ export default async function MembersAdminPage() {
           <PendingAccounts users={pending} />
         </div>
       </section>
+
+      {accounts && (
+        <section aria-labelledby="accounts" className="surface rounded-xl p-5">
+          <h2 id="accounts" className="font-semibold">
+            Tất cả tài khoản ({accounts.length})
+          </h2>
+          <p className="muted mt-1 text-sm">
+            Mọi tài khoản đã từng đăng nhập, kèm email GitHub. Chỉ admin xem được.
+          </p>
+          <div className="mt-4">
+            <AccountsTable rows={accounts} />
+          </div>
+        </section>
+      )}
 
       {list && (
         <section aria-labelledby="email-list" className="surface rounded-xl p-5">
