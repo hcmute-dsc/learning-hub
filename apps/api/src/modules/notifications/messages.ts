@@ -86,13 +86,27 @@ export function serverErrorMessage(info: ServerErrorInfo): string {
     `🚨 **Lỗi 500 trên API**: \`${codeSafe(`${info.method} ${info.path}`, 200)}\``,
     `requestId: \`${codeSafe(info.requestId ?? 'không có', 64)}\``,
     '```',
-    codeSafe(`${info.errorName}: ${info.errorMessage}`, 500),
+    codeSafe(`${info.errorName}: ${errorSummary(info.errorMessage)}`, 500),
     '```',
   ];
   if (info.suppressed > 0) {
     lines.push(`(${info.suppressed} cảnh báo khác đã bị gộp để tránh spam)`);
   }
   return lines.join('\n');
+}
+
+/**
+ * The part of an error message worth reading in Discord. Prisma messages start with the
+ * failing call, a code excerpt and server file paths, and end with the cause ("Can't
+ * reach database server at …"), so a multi-line message keeps only its last line
+ * (seen in the first end-to-end test, 17/11/2026).
+ */
+export function errorSummary(message: string): string {
+  const lines = message
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  return lines.length > 1 ? lines[lines.length - 1] : (lines[0] ?? '');
 }
 
 /** Drop the query string: it may hold search terms or tokens. */

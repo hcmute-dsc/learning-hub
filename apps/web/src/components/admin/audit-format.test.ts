@@ -4,7 +4,8 @@ import { actionLabel, describeAudit } from './audit-format';
 describe('actionLabel', () => {
   it('names known actions and falls back to the code', () => {
     expect(actionLabel('role.set')).toBe('Đổi vai trò');
-    expect(actionLabel('review.completed')).toBe('review.completed');
+    expect(actionLabel('review.complete')).toBe('Hoàn thành review');
+    expect(actionLabel('something.new')).toBe('something.new');
   });
 });
 
@@ -49,6 +50,14 @@ describe('describeAudit', () => {
     expect(describeAudit({ action: 'user.suspend', metadata: { previousStatus: 'active' } })).toBe(
       'Trước đó: Đang hoạt động',
     );
+  });
+
+  it('shows a mentor review outcome without member ids', () => {
+    const text = describeAudit({
+      action: 'review.complete',
+      metadata: { outcome: 'changes_requested', memberId: 'u1', submissionId: 's1' },
+    });
+    expect(text).toBe('Kết luận: Cần sửa');
   });
 
   it('prints unknown metadata as JSON, and nothing when empty', () => {

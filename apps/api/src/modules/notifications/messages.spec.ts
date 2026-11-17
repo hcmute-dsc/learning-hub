@@ -1,6 +1,7 @@
 import {
   awaitingReviewMessage,
   contentPublishedMessage,
+  errorSummary,
   escapeDiscord,
   pathWithoutQuery,
   reviewCompletedMessage,
@@ -104,5 +105,18 @@ describe('pathWithoutQuery', () => {
     expect(pathWithoutQuery('/api/v1/members?q=email@x.com')).toBe('/api/v1/members');
     expect(pathWithoutQuery('/a#b')).toBe('/a');
     expect(pathWithoutQuery('/a')).toBe('/a');
+  });
+});
+
+describe('errorSummary', () => {
+  it('keeps the cause of a multi-line Prisma error, not the code excerpt or paths', () => {
+    const prisma =
+      "\nInvalid `this.prisma.session.findUnique()` invocation in\nD:\app\dist\session.service.js:66:51\n\n  63 if (!token)\n→ 66 const session = await this.prisma.session.findUnique(\nCan't reach database server at `db:5432`";
+    expect(errorSummary(prisma)).toBe("Can't reach database server at `db:5432`");
+  });
+
+  it('leaves one-line messages alone', () => {
+    expect(errorSummary('boom')).toBe('boom');
+    expect(errorSummary('')).toBe('');
   });
 });

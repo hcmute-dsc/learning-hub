@@ -19,6 +19,13 @@ const ACTION_LABEL: Record<string, string> = {
   'content.sync': 'Đồng bộ nội dung',
   'content.publish': 'Publish nội dung',
   'content.reject': 'Từ chối nội dung',
+  'review.complete': 'Hoàn thành review',
+};
+
+/** Mentor review outcomes (E7, written by AuditListener.onReviewCompleted). */
+const REVIEW_OUTCOME_LABEL: Record<string, string> = {
+  approved: 'Đạt',
+  changes_requested: 'Cần sửa',
 };
 
 export const actionLabel = (action: string) => ACTION_LABEL[action] ?? action;
@@ -70,6 +77,8 @@ export function describeAudit(row: Pick<AuditLogRow, 'action' | 'metadata'>): st
     case 'content.publish':
     case 'content.reject':
       return `Commit ${shortSha(str(m.commitSha))}`;
+    case 'review.complete':
+      return `Kết luận: ${REVIEW_OUTCOME_LABEL[str(m.outcome)] ?? (str(m.outcome) || '—')}`;
     default:
       return Object.keys(m).length ? JSON.stringify(m) : '';
   }
