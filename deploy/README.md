@@ -32,7 +32,9 @@ Người dùng → Cloudflare → Traefik trên VPS (container `traefik`, mạng
 | Quyền admin repo `hcmute-dsc/learning-hub`           | để thêm secret và biến                        |
 | Tài khoản GitHub của bạn                             | để tạo OAuth app production                   |
 
-Trong các lệnh dưới, `VPS_IP` là IP của VPS, `you` là user bạn đang SSH vào.
+Trong các lệnh dưới, `VPS_IP` là IP của VPS, `you` là user bạn đang SSH vào. Đây là chữ giữ chỗ: **thay bằng giá trị thật** trước khi chạy (lỗi `Could not resolve hostname vps_ip` là do quên thay).
+
+> IP thật của VPS không ghi trong repo này (repo public, còn Cloudflare Proxied đang giấu IP đó). Hỏi tech lead hiện tại, hoặc xem bản ghi `learn` trên Cloudflare. GitHub chỉ giữ IP trong secret `VPS_HOST`, và secret thì không đọc lại được.
 
 ---
 
@@ -72,7 +74,7 @@ Cần Docker Compose ≥ 2.20 (lệnh `docker compose`, không phải `docker-co
 
 ## Bước 3. Tạo user `learnhub`
 
-GitHub Actions sẽ SSH vào VPS bằng user riêng này, không dùng `root` hay user của bạn.
+GitHub Actions sẽ SSH vào VPS bằng user riêng này, không dùng `root` hay user của bạn. Các lệnh dưới chạy bằng user có `sudo` của bạn trên VPS (`ssh you@VPS_IP`).
 
 ```bash
 sudo adduser --disabled-password --gecos "" learnhub
@@ -83,13 +85,25 @@ sudo chown -R learnhub:learnhub /opt/learning-hub
 
 > User trong nhóm `docker` có quyền gần bằng root trên VPS. Vì vậy chỉ dùng user này cho deploy, và chỉ đăng nhập bằng SSH key.
 
-## Bước 4. Tạo SSH key cho GitHub Actions
-
-Trên **máy của bạn** (không phải VPS):
+Kiểm tra:
 
 ```bash
+id learnhub                          # phải có nhóm docker
+ls -ld /opt/learning-hub             # chủ sở hữu learnhub
+```
+
+`learnhub` không có `sudo`. Khi đã SSH bằng `learnhub`, sửa file trong `/opt/learning-hub` bằng `nano` trực tiếp, không cần `sudo`.
+
+## Bước 4. Tạo SSH key cho GitHub Actions
+
+Trên **máy của bạn** (không phải VPS), trong thư mục `~/.ssh`. **Không tạo trong thư mục repo nào**, vì lỡ commit là lộ khóa:
+
+```bash
+cd ~/.ssh
 ssh-keygen -t ed25519 -N "" -C "learning-hub-deploy" -f learning-hub-deploy
 ```
+
+Khóa này không có passphrase, vì GitHub Actions không gõ passphrase được.
 
 Lệnh tạo 2 file: `learning-hub-deploy` (khóa bí mật, cho GitHub) và `learning-hub-deploy.pub` (khóa công khai, cho VPS).
 
@@ -114,7 +128,19 @@ sudo chmod 700 /home/learnhub/.ssh && sudo chmod 600 /home/learnhub/.ssh/authori
 Kiểm tra từ máy bạn:
 
 ```bash
-ssh -i learning-hub-deploy learnhub@VPS_IP "docker ps"
+ssh -i ~/.ssh/learning-hub-deploy learnhub@VPS_IP "docker ps"
+```
+
+Thấy danh sách container (có thể rỗng) là được. Nếu lỗi, chạy lại với `ssh -v` và xem bảng [Lỗi thường gặp](#lỗi-thường-gặp).
+
+Cho tiện, có thể thêm vào `~/.ssh/config` trên máy bạn để sau này chỉ gõ `ssh learnhub`:
+
+```
+Host learnhub
+  HostName VPS_IP
+  User learnhub
+  IdentityFile ~/.ssh/learning-hub-deploy
+  IdentitiesOnly yes
 ```
 
 Lấy "host key" của VPS (để GitHub chỉ nói chuyện với đúng VPS này):
@@ -169,7 +195,18 @@ Repo `hcmute-dsc/learning-hub` → **Settings → Environments → New environme
 | `VPS_SSH_KEY`     | toàn bộ nội dung file `learning-hub-deploy` (khóa bí mật) |
 | `VPS_KNOWN_HOSTS` | kết quả `ssh-keyscan` ở Bước 4                            |
 
-Sau đó xóa file `learning-hub-deploy` trên máy bạn (GitHub đã giữ nó).
+**Cách nhanh bằng `gh` CLI** (chạy trên máy bạn, trong `~/.ssh`; nội dung khóa đi thẳng từ file lên GitHub, không qua clipboard hay chat):
+
+```bash
+gh api -X PUT repos/hcmute-dsc/learning-hub/environments/production   # tạo environment
+gh secret set VPS_HOST --env production --repo hcmute-dsc/learning-hub --body "VPS_IP"
+gh secret set VPS_USER --env production --repo hcmute-dsc/learning-hub --body "learnhub"
+gh secret set VPS_SSH_KEY --env production --repo hcmute-dsc/learning-hub < learning-hub-deploy
+ssh-keyscan -p 22 VPS_IP | gh secret set VPS_KNOWN_HOSTS --env production --repo hcmute-dsc/learning-hub
+gh secret list --env production --repo hcmute-dsc/learning-hub        # phải thấy 4 secret
+```
+
+Khóa bí mật `learning-hub-deploy` trên máy bạn: GitHub đã giữ một bản. Nếu bạn cần SSH quản trị bằng user `learnhub` (sửa `.env`, xem log) thì giữ lại trên máy riêng của mình. Nếu không thì xóa. Không gửi khóa này cho ai: người mới tạo khóa của họ (xem [Bàn giao](#bàn-giao-cho-tech-lead-mới)).
 
 Chưa bật biến `DEPLOY_ENABLED` vội; làm Bước 8 trước.
 
@@ -187,9 +224,20 @@ Phải thấy một dòng `edge`. Các tên Learning Hub dùng (mạng `edge`, e
 
 ## Bước 9. Deploy lần đầu
 
-1. Repo → **Settings → Secrets and variables → Actions → Variables** → thêm `DEPLOY_ENABLED` = `true`.
-2. **Actions → Deploy → Run workflow** (nhánh `main`).
-3. Chờ job xanh. Job cuối gọi `https://learn.hcmute-dsc.io.vn` để kiểm tra.
+1. Repo → **Settings → Secrets and variables → Actions → Variables** → thêm `DEPLOY_ENABLED` = `true` (hoặc `gh variable set DEPLOY_ENABLED --repo hcmute-dsc/learning-hub --body true`).
+2. **Actions → Deploy → Run workflow** (nhánh `main`), hoặc `gh workflow run deploy.yml --repo hcmute-dsc/learning-hub --ref main`.
+3. Chờ job xanh (`gh run watch`). Job cuối gọi `https://learn.hcmute-dsc.io.vn` để kiểm tra.
+
+**Workflow Deploy làm gì** ([`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml)):
+
+| Bước                    | Chi tiết                                                                                                                                                                                            |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Khi nào chạy            | sau khi CI xanh trên `main` (`workflow_run`), hoặc bấm tay. Hai lần deploy không bao giờ chạy cùng lúc.                                                                                             |
+| `images` (api, web)     | build Docker image, đẩy lên GHCR với 2 tag: mã commit và `latest`. Dùng `GITHUB_TOKEN`, không cần secret riêng.                                                                                     |
+| `deploy` → Set up SSH   | ghi `VPS_SSH_KEY` và `VPS_KNOWN_HOSTS` ra file tạm trên máy chạy job. Host key được ghim, nên job từ chối nói chuyện với máy không phải VPS của mình.                                               |
+| Copy compose file       | `scp` file `docker-compose.prod.yml` và `backup.sh` vào `/opt/learning-hub/`. Vì vậy **đừng sửa 2 file này trên VPS**, sửa trong repo.                                                              |
+| Pull images and restart | đăng nhập GHCR bằng token chỉ sống trong job, ghi `IMAGE_TAG=<commit>` vào `.env`, `pull`, đăng xuất, `up -d --wait` (chạy migration trước api), rồi xóa image Learning Hub cũ để VPS khỏi đầy đĩa. |
+| Check the site answers  | gọi trang chủ tối đa 10 lần, không trả lời thì job đỏ.                                                                                                                                              |
 
 Kiểm tra trên VPS:
 
@@ -332,21 +380,27 @@ docker compose -f docker-compose.prod.yml up -d
 
 ## Lỗi thường gặp
 
-| Hiện tượng                                                 | Nguyên nhân hay gặp                                                                                         |
-| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Job "Copy compose file" báo `Host key verification failed` | `VPS_KNOWN_HOSTS` sai hoặc VPS được cài lại: chạy lại `ssh-keyscan`                                         |
-| `Permission denied (publickey)`                            | khóa công khai chưa nằm trong `/home/learnhub/.ssh/authorized_keys`, hoặc sai quyền file                    |
-| `migrate` thoát với lỗi                                    | xem `docker compose -f docker-compose.prod.yml logs migrate`; thường do `DATABASE_URL` sai mật khẩu         |
-| Trang báo 404 hoặc bị chuyển về trang khác                 | Traefik chưa thấy container `web`: kiểm tra `ps` (web healthy?) và `docker logs traefik --tail 50`          |
-| Trang báo 502/504                                          | web chưa sẵn sàng, hoặc `web` không nằm trong mạng `edge` (`docker inspect learning-hub-web-1`)             |
-| Chứng chỉ HTTPS lỗi                                        | xem `docker logs traefik` (dòng `acme`); token Cloudflare của Traefik phải có quyền zone `hcmute-dsc.io.vn` |
-| Mọi thành viên bị báo "quá nhiều request" cùng lúc         | `TRUST_PROXY_HOPS` sai: `2` khi Cloudflare Proxied, `1` khi DNS only                                        |
-| Đăng nhập GitHub báo `redirect_uri` sai                    | Callback URL của OAuth app phải đúng `https://learn.hcmute-dsc.io.vn/api/v1/auth/github/callback`           |
-| Đăng nhập xong vẫn bị đá ra                                | site phải chạy HTTPS: cookie `__Host-sid` chỉ dùng được qua HTTPS                                           |
-| Lỗi 403 "Origin" khi bấm nút                               | `WEB_ORIGIN` trong `.env` phải đúng `https://learn.hcmute-dsc.io.vn` (không có `/` cuối)                    |
-| Không có tin Discord nào                                   | `DISCORD_WEBHOOK_URL` / `DISCORD_ALERT_WEBHOOK_URL` trống hoặc sai, hoặc chưa Deploy lại sau khi sửa `.env` |
-| Link trong tin Discord trỏ sai trang                       | link lấy từ `WEB_ORIGIN` trong `.env`                                                                       |
-| Workflow Uptime đỏ nhưng site vẫn mở được                  | xem log của job: thường do `/api/v1/tracks` trả `502` (container `api` chết) chứ không phải `401`           |
+| Hiện tượng                                                    | Nguyên nhân hay gặp                                                                                                 |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Job "Copy compose file" báo `Host key verification failed`    | `VPS_KNOWN_HOSTS` sai hoặc VPS được cài lại: chạy lại `ssh-keyscan`                                                 |
+| `Permission denied (publickey)`                               | khóa công khai chưa nằm trong `/home/learnhub/.ssh/authorized_keys`, hoặc sai quyền file                            |
+| `ssh -v` báo `Server accepts key` rồi vẫn `Permission denied` | khóa có passphrase (hay gặp khi tạo bằng PowerShell với `-N '""'`): bỏ passphrase bằng `ssh-keygen -p -f KEY -N ""` |
+| `Could not resolve hostname vps_ip`                           | quên thay chữ giữ chỗ `VPS_IP` bằng IP thật                                                                         |
+| `Connection refused` / `timed out` khi SSH                    | sai IP hoặc sai cổng SSH (`VPS_PORT`)                                                                               |
+| `UNPROTECTED PRIVATE KEY FILE` (Windows)                      | `icacls KEY /inheritance:r /grant:r "$(whoami):F"` (xem Bước 4)                                                     |
+| `pull access denied` cho image `:latest`                      | `IMAGE_TAG` trong `.env` trống: chạy lại Deploy, workflow tự ghi                                                    |
+| Trang đăng nhập xong báo 500, log web gọi nhầm API site khác  | mạng `edge` dùng chung: API phải có alias riêng `learning-hub-api` (đã cấu hình), đừng đổi về `api`                 |
+| `migrate` thoát với lỗi                                       | xem `docker compose -f docker-compose.prod.yml logs migrate`; thường do `DATABASE_URL` sai mật khẩu                 |
+| Trang báo 404 hoặc bị chuyển về trang khác                    | Traefik chưa thấy container `web`: kiểm tra `ps` (web healthy?) và `docker logs traefik --tail 50`                  |
+| Trang báo 502/504                                             | web chưa sẵn sàng, hoặc `web` không nằm trong mạng `edge` (`docker inspect learning-hub-web-1`)                     |
+| Chứng chỉ HTTPS lỗi                                           | xem `docker logs traefik` (dòng `acme`); token Cloudflare của Traefik phải có quyền zone `hcmute-dsc.io.vn`         |
+| Mọi thành viên bị báo "quá nhiều request" cùng lúc            | `TRUST_PROXY_HOPS` sai: `2` khi Cloudflare Proxied, `1` khi DNS only                                                |
+| Đăng nhập GitHub báo `redirect_uri` sai                       | Callback URL của OAuth app phải đúng `https://learn.hcmute-dsc.io.vn/api/v1/auth/github/callback`                   |
+| Đăng nhập xong vẫn bị đá ra                                   | site phải chạy HTTPS: cookie `__Host-sid` chỉ dùng được qua HTTPS                                                   |
+| Lỗi 403 "Origin" khi bấm nút                                  | `WEB_ORIGIN` trong `.env` phải đúng `https://learn.hcmute-dsc.io.vn` (không có `/` cuối)                            |
+| Không có tin Discord nào                                      | `DISCORD_WEBHOOK_URL` / `DISCORD_ALERT_WEBHOOK_URL` trống hoặc sai, hoặc chưa Deploy lại sau khi sửa `.env`         |
+| Link trong tin Discord trỏ sai trang                          | link lấy từ `WEB_ORIGIN` trong `.env`                                                                               |
+| Workflow Uptime đỏ nhưng site vẫn mở được                     | xem log của job: thường do `/api/v1/tracks` trả `502` (container `api` chết) chứ không phải `401`                   |
 
 ## Bàn giao cho tech lead mới
 
@@ -354,3 +408,18 @@ docker compose -f docker-compose.prod.yml up -d
 2. Chuyển quyền admin repo và org GitHub; chuyển quyền DNS nếu cần.
 3. Chuyển OAuth app sang org hoặc tạo lại (đổi `GITHUB_CLIENT_*` trong `.env`, rồi chạy lại Deploy).
 4. Tạo SSH key deploy mới (Bước 4, 7), xóa khóa cũ khỏi `authorized_keys`.
+5. Tạo lại 2 webhook Discord nếu người cũ rời server (Bước 12), cập nhật `.env` và secret repo.
+
+## Hiện trạng production (cập nhật khi thay đổi)
+
+| Mục                             | Giá trị                                                                                                    |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Cài lần đầu                     | 17/11/2026, Ubuntu 22.04, Traefik v3 có sẵn (mạng `edge`)                                                  |
+| Thư mục                         | `/opt/learning-hub` (chủ: `learnhub`), database riêng trong stack này, không dùng chung Postgres site khác |
+| User deploy                     | `learnhub` (nhóm `docker`, không `sudo`, chỉ SSH key)                                                      |
+| Secret environment `production` | `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, `VPS_KNOWN_HOSTS`                                                   |
+| Secret repo                     | `DISCORD_ALERT_WEBHOOK_URL` (workflow Uptime)                                                              |
+| Biến repo                       | `DEPLOY_ENABLED=true`                                                                                      |
+| DNS                             | `learn` → VPS, Cloudflare Proxied, `TRUST_PROXY_HOPS=2`                                                    |
+| Sao lưu                         | cron 19:30 UTC của `learnhub`, giữ 14 ngày, `/opt/learning-hub/backups`                                    |
+| Discord                         | bật 17/11/2026 (kênh CLB + kênh vận hành)                                                                  |
