@@ -13,7 +13,7 @@ WORKDIR /repo
 # ---- build
 FROM base AS build
 ARG API_INTERNAL_URL=http://learning-hub-api:4000
-ENV API_INTERNAL_URL=$API_INTERNAL_URL NEXT_TELEMETRY_DISABLED=1
+ENV API_INTERNAL_URL=$API_INTERNAL_URL NEXT_TELEMETRY_DISABLED=1 NEXT_STANDALONE=1
 COPY . .
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @hub/shared --filter @hub/web build

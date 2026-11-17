@@ -5,6 +5,9 @@ import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
 import { rewriteContentUrl, type ContentOrigin } from './content-url';
+import { CodeBlock } from './CodeBlock';
+import { MermaidDiagram } from './MermaidDiagram';
+import { mermaidSource } from './mermaid-source';
 
 /**
  * Renders Markdown from a content repo (lessons, exercise statements).
@@ -18,6 +21,9 @@ import { rewriteContentUrl, type ContentOrigin } from './content-url';
  * JS). It runs AFTER sanitize: it only adds <span class="hljs-*">, and sanitize would
  * strip those classes. Only fences with a language (```sql) are colored; the token
  * colors are in globals.css ("Code highlighting").
+ *
+ * ```mermaid fences are not highlighted: the `pre` component hands them to
+ * MermaidDiagram, which draws them in the browser.
  *
  * Works in Server and Client Components (no hooks).
  */
@@ -33,7 +39,11 @@ export function Markdown({
     <div className="markdown">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeRaw, rehypeSanitize, [rehypeHighlight, { detect: false }]]}
+        rehypePlugins={[
+          rehypeRaw,
+          rehypeSanitize,
+          [rehypeHighlight, { detect: false, plainText: ['mermaid'] }],
+        ]}
         urlTransform={(url, key, node) => {
           const safe = defaultUrlTransform(url);
           if (!safe) return safe;
@@ -60,8 +70,12 @@ const COMPONENTS: Components = {
   h5: ({ node: _node, ...props }) => <h6 {...props} />,
   a: ({ node: _node, ...props }) => <MarkdownLink {...props} />,
   img: ({ node: _node, ...props }) => <MarkdownImage {...props} />,
-  // Code blocks can be wide: let them scroll and be reachable by keyboard (FRONTEND-DESIGN §9).
-  pre: ({ node: _node, ...props }) => <pre tabIndex={0} {...props} />,
+  // Mermaid fences become diagrams. Other code blocks get a copy button; they can be
+  // wide, so they scroll and are reachable by keyboard (FRONTEND-DESIGN §9).
+  pre: ({ node, ...props }) => {
+    const diagram = mermaidSource(node);
+    return diagram === null ? <CodeBlock {...props} /> : <MermaidDiagram code={diagram} />;
+  },
   // Wide tables scroll inside their own box instead of squeezing the columns.
   table: ({ node: _node, ...props }) => (
     <div className="table-wrap" tabIndex={0}>

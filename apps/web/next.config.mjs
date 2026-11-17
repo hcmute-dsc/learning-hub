@@ -7,8 +7,10 @@ const API = process.env.API_INTERNAL_URL ?? 'http://localhost:4000';
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Docker image (apps/web/Dockerfile): a self-contained server.js with only the files it needs.
-  output: 'standalone',
+  // Docker image only (apps/web/Dockerfile sets NEXT_STANDALONE=1): a self-contained
+  // server.js with only the files it needs. Off for local builds, because it creates
+  // symlinks, which Windows refuses without Developer Mode (EPERM).
+  output: process.env.NEXT_STANDALONE === '1' ? 'standalone' : undefined,
   // Monorepo: trace files from the repo root so @hub/shared is included.
   outputFileTracingRoot: fileURLToPath(new URL('../../', import.meta.url)),
   poweredByHeader: false,

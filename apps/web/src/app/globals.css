@@ -190,6 +190,20 @@ body {
   font-size: inherit;
 }
 
+/* Mermaid diagrams (components/markdown/MermaidDiagram.tsx): drawn at natural size so
+   labels stay readable, centered; wider ones scroll inside their own box. */
+.markdown .mermaid-diagram {
+  overflow-x: auto;
+  text-align: center;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  padding: 1rem;
+}
+.markdown .mermaid-diagram svg {
+  display: inline-block;
+}
+
 /* Code highlighting: classes added by rehype-highlight (Markdown.tsx). Colors follow
    GitHub's light and dark themes, so code looks the same as in the content repo. */
 :root {
@@ -429,4 +443,9 @@ body {
     transform 0.18s ease,
     box-shadow 0.18s ease,
     border-color 0.18s ease;
+}
+
+/* Room for the copy button (components/markdown/CodeBlock.tsx) on the first line. */
+.markdown .code-block pre {
+  padding-right: 4.5rem;
 }
