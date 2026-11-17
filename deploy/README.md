@@ -274,9 +274,9 @@ Thêm dòng (2:30 sáng giờ Việt Nam = 19:30 UTC, giữ 14 ngày):
 
 Bản sao lưu chứa email thành viên, nên `backup.sh` chỉ cho user `learnhub` đọc (thư mục `700`, file `600`).
 
-Chạy thử ngay: `sudo -u learnhub /opt/learning-hub/backup.sh`.
+Chạy thử ngay: `sudo -u learnhub /opt/learning-hub/backup.sh`. Kiểm tra cron đã cài: `sudo -u learnhub crontab -l` phải thấy dòng `backup.sh`.
 
-Bản sao lưu chỉ nằm trên VPS. Nên định kỳ chép về máy khác (ví dụ `scp learnhub@VPS_IP:/opt/learning-hub/backups/*.sql.gz .`), vì hỏng VPS là mất cả hai.
+Cách xem bản sao lưu, chép về máy, kiểm tra và khôi phục: xem [Sao lưu và khôi phục database](#sao-lưu-và-khôi-phục-database).
 
 ## Bước 12. Thông báo Discord (không bắt buộc)
 
@@ -366,19 +366,85 @@ sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=<mã commit 40 ký tự>/' .env
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-Migration không tự quay ngược. Nếu phiên bản lỗi đã đổi database, khôi phục từ bản sao lưu.
+Migration không tự quay ngược. Nếu phiên bản lỗi đã đổi database, khôi phục từ bản sao lưu ([Sao lưu và khôi phục database](#sao-lưu-và-khôi-phục-database)).
 
-### Khôi phục database từ bản sao lưu
+## Sao lưu và khôi phục database
+
+Mọi lệnh dưới chạy trên VPS bằng user `learnhub` (`ssh learnhub`), trong `/opt/learning-hub`.
+
+**Bản sao lưu có gì:** toàn bộ database `learning_hub` (pg_dump dạng SQL, nén gzip, không kèm owner), gồm tài khoản và email, bài nộp, review, phiên bản nội dung, nhật ký quản trị.
+
+**Bản sao lưu không có gì:**
+
+- `.env` (secret): giữ riêng, mất thì tạo lại theo Bước 6.
+- Bài học gốc: nằm trên GitHub, đồng bộ lại được.
+
+| Việc                    | Lệnh                                                        |
+| ----------------------- | ----------------------------------------------------------- |
+| Xem các bản sao lưu     | `ls -lh backups/`                                           |
+| Xem cron có chạy không  | `tail backups/backup.log` (mỗi đêm một dòng `backup ok`)    |
+| Sao lưu ngay (bằng tay) | `./backup.sh`, nên chạy trước mọi thao tác nguy hiểm với DB |
+| Đổi số ngày giữ         | `KEEP_DAYS=30` trước lệnh trong crontab (mặc định 14)       |
+
+### Chép bản sao lưu về máy khác
+
+Bản sao lưu chỉ nằm trên VPS: hỏng VPS là mất cả dữ liệu lẫn bản sao lưu. Nên chép về máy riêng định kỳ, ví dụ mỗi tuần. Trên máy bạn (Windows PowerShell, macOS hay Linux đều được), nếu đã có `Host learnhub` trong `~/.ssh/config` (Bước 4):
+
+```bash
+mkdir -p ~/learning-hub-backups
+scp "learnhub:/opt/learning-hub/backups/learning_hub-*.sql.gz" ~/learning-hub-backups/
+```
+
+File có email thành viên: để trong thư mục riêng của bạn. Không đưa lên Drive công khai, không gửi qua chat, không commit.
+
+### Kiểm tra bản sao lưu dùng được (mỗi tháng)
+
+Bản sao lưu chưa khôi phục thử thì chưa chắc dùng được. Lệnh dưới nạp bản mới nhất vào một Postgres **tạm**, không nối mạng, rồi so số dòng với production. **Không đụng database thật.**
 
 ```bash
 cd /opt/learning-hub
-docker compose -f docker-compose.prod.yml stop web api
-docker compose -f docker-compose.prod.yml exec -T db psql -U hub -d postgres \
-  -c "DROP DATABASE learning_hub WITH (FORCE);" -c "CREATE DATABASE learning_hub OWNER hub;"
-gunzip -c backups/learning_hub-YYYYMMDD-HHMMSS.sql.gz | \
-  docker compose -f docker-compose.prod.yml exec -T db psql -U hub -d learning_hub
-docker compose -f docker-compose.prod.yml up -d
+f=$(ls -t backups/learning_hub-*.sql.gz | head -1); echo "Kiểm tra $f"
+gunzip -t "$f" && echo "gzip OK"
+docker run -d --rm --name lh-restore-test --network none \
+  -e POSTGRES_PASSWORD=test -e POSTGRES_USER=hub -e POSTGRES_DB=learning_hub postgres:16
+sleep 10   # chờ Postgres tạm khởi động
+gunzip -c "$f" | docker exec -i lh-restore-test psql -q -v ON_ERROR_STOP=1 -U hub -d learning_hub >/dev/null && echo "Khôi phục OK"
+Q="select (select count(*) from users), (select count(*) from submissions), (select count(*) from _prisma_migrations)"
+docker exec lh-restore-test psql -U hub -d learning_hub -At -c "$Q"                       # bản sao lưu
+docker compose -f docker-compose.prod.yml exec -T db psql -U hub -d learning_hub -At -c "$Q"  # production
+docker rm -f lh-restore-test
 ```
+
+Thấy `Khôi phục OK` và 2 dòng số gần giống nhau là được. Production có thể nhiều hơn một chút, vì có dữ liệu mới sau lúc sao lưu. Lần đầu chạy thử: 17/11/2026, khớp.
+
+### Khôi phục database production
+
+Mọi dữ liệu **sau** thời điểm của bản sao lưu sẽ mất. Báo trước trên Discord CLB vì site sẽ tắt vài phút.
+
+```bash
+cd /opt/learning-hub
+ls -lh backups/                                  # 1. chọn file
+./backup.sh                                      # 2. sao lưu trạng thái hiện tại, phòng khi chọn nhầm file
+docker compose -f docker-compose.prod.yml stop web api          # 3. tắt site
+docker compose -f docker-compose.prod.yml exec -T db psql -U hub -d postgres \
+  -c "DROP DATABASE learning_hub WITH (FORCE);" -c "CREATE DATABASE learning_hub OWNER hub;"   # 4. làm rỗng DB
+gunzip -c backups/learning_hub-YYYYMMDD-HHMMSS.sql.gz | \
+  docker compose -f docker-compose.prod.yml exec -T db psql -q -v ON_ERROR_STOP=1 -U hub -d learning_hub   # 5. nạp lại
+docker compose -f docker-compose.prod.yml up -d --wait          # 6. bật lại (migrate chạy trước api)
+docker compose -f docker-compose.prod.yml ps                    # 7. kiểm tra
+```
+
+- Bước 5 dừng ngay ở lỗi đầu tiên. Nếu lỗi, đừng bật site: làm lại từ bước 4 với file khác.
+- Bước 6: nếu bản sao lưu cũ hơn code đang chạy, `migrate` tự áp các migration còn thiếu.
+- Khôi phục vì một bản deploy làm hỏng DB? Quay `IMAGE_TAG` về bản cũ trước ([Quay về phiên bản cũ](#quay-về-phiên-bản-cũ)), rồi mới khôi phục. Nếu không, migration lỗi sẽ chạy lại.
+- Sau đó mở site, đăng nhập, xem **Quản trị → Thành viên** thấy đủ tài khoản. Ghi lại sự cố (ngày, file đã dùng, lý do) vào tài liệu bàn giao.
+
+### Chuyển sang VPS mới
+
+1. Làm Bước 1–9 trên VPS mới, đến khi Deploy xanh (DB mới đang rỗng).
+2. Chép bản sao lưu lên: `scp learning_hub-….sql.gz learnhub@VPS_MỚI:/opt/learning-hub/backups/`.
+3. Làm các bước khôi phục ở trên, từ bước 3.
+4. Đổi bản ghi DNS `learn` sang IP mới, cập nhật secret `VPS_HOST` và `VPS_KNOWN_HOSTS`.
 
 ## Lỗi thường gặp
 
@@ -411,6 +477,7 @@ docker compose -f docker-compose.prod.yml up -d
 3. Chuyển OAuth app sang org hoặc tạo lại (đổi `GITHUB_CLIENT_*` trong `.env`, rồi chạy lại Deploy).
 4. Tạo SSH key deploy mới (Bước 4, 7), xóa khóa cũ khỏi `authorized_keys`.
 5. Tạo lại 2 webhook Discord nếu người cũ rời server (Bước 12), cập nhật `.env` và secret repo.
+6. Người mới tự chạy [kiểm tra bản sao lưu](#kiểm-tra-bản-sao-lưu-dùng-được-mỗi-tháng) một lần; người cũ xóa các bản sao lưu đã chép về máy mình.
 
 ## Hiện trạng production (cập nhật khi thay đổi)
 
