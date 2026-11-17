@@ -17,6 +17,8 @@ export interface ContentOrigin {
 
 const GITHUB_REPO = /^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+$/;
 const HAS_SCHEME = /^[A-Za-z][A-Za-z0-9+.-]*:/;
+/** Same-origin API path (next.config rewrites /api/*), served only when CONTENT_SOURCE=local. */
+const LOCAL_IMAGE_BASE = '/api/v1/local-content/';
 
 /** True when `repo` is a real GitHub "owner/repo", not a local folder. */
 export function isGithubRepo(repo: string): boolean {
@@ -32,22 +34,28 @@ export function githubBlobUrl(origin: ContentOrigin): string | null {
 /**
  * Rewrites one URL found in a Markdown document.
  * - absolute URLs, protocol-relative URLs and in-page anchors (#x) are kept;
- * - with no origin, or a `local:` repo, everything is kept (nothing to point at);
- * - images → raw.githubusercontent.com so the browser gets the file itself;
- * - other links → github.com/blob so the reader sees the file rendered by GitHub.
+ * - with no origin everything is kept (nothing to resolve against);
+ * - GitHub repo: images → raw.githubusercontent.com so the browser gets the file
+ *   itself; other links → github.com/blob so the reader sees the file rendered by GitHub;
+ * - `local:` folder (development): images → the API's /local-content endpoint
+ *   (apps/api/src/integrations/local); other links are kept, there is nothing to open.
  */
 export function rewriteContentUrl(
   url: string,
   kind: 'image' | 'link',
   origin: ContentOrigin | null,
 ): string {
-  if (!origin || !isGithubRepo(origin.repo)) return url;
+  if (!origin) return url;
   if (url === '' || url.startsWith('#') || url.startsWith('//') || HAS_SCHEME.test(url)) {
     return url;
   }
+  const github = isGithubRepo(origin.repo);
+  if (!github && !(kind === 'image' && origin.repo.startsWith('local:'))) return url;
 
   const { pathPart, suffix } = splitSuffix(url);
   const resolved = resolvePosix(origin.path, pathPart);
+  if (!github)
+    return LOCAL_IMAGE_BASE + resolved.split('/').map(encodeURIComponent).join('/') + suffix;
   const base =
     kind === 'image'
       ? `https://raw.githubusercontent.com/${origin.repo}/${origin.commitSha}/`

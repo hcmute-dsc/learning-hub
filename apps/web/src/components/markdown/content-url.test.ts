@@ -54,10 +54,18 @@ describe('rewriteContentUrl', () => {
     }
   });
 
-  it('keeps everything for local repos or a missing origin', () => {
-    expect(rewriteContentUrl('a.png', 'image', { ...origin, repo: 'local:content-example' })).toBe(
-      'a.png',
+  it('sends images of a local folder to the API, keeping the mode marker', () => {
+    const local = { ...origin, repo: 'local:D:/repos/learning-hub-content' };
+    expect(
+      rewriteContentUrl('../../../assets/img/sơ đồ.png#gh-dark-mode-only', 'image', local),
+    ).toBe(
+      '/api/v1/local-content/tracks/git/assets/img/s%C6%A1%20%C4%91%E1%BB%93.png#gh-dark-mode-only',
     );
+  });
+
+  it('keeps links of a local folder, and everything when the origin is missing', () => {
+    const local = { ...origin, repo: 'local:content-example' };
+    expect(rewriteContentUrl('next.md', 'link', local)).toBe('next.md');
     expect(rewriteContentUrl('a.png', 'image', null)).toBe('a.png');
   });
 });

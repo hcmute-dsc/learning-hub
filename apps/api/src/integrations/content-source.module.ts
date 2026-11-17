@@ -2,10 +2,15 @@ import { Module } from '@nestjs/common';
 import { ENV, type Env } from '../infrastructure/config/env';
 import { CONTENT_SOURCE } from '../modules/content/ports/content-source';
 import { GithubContentSource } from './github/github-content.source';
+import { LocalContentFilesController } from './local/local-content-files.controller';
 import { LocalDirContentSource } from './local/local-dir-content.source';
 
-/** Binds the ContentSource port to a local folder (dev) or a GitHub repo, from env. */
+/**
+ * Binds the ContentSource port to a local folder (dev) or a GitHub repo, from env.
+ * The controller serves lesson images in local mode only (see its comment).
+ */
 @Module({
+  controllers: [LocalContentFilesController],
   providers: [
     {
       provide: CONTENT_SOURCE,
