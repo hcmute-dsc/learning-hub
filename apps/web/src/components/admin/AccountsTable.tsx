@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import type { AdminUserRow } from '@hub/shared';
 import { ROLE_LABEL, visibleRoles } from '@/components/profile/profile';
 import { Avatar } from '@/components/ui/Avatar';
+import { ProblemAlert } from '@/components/exercise/ProblemAlert';
 import { formatDateTime } from '@/lib/format';
 import {
   countByStatus,
@@ -13,6 +14,8 @@ import {
   STATUS_LABEL,
   type StatusFilter,
 } from './account-filter';
+import { ApproveButton } from './ApproveButton';
+import { useApproveAccount } from './use-approve';
 
 const TABS: { value: StatusFilter; label: string }[] = [
   { value: 'all', label: 'Tất cả' },
@@ -35,6 +38,7 @@ export function AccountsTable({ rows }: { rows: AdminUserRow[] }) {
   const [status, setStatus] = useState<StatusFilter>('all');
   const [search, setSearch] = useState('');
   const [copied, setCopied] = useState(false);
+  const { approve, busy, problem, isApproving, isApproved } = useApproveAccount();
 
   const counts = useMemo(() => countByStatus(rows), [rows]);
   const shown = useMemo(() => filterAccounts(rows, status, search), [rows, status, search]);
@@ -83,6 +87,8 @@ export function AccountsTable({ rows }: { rows: AdminUserRow[] }) {
           <span aria-live="polite">{copied ? '✓ Đã chép' : `Chép email (${shown.length})`}</span>
         </button>
       </div>
+
+      <ProblemAlert problem={problem} />
 
       {shown.length === 0 ? (
         <p className="muted text-sm">Không có tài khoản nào khớp.</p>
@@ -137,11 +143,26 @@ export function AccountsTable({ rows }: { rows: AdminUserRow[] }) {
                     )}
                   </td>
                   <td className="py-2 pr-4">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap ${STATUS_CLASS[row.status]}`}
-                    >
-                      {STATUS_LABEL[row.status]}
-                    </span>
+                    {row.status === 'pending' && !isApproved(row.id) ? (
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap ${STATUS_CLASS.pending}`}
+                        >
+                          {STATUS_LABEL.pending}
+                        </span>
+                        <ApproveButton
+                          onClick={() => approve(row.id)}
+                          disabled={busy}
+                          approving={isApproving(row.id)}
+                        />
+                      </div>
+                    ) : (
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap ${STATUS_CLASS[isApproved(row.id) ? 'active' : row.status]}`}
+                      >
+                        {STATUS_LABEL[isApproved(row.id) ? 'active' : row.status]}
+                      </span>
+                    )}
                   </td>
                   <td className="py-2 pr-4 text-xs">
                     {visibleRoles(row.roles)
