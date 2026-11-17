@@ -59,4 +59,19 @@ export class ExerciseStateService {
   async stateOf(userId: string, exerciseId: string): Promise<ExerciseState> {
     return (await this.statesFor(userId, [exerciseId])).get(exerciseId)!;
   }
+
+  /**
+   * For the member profile (learning module): when the member submitted anything, and
+   * how many different exercises are completed by the same rule as everywhere else.
+   */
+  async activityOf(userId: string): Promise<{ submittedAt: Date[]; completedExercises: number }> {
+    const rows = await this.prisma.submission.findMany({
+      where: { userId },
+      select: { exerciseId: true, submittedAt: true },
+    });
+    const exerciseIds = [...new Set(rows.map((r) => r.exerciseId))];
+    const states = await this.statesFor(userId, exerciseIds);
+    const completedExercises = [...states.values()].filter((st) => st === 'completed').length;
+    return { submittedAt: rows.map((r) => r.submittedAt), completedExercises };
+  }
 }

@@ -4,11 +4,14 @@ import { ExerciseStateBadge } from '@/components/exercise/ExerciseStateBadge';
 import { EXERCISE_TYPE_LABEL } from '@/lib/labels';
 import { exerciseHref } from './links';
 
-/** "Bài tập liên quan" block of a lesson page (INFORMATION-ARCHITECTURE §5). */
+/**
+ * "Bài tập liên quan" block of a lesson page (INFORMATION-ARCHITECTURE §5). It sits under
+ * the "Đánh dấu đã học" button inside the same card, so it only draws a divider line.
+ */
 export function RelatedExercises({ exercises }: { exercises: LessonView['exercises'] }) {
   if (exercises.length === 0) return null;
   return (
-    <section aria-labelledby="related-exercises" className="surface rounded-xl p-5">
+    <section aria-labelledby="related-exercises" className="border-t border-[var(--border)] pt-5">
       <h2 id="related-exercises" className="font-semibold">
         Bài tập liên quan
       </h2>

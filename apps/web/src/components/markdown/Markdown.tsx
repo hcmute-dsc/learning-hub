@@ -1,5 +1,6 @@
 import type { ComponentPropsWithoutRef } from 'react';
 import ReactMarkdown, { defaultUrlTransform, type Components } from 'react-markdown';
+import rehypeHighlight from 'rehype-highlight';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
@@ -12,6 +13,11 @@ import { rewriteContentUrl, type ContentOrigin } from './content-url';
  * parsed (rehype-raw, so authors can use <details>/<summary> like on GitHub) and then
  * sanitized with the default GitHub-like schema (rehype-sanitize) BEFORE React renders
  * it. Unsafe URL protocols are dropped by react-markdown's defaultUrlTransform.
+ *
+ * Code blocks are colored by rehype-highlight (highlight.js, on the server, no browser
+ * JS). It runs AFTER sanitize: it only adds <span class="hljs-*">, and sanitize would
+ * strip those classes. Only fences with a language (```sql) are colored; the token
+ * colors are in globals.css ("Code highlighting").
  *
  * Works in Server and Client Components (no hooks).
  */
@@ -27,7 +33,7 @@ export function Markdown({
     <div className="markdown">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeRaw, rehypeSanitize]}
+        rehypePlugins={[rehypeRaw, rehypeSanitize, [rehypeHighlight, { detect: false }]]}
         urlTransform={(url, key, node) => {
           const safe = defaultUrlTransform(url);
           if (!safe) return safe;

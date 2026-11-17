@@ -23,6 +23,15 @@ export class LessonProgressRepository {
     return (await this.statusesFor(userId, [lessonId])).get(lessonId) ?? 'not_started';
   }
 
+  /** When each lesson the member has completed was completed (member profile activity). */
+  async completedAtFor(userId: string): Promise<Date[]> {
+    const rows = await this.prisma.lessonProgress.findMany({
+      where: { userId, status: 'completed', completedAt: { not: null } },
+      select: { completedAt: true },
+    });
+    return rows.map((r) => r.completedAt!);
+  }
+
   /** completed_at records when the lesson was completed; it is cleared if the member reopens it. */
   async save(
     userId: string,

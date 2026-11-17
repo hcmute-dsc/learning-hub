@@ -21,6 +21,10 @@ model User {
   /// stored lower-cased by the app (unique when present — partial index in SQL migration)
   email       String?
   avatarUrl   String?   @map("avatar_url")
+  /// short text on the member profile, max 280 chars (CHECK in SQL migration)
+  bio         String?
+  /// system | light | dark — color scheme picked in /settings
+  theme       String    @default("system")
   /// pending | active | suspended
   status      String    @default("pending")
   lastLoginAt DateTime? @map("last_login_at") @db.Timestamptz

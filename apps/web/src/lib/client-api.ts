@@ -9,7 +9,7 @@ export type SendResult<T> = { ok: true; data: T } | { ok: false; problem: Proble
  */
 export async function sendJson<T>(
   path: string,
-  method: 'POST' | 'PUT' | 'DELETE',
+  method: 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   body?: unknown,
   headers: Record<string, string> = {},
 ): Promise<SendResult<T>> {

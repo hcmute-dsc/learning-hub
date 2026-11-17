@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import type { Me, Role, UserStatus } from '@hub/shared';
+import type { Me, Role, Theme, UserStatus } from '@hub/shared';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { Clock } from '../../infrastructure/clock';
 import { ENV, type Env } from '../../infrastructure/config/env';
@@ -106,14 +106,39 @@ export class UsersService {
       include: { roles: { include: { role: true } } },
     });
     if (!user || user.deletedAt) throw DomainError.notFound('User');
-    return {
-      id: user.id,
-      githubLogin: user.githubLogin,
-      displayName: user.displayName,
-      avatarUrl: user.avatarUrl,
-      status: user.status as UserStatus,
-      roles: user.roles.map((r) => r.role.code as Role),
-    };
+    return toMe(user);
+  }
+
+  /** Name and bio on the member's own profile (/settings). GitHub sign-in never overwrites them. */
+  async updateProfile(userId: string, input: { displayName: string; bio: string | null }) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { displayName: input.displayName, bio: input.bio },
+    });
+    return this.getMe(userId);
+  }
+
+  async updateSettings(userId: string, input: { theme: Theme }) {
+    await this.prisma.user.update({ where: { id: userId }, data: { theme: input.theme } });
+    return this.getMe(userId);
+  }
+
+  /**
+   * Profile owner for /members/:login: approved, not deleted. A login can repeat when
+   * someone renamed their GitHub account and another person took the old name, so the
+   * most recently signed-in account wins (only that one can hold the name today).
+   */
+  async findActiveByLogin(login: string): Promise<(Me & { createdAt: Date }) | null> {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        githubLogin: { equals: login, mode: 'insensitive' },
+        status: 'active',
+        deletedAt: null,
+      },
+      include: { roles: { include: { role: true } } },
+      orderBy: { lastLoginAt: { sort: 'desc', nulls: 'last' } },
+    });
+    return user ? { ...toMe(user), createdAt: user.createdAt } : null;
   }
 
   async listPending(): Promise<Me[]> {
@@ -123,14 +148,7 @@ export class UsersService {
       orderBy: { createdAt: 'asc' },
       take: 100,
     });
-    return users.map((u) => ({
-      id: u.id,
-      githubLogin: u.githubLogin,
-      displayName: u.displayName,
-      avatarUrl: u.avatarUrl,
-      status: u.status as UserStatus,
-      roles: u.roles.map((r) => r.role.code as Role),
-    }));
+    return users.map(toMe);
   }
 
   async approve(actorId: string, userId: string): Promise<void> {
@@ -155,4 +173,28 @@ export class UsersService {
     ]);
     await this.events.emitAsync(UserEvents.RolesChanged, { actorId, userId, roles: unique });
   }
+}
+
+type UserWithRoles = {
+  id: string;
+  githubLogin: string;
+  displayName: string;
+  avatarUrl: string | null;
+  bio: string | null;
+  theme: string;
+  status: string;
+  roles: { role: { code: string } }[];
+};
+
+function toMe(user: UserWithRoles): Me {
+  return {
+    id: user.id,
+    githubLogin: user.githubLogin,
+    displayName: user.displayName,
+    avatarUrl: user.avatarUrl,
+    status: user.status as UserStatus,
+    roles: user.roles.map((r) => r.role.code as Role),
+    bio: user.bio,
+    theme: user.theme as Theme,
+  };
 }

@@ -1,7 +1,21 @@
 @import 'tailwindcss';
 
+/* Dark mode: the member picks it in /settings (users.theme). The root layout writes
+   <html data-theme="light|dark">; without the attribute ("system") the device decides.
+   Every dark style, Tailwind `dark:` classes and `@variant dark` below, uses this rule. */
+@custom-variant dark {
+  &:where([data-theme='dark'], [data-theme='dark'] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme]), :root:not([data-theme]) *) {
+      @slot;
+    }
+  }
+}
+
 /* Design tokens, matched to the club website hcmute-dsc.io.vn (src/css/custom.css there):
-   DSC orange #F0622D (hsl 16 86%), navy hero, system fonts. Dark mode follows the system.
+   DSC orange #F0622D (hsl 16 86%), navy hero, system fonts.
    brand-600 is the darker orange (hsl 16 86% 40%) so white button text keeps AA contrast. */
 @theme {
   --font-sans:
@@ -26,23 +40,35 @@
   --border: #e3e7ef;
 }
 
-@media (prefers-color-scheme: dark) {
-  /* Orange text on a dark background needs a lighter tone to stay readable.
-     Buttons keep brand-600 (white text on it already has enough contrast). */
-  .text-brand-600,
-  .text-brand-700 {
+/* Orange text on a dark background needs a lighter tone to stay readable.
+   Buttons keep brand-600 (white text on it already has enough contrast). */
+.text-brand-600,
+.text-brand-700 {
+  @variant dark {
     color: #f39a77;
   }
-  /* Light peach badges would glare on a dark page: use a translucent orange instead. */
-  .bg-brand-50 {
+}
+/* Light peach badges would glare on a dark page: use a translucent orange instead. */
+.bg-brand-50 {
+  @variant dark {
     background-color: rgb(240 98 45 / 0.15);
   }
-  :root {
+}
+:root {
+  @variant dark {
     --bg: #0d1117;
     --surface: #161b22;
     --text: #e6edf3;
     --muted: #9aa4b2;
     --border: #2a313c;
+  }
+}
+
+/* Native controls (scrollbars, form fields) follow the same scheme. */
+:root {
+  color-scheme: light;
+  @variant dark {
+    color-scheme: dark;
   }
 }
 
@@ -84,8 +110,8 @@ body {
   --code-bg: #f1f3f8;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
+:root {
+  @variant dark {
     --code-bg: #0b0f14;
   }
 }
@@ -120,8 +146,8 @@ body {
   color: var(--color-brand-600);
   text-decoration: underline;
 }
-@media (prefers-color-scheme: dark) {
-  .markdown a {
+.markdown a {
+  @variant dark {
     color: #f39a77;
   }
 }
@@ -162,6 +188,86 @@ body {
   background: none;
   padding: 0;
   font-size: inherit;
+}
+
+/* Code highlighting: classes added by rehype-highlight (Markdown.tsx). Colors follow
+   GitHub's light and dark themes, so code looks the same as in the content repo. */
+:root {
+  --hl-keyword: #cf222e;
+  --hl-string: #0a3069;
+  --hl-number: #0550ae;
+  --hl-comment: #6e7781;
+  --hl-function: #8250df;
+  --hl-type: #953800;
+  --hl-variable: #116329;
+  @variant dark {
+    --hl-keyword: #ff7b72;
+    --hl-string: #a5d6ff;
+    --hl-number: #79c0ff;
+    --hl-comment: #8b949e;
+    --hl-function: #d2a8ff;
+    --hl-type: #ffa657;
+    --hl-variable: #7ee787;
+  }
+}
+.hljs-keyword,
+.hljs-operator,
+.hljs-doctag,
+.hljs-meta .hljs-keyword,
+.hljs-selector-tag {
+  color: var(--hl-keyword);
+}
+.hljs-string,
+.hljs-regexp,
+.hljs-meta .hljs-string {
+  color: var(--hl-string);
+}
+.hljs-number,
+.hljs-literal,
+.hljs-symbol,
+.hljs-attr,
+.hljs-attribute,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  color: var(--hl-number);
+}
+.hljs-comment,
+.hljs-quote {
+  color: var(--hl-comment);
+  font-style: italic;
+}
+.hljs-title,
+.hljs-title.function_,
+.hljs-section {
+  color: var(--hl-function);
+}
+.hljs-type,
+.hljs-built_in,
+.hljs-title.class_,
+.hljs-params {
+  color: var(--hl-type);
+}
+.hljs-variable,
+.hljs-template-variable,
+.hljs-name,
+.hljs-tag,
+.hljs-bullet {
+  color: var(--hl-variable);
+}
+.hljs-deletion {
+  color: var(--hl-keyword);
+  background: rgb(255 129 130 / 0.15);
+}
+.hljs-addition {
+  color: var(--hl-variable);
+  background: rgb(46 160 67 / 0.15);
+}
+.hljs-emphasis {
+  font-style: italic;
+}
+.hljs-strong {
+  font-weight: 700;
 }
 /* Tables get a scrolling wrapper (Markdown.tsx) instead of `display: block` on the
    table itself: a block table shrinks its columns and wrapped words one per line. */
@@ -219,11 +325,13 @@ body {
 .markdown img.gh-dark-mode-only {
   display: none;
 }
-@media (prefers-color-scheme: dark) {
-  .markdown img.gh-dark-mode-only {
+.markdown img.gh-dark-mode-only {
+  @variant dark {
     display: inline;
   }
-  .markdown img.gh-light-mode-only {
+}
+.markdown img.gh-light-mode-only {
+  @variant dark {
     display: none;
   }
 }

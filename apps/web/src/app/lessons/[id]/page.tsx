@@ -76,7 +76,7 @@ export default async function LessonPage({ params }: Params) {
 
         <Markdown source={lesson.bodyMd} origin={lesson.source} />
 
-        <section className="surface rounded-xl p-5">
+        <section className="surface space-y-5 rounded-xl p-5">
           <MarkLessonDone lessonId={lesson.id} status={lesson.progress} />
           <RelatedExercises exercises={lesson.exercises} />
         </section>

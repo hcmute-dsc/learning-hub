@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Me } from '@hub/shared';
+import { Avatar } from '@/components/ui/Avatar';
 import { BrandLogo } from './BrandLogo';
 import { NavLink } from './NavLink';
 
@@ -40,12 +41,27 @@ export function SiteHeader({ me }: { me: Me | null }) {
             {n.label}
           </NavLink>
         ))}
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex items-center gap-2 sm:gap-3">
           {me ? (
             <>
-              <span className="muted hidden sm:inline">@{me.githubLogin}</span>
+              <Link
+                href={`/u/${me.githubLogin}`}
+                className="flex items-center gap-2 rounded-full hover:text-brand-600"
+                title="Hồ sơ của bạn"
+              >
+                <Avatar src={me.avatarUrl} size={28} />
+                <span className="hidden sm:inline">@{me.githubLogin}</span>
+              </Link>
+              <Link
+                href="/settings"
+                aria-label="Cài đặt"
+                title="Cài đặt"
+                className="rounded-md p-1.5 text-lg leading-none hover:bg-[var(--bg)]"
+              >
+                <span aria-hidden>⚙️</span>
+              </Link>
               <form action="/logout" method="post">
-                <button className="rounded-md border border-[var(--border)] px-3 py-1.5 hover:border-brand-500">
+                <button className="rounded-md border border-[var(--border)] px-3 py-1.5 whitespace-nowrap hover:border-brand-500">
                   Đăng xuất
                 </button>
               </form>

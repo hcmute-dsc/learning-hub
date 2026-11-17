@@ -96,8 +96,12 @@ export const meSchema = z.object({
   avatarUrl: z.string().url().nullable(),
   status: z.enum(USER_STATUSES),
   roles: z.array(z.enum(ROLES)),
+  bio: z.string().nullable(),
+  /** color scheme picked in /settings (see profile.ts) */
+  theme: z.enum(['system', 'light', 'dark']),
 });
 export type Me = z.infer<typeof meSchema>;
 
 export * from './learning';
 export * from './admin';
+export * from './profile';
