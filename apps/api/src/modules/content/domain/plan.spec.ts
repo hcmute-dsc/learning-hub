@@ -2,6 +2,7 @@ import { parseContent, readDirectory, type ContentTree } from '@hub/content';
 import { resolve } from 'node:path';
 import type { DbItem, DbSnapshot } from './plan';
 import { planChanges } from './plan';
+import { publishedChanges } from './published-changes';
 
 const example = (): ContentTree => {
   const { tree, issues } = parseContent(
@@ -132,5 +133,42 @@ describe('planChanges', () => {
     ];
     [ra.slug, rb.slug] = [rb.slug, ra.slug];
     expect(planChanges(tree, db).conflicts).toEqual([]);
+  });
+});
+
+describe('publishedChanges', () => {
+  it('names a new track but does not list every title of it', () => {
+    const tree = example();
+    const changes = publishedChanges(tree, planChanges(tree, empty()));
+    expect(changes.tracks).toHaveLength(2);
+    expect(changes.tracks.every((t) => t.isNew)).toBe(true);
+    expect(changes.removed).toBe(0);
+  });
+
+  it('lists the titles of changed and removed items only', () => {
+    const tree = example();
+    const db = snapshotOf(tree);
+    const lesson = tree.tracks[0].modules[0].lessons[0];
+    db.lesson.find((l) => l.id === lesson.uid)!.contentHash = 'old';
+    db.exercise.push({ ...db.exercise[0], id: 'gone', slug: 'gone' });
+    const changes = publishedChanges(tree, planChanges(tree, db));
+    expect(changes.tracks).toEqual([
+      {
+        slug: tree.tracks[0].slug,
+        title: tree.tracks[0].title,
+        isNew: false,
+        added: [],
+        changed: [lesson.title],
+      },
+    ]);
+    expect(changes.removed).toBe(1);
+  });
+
+  it('is empty when nothing changed', () => {
+    const tree = example();
+    expect(publishedChanges(tree, planChanges(tree, snapshotOf(tree)))).toEqual({
+      tracks: [],
+      removed: 0,
+    });
   });
 });

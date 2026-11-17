@@ -325,13 +325,13 @@ Lần bật đầu tiên: 17/11/2026 (kênh CLB và kênh vận hành, secret re
 
 **Ý nghĩa từng tin:**
 
-| Tin                                    | Kênh     | Khi nào                                                                                                      | Cần làm gì                                                                                          |
-| -------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| 📝 **Bài chờ review**                  | CLB      | thành viên nộp project cần mentor chấm                                                                       | mentor bấm link `/review/…` để nhận review                                                          |
-| **Review xong** — ✅ Đạt / 🔁 Cần sửa  | CLB      | mentor chấm xong                                                                                             | không; thành viên xem nhận xét trên web                                                             |
-| 📚 **Nội dung mới đã được publish**    | CLB      | admin publish một phiên bản nội dung mới                                                                     | không; thành viên vào `/tracks` xem bài mới                                                         |
-| 🚨 **Lỗi 500 trên API**                | vận hành | API gặp lỗi chưa xử lý. Cùng một lỗi chỉ báo 1 lần mỗi 10 phút, tối đa 10 tin mỗi giờ (số tin bị gộp có ghi) | tìm `requestId` trong log: `docker compose -f docker-compose.prod.yml logs api \| grep <requestId>` |
-| 🔴 **Learning Hub không trả lời đúng** | vận hành | workflow **Uptime** (15 phút một lần) thấy trang chủ không trả `200` hoặc `/api/v1/tracks` không trả `401`   | xem mục [Lỗi thường gặp](#lỗi-thường-gặp); job đỏ trong tab Actions cũng gửi email cho admin repo   |
+| Tin                                    | Kênh     | Khi nào                                                                                                                     | Cần làm gì                                                                                          |
+| -------------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| 📝 **Bài chờ review**                  | CLB      | thành viên nộp project cần mentor chấm                                                                                      | mentor bấm link `/review/…` để nhận review                                                          |
+| **Review xong** — ✅ Đạt / 🔁 Cần sửa  | CLB      | mentor chấm xong                                                                                                            | không; thành viên xem nhận xét trên web                                                             |
+| 📚 **Nội dung mới đã được publish**    | CLB      | admin publish nội dung mới; tin ghi tên lộ trình, các bài được thêm/sửa/gỡ (tối đa 12 tên) và link xem thay đổi trên GitHub | không; thành viên vào `/tracks` xem bài mới                                                         |
+| 🚨 **Lỗi 500 trên API**                | vận hành | API gặp lỗi chưa xử lý. Cùng một lỗi chỉ báo 1 lần mỗi 10 phút, tối đa 10 tin mỗi giờ (số tin bị gộp có ghi)                | tìm `requestId` trong log: `docker compose -f docker-compose.prod.yml logs api \| grep <requestId>` |
+| 🔴 **Learning Hub không trả lời đúng** | vận hành | workflow **Uptime** (15 phút một lần) thấy trang chủ không trả `200` hoặc `/api/v1/tracks` không trả `401`                  | xem mục [Lỗi thường gặp](#lỗi-thường-gặp); job đỏ trong tab Actions cũng gửi email cho admin repo   |
 
 Tin không bao giờ chứa email hay dữ liệu cá nhân, chỉ có tên bài, tên lộ trình và login GitHub. Tin lỗi chỉ có method, đường dẫn (không có query string), `requestId` và câu báo lỗi; chi tiết đầy đủ nằm trong log API.
 

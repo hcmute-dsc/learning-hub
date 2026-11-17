@@ -9,8 +9,13 @@ import { newId } from '../../infrastructure/ids';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { CatalogWriter } from '../catalog/catalog.writer';
 import { UsersService } from '../users/users.service';
-import { ContentEvents, type ContentVersionEvent } from './content.events';
+import {
+  ContentEvents,
+  type ContentPublishedEvent,
+  type ContentVersionEvent,
+} from './content.events';
 import { planChanges, type ChangePlan } from './domain/plan';
+import { publishedChanges } from './domain/published-changes';
 import { CONTENT_SOURCE, loadFileMap, type ContentSource } from './ports/content-source';
 
 const SHA = /^[0-9a-f]{40}$/;
@@ -145,19 +150,23 @@ export class ContentService {
     const { tree, issues } = parseContent(await loadFileMap(this.source, version.commitSha));
     if (issues.length) throw toValidationError('Content at this commit is no longer valid', issues);
 
-    const published = await this.prisma.$transaction(
+    const { published, plan, previousCommitSha } = await this.prisma.$transaction(
       async (tx) => {
         const plan = planChanges(tree, await this.writer.snapshot(tx));
         if (plan.conflicts.length)
           throw toValidationError('Content conflicts with the catalog', plan.conflicts);
 
         const now = this.clock.now();
+        const previous = await tx.contentVersion.findFirst({
+          where: { status: 'published' },
+          select: { commitSha: true },
+        });
         await tx.contentVersion.updateMany({
           where: { status: 'published' },
           data: { status: 'superseded' },
         });
         await this.writer.apply(tx, tree, plan, version.id);
-        return tx.contentVersion.update({
+        const published = await tx.contentVersion.update({
           where: { id: version.id },
           data: {
             status: 'published',
@@ -171,6 +180,7 @@ export class ContentService {
             } as unknown as Prisma.InputJsonValue,
           },
         });
+        return { published, plan, previousCommitSha: previous?.commitSha ?? null };
       },
       { timeout: 60_000, maxWait: 10_000 },
     );
@@ -180,7 +190,10 @@ export class ContentService {
       versionId: published.id,
       commitSha: published.commitSha,
       status: published.status,
-    } satisfies ContentVersionEvent);
+      sourceRepo: published.sourceRepo,
+      previousCommitSha,
+      changes: publishedChanges(tree, plan),
+    } satisfies ContentPublishedEvent);
     return view(published);
   }
 

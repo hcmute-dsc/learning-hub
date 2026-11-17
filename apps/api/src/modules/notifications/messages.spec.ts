@@ -3,6 +3,7 @@ import {
   contentPublishedMessage,
   errorSummary,
   escapeDiscord,
+  MAX_PUBLISHED_TITLES,
   pathWithoutQuery,
   reviewCompletedMessage,
   serverErrorMessage,
@@ -62,14 +63,67 @@ describe('reviewCompletedMessage', () => {
 });
 
 describe('contentPublishedMessage', () => {
-  it('shows the short commit and links /tracks', () => {
-    const msg = contentPublishedMessage(ORIGIN, 'abcdef1234567890');
+  const base = {
+    commitSha: 'abcdef1234567890',
+    sourceRepo: 'hcmute-dsc/learning-hub-content',
+    previousCommitSha: '1234567aaaaaaaa',
+    removed: 0,
+  };
+  const sql = { slug: 'sql-30-days', title: 'SQL 30 ngày', isNew: false };
+
+  it('names the track, the changed lessons and links the GitHub diff', () => {
+    const msg = contentPublishedMessage(ORIGIN, {
+      ...base,
+      tracks: [{ ...sql, added: ['Ngày 31: Ôn tập'], changed: ['Ngày 1: Giới thiệu SQL'] }],
+    });
     expect(msg).toContain('`abcdef1`');
-    expect(msg).toContain(`<${ORIGIN}/tracks>`);
+    expect(msg).toContain('**SQL 30 ngày**');
+    expect(msg).toContain('➕ Thêm 1 bài:\n• Ngày 31: Ôn tập');
+    expect(msg).toContain('✏️ Cập nhật 1 bài:\n• Ngày 1: Giới thiệu SQL');
+    expect(msg).toContain(`<${ORIGIN}/tracks/sql-30-days>`);
+    expect(msg).toContain(
+      '<https://github.com/hcmute-dsc/learning-hub-content/compare/1234567aaaaaaaa...abcdef1234567890>',
+    );
   });
 
-  it('hides a commit that is not a sha', () => {
-    expect(contentPublishedMessage(ORIGIN, '`@everyone`')).toContain('`?`');
+  it(`lists at most ${MAX_PUBLISHED_TITLES} titles and counts the rest`, () => {
+    const changed = Array.from({ length: 30 }, (_, i) => `Ngày ${i + 1}`);
+    const msg = contentPublishedMessage(ORIGIN, {
+      ...base,
+      tracks: [{ ...sql, added: [], changed }],
+    });
+    expect(msg.match(/^• /gm)).toHaveLength(MAX_PUBLISHED_TITLES);
+    expect(msg).toContain(`… và ${30 - MAX_PUBLISHED_TITLES} bài khác`);
+    expect(msg.length).toBeLessThan(2000);
+  });
+
+  it('announces a new track and removed lessons', () => {
+    const msg = contentPublishedMessage(ORIGIN, {
+      ...base,
+      removed: 2,
+      tracks: [{ slug: 'git', title: 'Git cơ bản', isNew: true, added: ['a', 'b'], changed: [] }],
+    });
+    expect(msg).toContain('🆕 **Lộ trình mới: Git cơ bản**');
+    expect(msg).toContain('🗑️ Gỡ 2 bài');
+  });
+
+  it('escapes titles and hides values that are not a sha or a GitHub repo', () => {
+    const msg = contentPublishedMessage(ORIGIN, {
+      commitSha: '`@everyone`',
+      sourceRepo: 'local:D:/content',
+      previousCommitSha: null,
+      removed: 0,
+      tracks: [{ ...sql, added: [], changed: ['@everyone **x**'] }],
+    });
+    expect(msg).toContain('`?`');
+    expect(msg).not.toMatch(/@everyone|github\.com/);
+    expect(msg).toContain(String.raw`\*\*x\*\*`);
+  });
+
+  it('says so when nothing a member can see changed', () => {
+    expect(contentPublishedMessage(ORIGIN, { ...base, tracks: [] })).toContain(
+      'Không có bài học hay bài tập nào thay đổi',
+    );
   });
 });
 

@@ -62,12 +62,84 @@ export function reviewCompletedMessage(info: ReviewCompletedInfo): string {
   ].join('\n');
 }
 
-export function contentPublishedMessage(origin: string, commitSha: string): string {
+export interface PublishedTrackInfo {
+  slug: string;
+  title: string;
+  isNew: boolean;
+  added: string[];
+  changed: string[];
+}
+
+export interface ContentPublishedInfo {
+  commitSha: string;
+  /** owner/repo on GitHub (anything else, e.g. local:…, gets no compare link) */
+  sourceRepo: string;
+  previousCommitSha: string | null;
+  tracks: PublishedTrackInfo[];
+  /** lessons + exercises taken off the site */
+  removed: number;
+}
+
+/** At most this many lesson/exercise titles in one message; the rest become "và N bài khác". */
+export const MAX_PUBLISHED_TITLES = 12;
+
+const isSha = (v: string | null): v is string => !!v && /^[0-9a-f]{7,40}$/i.test(v);
+
+/**
+ * What a content publish changed, by track and by title, so members know what to read
+ * (the first version only showed the commit: 18/11/2026). Stays well under Discord's
+ * 2000-character limit: titles are cut to 80 characters and capped at MAX_PUBLISHED_TITLES.
+ */
+export function contentPublishedMessage(origin: string, info: ContentPublishedInfo): string {
   // A sha is hex; anything else is not shown rather than escaped.
-  const sha = /^[0-9a-f]{7,40}$/i.test(commitSha) ? commitSha.slice(0, 7) : '?';
-  return [`📚 **Nội dung mới đã được publish** (commit \`${sha}\`)`, link(origin, '/tracks')].join(
-    '\n',
-  );
+  const sha = isSha(info.commitSha) ? info.commitSha.slice(0, 7) : '?';
+  const lines = [`📚 **Nội dung mới đã được publish** (commit \`${sha}\`)`];
+
+  let budget = MAX_PUBLISHED_TITLES;
+  let hidden = 0;
+  const list = (titles: string[]) => {
+    const shown = titles.slice(0, Math.max(budget, 0));
+    budget -= shown.length;
+    hidden += titles.length - shown.length;
+    return shown.map((t) => `• ${escapeDiscord(t, 80)}`);
+  };
+
+  for (const track of info.tracks) {
+    const name = escapeDiscord(track.title, 80);
+    lines.push('');
+    lines.push(track.isNew ? `🆕 **Lộ trình mới: ${name}**` : `**${name}**`);
+    if (track.added.length && !track.isNew) {
+      lines.push(`➕ Thêm ${track.added.length} bài:`, ...list(track.added));
+    } else if (track.isNew) {
+      lines.push(`${track.added.length} bài học và bài tập`);
+    }
+    if (track.changed.length) {
+      lines.push(`✏️ Cập nhật ${track.changed.length} bài:`, ...list(track.changed));
+    }
+    if (!track.isNew && !track.added.length && !track.changed.length) {
+      lines.push('✏️ Cập nhật thông tin lộ trình');
+    }
+    lines.push(link(origin, `/tracks/${encodeURIComponent(track.slug)}`));
+  }
+  if (hidden > 0) lines.push(`… và ${hidden} bài khác`);
+  if (info.removed > 0) lines.push('', `🗑️ Gỡ ${info.removed} bài khỏi trang`);
+  if (!info.tracks.length && !info.removed) {
+    lines.push('Không có bài học hay bài tập nào thay đổi.');
+  }
+
+  const repoOk = /^[\w.-]+\/[\w.-]+$/.test(info.sourceRepo);
+  if (
+    repoOk &&
+    isSha(info.previousCommitSha) &&
+    isSha(info.commitSha) &&
+    info.previousCommitSha !== info.commitSha
+  ) {
+    lines.push(
+      '',
+      `Xem chi tiết thay đổi: <https://github.com/${info.sourceRepo}/compare/${info.previousCommitSha}...${info.commitSha}>`,
+    );
+  }
+  return lines.join('\n');
 }
 
 export interface ServerErrorInfo {

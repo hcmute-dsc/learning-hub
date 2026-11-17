@@ -63,8 +63,17 @@ describe('NotificationsListener', () => {
       versionId: 'v',
       commitSha: 'abcdef0123',
       status: 'published',
+      sourceRepo: 'hcmute-dsc/learning-hub-content',
+      previousCommitSha: '0123456789',
+      changes: {
+        tracks: [{ slug: 'sql', title: 'SQL', isNew: false, added: [], changed: ['Ngày 1'] }],
+        removed: 0,
+      },
     });
     await flush();
-    expect(channel.send.mock.calls[0][0]).toContain('abcdef0');
+    const msg = channel.send.mock.calls[0][0];
+    expect(msg).toContain('abcdef0');
+    expect(msg).toContain('• Ngày 1');
+    expect(msg).toContain('/compare/0123456789...abcdef0123');
   });
 });

@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { ENV, type Env } from '../../infrastructure/config/env';
 import { CatalogReader } from '../catalog/catalog.reader';
-import { ContentEvents, type ContentVersionEvent } from '../content/content.events';
+import { ContentEvents, type ContentPublishedEvent } from '../content/content.events';
 import { ReviewEvents, type ReviewCompletedEvent } from '../reviews/reviews.events';
 import { SubmissionEvents, type SubmissionEvent } from '../submissions/submissions.events';
 import { UsersService } from '../users/users.service';
@@ -58,9 +58,15 @@ export class NotificationsListener {
   }
 
   @OnEvent(ContentEvents.Published)
-  onContentPublished(e: ContentVersionEvent): void {
+  onContentPublished(e: ContentPublishedEvent): void {
     this.inBackground('content_published', async () =>
-      contentPublishedMessage(this.env.WEB_ORIGIN, e.commitSha),
+      contentPublishedMessage(this.env.WEB_ORIGIN, {
+        commitSha: e.commitSha,
+        sourceRepo: e.sourceRepo,
+        previousCommitSha: e.previousCommitSha,
+        tracks: e.changes.tracks,
+        removed: e.changes.removed,
+      }),
     );
   }
 

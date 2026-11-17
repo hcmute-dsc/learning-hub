@@ -12,6 +12,10 @@ export interface DiffCount {
 
 export interface ChangePlan extends CatalogChanges {
   diff: Record<ItemKind, DiffCount>;
+  /** uids of new items, per kind (for the "what changed" message) */
+  added: Record<ItemKind, string[]>;
+  /** uids of existing items whose content, status or place changed */
+  changed: Record<ItemKind, string[]>;
   /** problems that only show up against the database (natural-key clashes) */
   conflicts: ContentIssue[];
 }
@@ -85,6 +89,8 @@ export function planChanges(tree: ContentTree, db: DbSnapshot): ChangePlan {
       lesson: { added: 0, changed: 0, removed: 0, unchanged: 0 },
       exercise: { added: 0, changed: 0, removed: 0, unchanged: 0 },
     },
+    added: { track: [], module: [], lesson: [], exercise: [] },
+    changed: { track: [], module: [], lesson: [], exercise: [] },
     conflicts: [],
   };
 
@@ -106,6 +112,7 @@ export function planChanges(tree: ContentTree, db: DbSnapshot): ChangePlan {
       const row = byId.get(item.id);
       if (!row) {
         plan.diff[kind].added += 1;
+        plan.added[kind].push(item.id);
         plan.upsert[kind].add(item.id);
       } else if (
         row.contentHash !== item.hash ||
@@ -114,6 +121,7 @@ export function planChanges(tree: ContentTree, db: DbSnapshot): ChangePlan {
         row.sourcePath !== item.sourcePath
       ) {
         plan.diff[kind].changed += 1;
+        plan.changed[kind].push(item.id);
         plan.upsert[kind].add(item.id);
       } else {
         plan.diff[kind].unchanged += 1;
