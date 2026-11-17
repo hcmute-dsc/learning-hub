@@ -353,6 +353,9 @@ model Review {
   /// in_progress | approved | changes_requested
   status       String    @default("in_progress")
   summaryMd    String?   @map("summary_md")
+  /// [{ criterion, weight, score }] of a finished review (CHECK: JSON array, SQL migration)
+  rubricScores Json?     @map("rubric_scores")
+  /// completion time; NULL exactly while in_progress (CHECK in SQL migration)
   submittedAt  DateTime? @map("submitted_at") @db.Timestamptz
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz
@@ -362,6 +365,7 @@ model Review {
   comments   ReviewComment[]
 
   @@index([submissionId])
+  @@index([reviewerId, status], map: "reviews_reviewer_idx")
   @@map("reviews")
 }
 

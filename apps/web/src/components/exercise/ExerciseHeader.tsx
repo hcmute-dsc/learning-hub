@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import type { Difficulty, ExerciseType, ExerciseView } from '@hub/shared';
+import type { CompletedReview, Difficulty, ExerciseType, ExerciseView } from '@hub/shared';
 import { Breadcrumbs } from '@/components/learn/Breadcrumbs';
 import { lessonHref, moduleHref } from '@/components/learn/links';
 import { HexIcon } from '@/components/ui/HexIcon';
@@ -30,10 +30,13 @@ const DIFFICULTY_CLASS: Record<Difficulty, string> = {
 export function ExerciseHeader({
   exercise,
   trackIcon,
+  review = null,
 }: {
   exercise: ExerciseView;
   /** Short label for the track hexagon (lib/track-icon.ts) */
   trackIcon: string;
+  /** The mentor review the banner mentions (bannerReview in exercise-status.ts) */
+  review?: { submissionId: string; review: CompletedReview } | null;
 }) {
   return (
     <header className="motion-fade-up space-y-5">
@@ -101,7 +104,7 @@ export function ExerciseHeader({
         </div>
       </div>
 
-      <ExerciseStatusBanner state={exercise.state} lockedBy={exercise.lockedBy} />
+      <ExerciseStatusBanner state={exercise.state} lockedBy={exercise.lockedBy} review={review} />
     </header>
   );
 }

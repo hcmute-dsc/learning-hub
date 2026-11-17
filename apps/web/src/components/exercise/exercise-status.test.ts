@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { statusBanner, submissionTone } from './exercise-status';
+import { bannerReview, statusBanner, submissionTone } from './exercise-status';
 
 describe('statusBanner', () => {
   it('has no banner while the panel already says what to do', () => {
@@ -26,5 +26,31 @@ describe('submissionTone', () => {
     expect(submissionTone('awaiting_review')).toBe('review');
     expect(submissionTone('submitted')).toBe('info');
     expect(submissionTone('testing')).toBe('info');
+  });
+});
+
+describe('bannerReview', () => {
+  const review = {
+    id: 'r1',
+    outcome: 'changes_requested' as const,
+    summaryMd: 'Sửa index.',
+    rubricScores: [],
+    rubricTotal: null,
+    reviewer: { id: 'm1', githubLogin: 'mentor', displayName: 'Mentor', avatarUrl: null },
+    completedAt: '2026-11-17T08:00:00.000Z',
+  };
+  const history = [
+    { id: 's2', review: null },
+    { id: 's1', review },
+  ];
+
+  it('picks the newest finished review when it explains the state', () => {
+    expect(bannerReview('needs_changes', history)).toEqual({ submissionId: 's1', review });
+    expect(bannerReview('completed', history)?.submissionId).toBe('s1');
+  });
+
+  it('stays quiet while a new attempt waits for review', () => {
+    expect(bannerReview('in_review', history)).toBeNull();
+    expect(bannerReview('needs_changes', [{ id: 's1', review: null }])).toBeNull();
   });
 });

@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { SubmissionView } from '@hub/shared';
 import { formatDateTime, formatPercent } from '@/lib/format';
+import { ReviewCard, reviewAnchor } from '@/components/review/ReviewCard';
 import { SUBMISSION_STATUS_LABEL } from '@/lib/labels';
 import { TONE_CLASS, submissionTone, type Tone } from './exercise-status';
 
@@ -16,7 +17,8 @@ const DOT_CLASS: Record<Tone, string> = {
 
 /**
  * Past attempts of one exercise as a compact timeline, newest first as the API returns
- * them (FRONTEND-DESIGN §2 AttemptHistory).
+ * them (FRONTEND-DESIGN §2 AttemptHistory). A project attempt shows the mentor's
+ * finished review under it (E7).
  */
 export function AttemptHistory({ submissions }: { submissions: SubmissionView[] }) {
   return (
@@ -68,6 +70,7 @@ export function AttemptHistory({ submissions }: { submissions: SubmissionView[] 
                     </a>
                   )}
                 </div>
+                {s.review && <ReviewCard review={s.review} id={reviewAnchor(s.id)} />}
               </li>
             );
           })}

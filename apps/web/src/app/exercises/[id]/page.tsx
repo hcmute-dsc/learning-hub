@@ -4,6 +4,7 @@ import type { ExerciseView, SubmissionView } from '@hub/shared';
 import { AttemptHistory } from '@/components/exercise/AttemptHistory';
 import { ExerciseActions } from '@/components/exercise/ExerciseActions';
 import { ExerciseHeader } from '@/components/exercise/ExerciseHeader';
+import { bannerReview } from '@/components/exercise/exercise-status';
 import { TrackSidebar } from '@/components/learn/TrackSidebar';
 import { Markdown } from '@/components/markdown/Markdown';
 import { apiOrNotFound } from '@/lib/api';
@@ -53,7 +54,11 @@ export default async function ExercisePage({ params }: Params) {
       </aside>
 
       <article className="min-w-0 space-y-6">
-        <ExerciseHeader exercise={exercise} trackIcon={trackIconLabel(track)} />
+        <ExerciseHeader
+          exercise={exercise}
+          trackIcon={trackIconLabel(track)}
+          review={bannerReview(exercise.state, submissions)}
+        />
 
         <details className="surface rounded-xl p-4 lg:hidden">
           <summary className="cursor-pointer font-medium">Mục lục lộ trình</summary>

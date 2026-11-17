@@ -4,6 +4,7 @@ import type {
   ExerciseType,
   ErrorCode,
   LessonStatus,
+  ReviewOutcome,
   SubmissionStatus,
   TrackLevel,
 } from '@hub/shared';
@@ -59,6 +60,12 @@ export const SUBMISSION_STATUS_LABEL: Record<SubmissionStatus, string> = {
   approved: 'Đã duyệt',
   changes_requested: 'Cần sửa',
   errored: 'Lỗi khi chấm',
+};
+
+/** Mentor review result (E7), with an icon so it never relies on color alone. */
+export const REVIEW_OUTCOME_LABEL: Record<ReviewOutcome, { text: string; icon: string }> = {
+  approved: { text: 'Đạt', icon: '✓' },
+  changes_requested: { text: 'Cần sửa', icon: '✎' },
 };
 
 /** problem+json `code` → Vietnamese message (FRONTEND-DESIGN §7). */

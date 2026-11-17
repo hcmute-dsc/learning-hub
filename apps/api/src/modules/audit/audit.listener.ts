@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { ContentEvents, type ContentVersionEvent } from '../content/content.events';
+import { ReviewEvents, type ReviewCompletedEvent } from '../reviews/reviews.events';
 import { UserEvents } from '../users/users.events';
 
 /**
@@ -83,6 +84,15 @@ export class AuditListener {
   onContentRejected(e: ContentVersionEvent) {
     return this.write('content.reject', 'content_version', e.versionId, e.actorId, {
       commitSha: e.commitSha,
+    });
+  }
+
+  @OnEvent(ReviewEvents.Completed)
+  onReviewCompleted(e: ReviewCompletedEvent) {
+    return this.write('review.complete', 'review', e.reviewId, e.reviewerId, {
+      submissionId: e.submissionId,
+      memberId: e.memberId,
+      outcome: e.outcome,
     });
   }
 }

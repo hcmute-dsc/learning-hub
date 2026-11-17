@@ -12,6 +12,7 @@ import { AuditModule } from './modules/audit/audit.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { ContentModule } from './modules/content/content.module';
 import { LearningModule } from './modules/learning/learning.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
 import { SubmissionsModule } from './modules/submissions/submissions.module';
 import { HealthController } from './modules/health/health.controller';
 import { IdentityModule } from './modules/identity/identity.module';
@@ -48,6 +49,7 @@ const env = loadEnv();
     ContentModule,
     SubmissionsModule,
     LearningModule,
+    ReviewsModule,
     AuditModule,
   ],
   controllers: [HealthController],

@@ -31,6 +31,7 @@ content-example/               small content repo used for local dev and tests
 | `content`     | sync a content repo → draft version → publish                                                                                                     | `content.service.ts`, `domain/plan.ts`      |
 | `learning`    | enrollments, lesson progress, track progress and completion; depends on `submissions` and `catalog`                                               | `progress.ts`, `enrollment.service.ts`      |
 | `submissions` | submissions and each exercise's state for a member, including prerequisite locks (`exercise-state.ts`); depends on `catalog`, never on `learning` | `exercise-state.ts`, `submission-writer.ts` |
+| `reviews`     | mentor review: queue, claim/release, complete with rubric scores; depends on `submissions` (which owns the status change) and `users`             | `review-rules.ts`, `reviews.service.ts`     |
 | `audit`       | writes `audit_logs` from domain events                                                                                                            | `audit.listener.ts`                         |
 
 ## Rules that keep the code maintainable

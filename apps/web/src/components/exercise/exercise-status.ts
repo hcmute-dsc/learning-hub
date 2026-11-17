@@ -1,4 +1,4 @@
-import type { ExerciseState, SubmissionStatus } from '@hub/shared';
+import type { CompletedReview, ExerciseState, SubmissionStatus } from '@hub/shared';
 
 /**
  * Which colored message an exercise or a submission gets, kept out of the components
@@ -57,7 +57,7 @@ export function statusBanner(state: ExerciseState): StatusBanner | null {
       return {
         tone: 'warning',
         title: 'Mentor yêu cầu sửa',
-        body: 'Đọc nhận xét của mentor, sửa bài rồi nộp lại đường dẫn ở phần “Làm bài”.',
+        body: 'Đọc nhận xét của mentor bên dưới, sửa bài rồi nộp lại đường dẫn ở phần “Làm bài”.',
       };
     case 'completed':
       return {
@@ -86,4 +86,20 @@ export function submissionTone(status: SubmissionStatus): Tone {
     default:
       return 'info';
   }
+}
+
+/**
+ * The mentor review the status banner talks about: the newest finished review, only
+ * while it explains the current state (needs changes, or completed by an approval).
+ * While a new attempt waits for review, an older "Cần sửa" would only confuse.
+ */
+export function bannerReview(
+  state: ExerciseState,
+  submissions: { id: string; review: CompletedReview | null }[],
+): { submissionId: string; review: CompletedReview } | null {
+  if (state !== 'needs_changes' && state !== 'completed') return null;
+  for (const s of submissions) {
+    if (s.review) return { submissionId: s.id, review: s.review };
+  }
+  return null;
 }

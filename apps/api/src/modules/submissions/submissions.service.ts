@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type { LinkSubmissionInput, SubmissionView } from '@hub/shared';
 import type { AuthUser } from '../../common/auth.decorators';
 import { DomainError } from '../../common/errors';
@@ -7,6 +7,7 @@ import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { CatalogReader, type ExerciseContext } from '../catalog/catalog.reader';
 import { ExerciseStateService } from './exercise-state.service';
 import { codeSpec, projectSpec } from './exercise-spec';
+import { COMPLETED_REVIEWS, type CompletedReviews } from './ports/completed-reviews';
 import { parseSubmissionUrl, type SubmissionSource } from './submission-url';
 import { SubmissionWriter } from './submission-writer';
 import { SUBMISSION_ROW_SELECT, toSubmissionView } from './submission-view';
@@ -39,6 +40,7 @@ export class SubmissionsService {
     private readonly catalog: CatalogReader,
     private readonly states: ExerciseStateService,
     private readonly writer: SubmissionWriter,
+    @Inject(COMPLETED_REVIEWS) private readonly reviews: CompletedReviews,
   ) {}
 
   async submitLink(
@@ -87,7 +89,8 @@ export class SubmissionsService {
       take: MY_SUBMISSIONS_LIMIT,
       select: SUBMISSION_ROW_SELECT,
     });
-    return rows.map(toSubmissionView);
+    const reviews = await this.reviews.forSubmissions(rows.map((r) => r.id));
+    return rows.map((row) => toSubmissionView(row, reviews.get(row.id) ?? null));
   }
 
   async get(viewer: AuthUser, submissionId: string): Promise<SubmissionView> {
@@ -96,7 +99,8 @@ export class SubmissionsService {
       select: { ...SUBMISSION_ROW_SELECT, userId: true },
     });
     if (!row || !canViewSubmission(viewer, row.userId)) throw DomainError.notFound('Submission');
-    return toSubmissionView(row);
+    const reviews = await this.reviews.forSubmissions([row.id]);
+    return toSubmissionView(row, reviews.get(row.id) ?? null);
   }
 
   private acceptedUrl(exercise: ExerciseContext) {
