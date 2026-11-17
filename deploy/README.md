@@ -243,8 +243,35 @@ URL webhook là mật khẩu: ai có nó đều gửi tin vào kênh được. K
 
 **Đặt vào đâu:**
 
-1. `/opt/learning-hub/.env` trên VPS (cho API): điền `DISCORD_WEBHOOK_URL=` và `DISCORD_ALERT_WEBHOOK_URL=`, rồi **Actions → Deploy → Run workflow** để API đọc lại `.env`.
-2. GitHub (cho workflow kiểm tra uptime): repo → **Settings → Secrets and variables → Actions → Secrets** (secret của repo, không phải của environment `production`) → thêm `DISCORD_ALERT_WEBHOOK_URL` = URL webhook kênh vận hành.
+1. `/opt/learning-hub/.env` trên VPS (cho API): đăng nhập bằng user `learnhub`, mở `nano /opt/learning-hub/.env`, điền `DISCORD_WEBHOOK_URL=` và `DISCORD_ALERT_WEBHOOK_URL=` (dán URL liền, không dấu cách, không ngoặc kép), lưu bằng `Ctrl+O`, thoát bằng `Ctrl+X`.
+2. GitHub (cho workflow kiểm tra uptime): secret của repo, không phải của environment `production`. Cách nhanh là chạy lệnh dưới trên máy mình rồi dán URL webhook kênh vận hành khi được hỏi:
+
+   ```bash
+   gh secret set DISCORD_ALERT_WEBHOOK_URL --repo hcmute-dsc/learning-hub
+   ```
+
+   Hoặc trên web: repo → **Settings → Secrets and variables → Actions → New repository secret**.
+
+3. **Actions → Deploy → Run workflow** (hoặc `gh workflow run deploy.yml --repo hcmute-dsc/learning-hub --ref main`) để API đọc lại `.env`.
+
+**Kiểm tra** (chạy trên VPS; URL đọc thẳng từ `.env` nên không hiện ra màn hình):
+
+```bash
+# Gửi thử 1 tin vào mỗi kênh: thấy "OK" và tin hiện trong Discord là URL đúng
+cd /opt/learning-hub
+for k in DISCORD_WEBHOOK_URL DISCORD_ALERT_WEBHOOK_URL; do
+  curl -fsS -H 'Content-Type: application/json' -d "{\"content\":\"Learning Hub: thử $k\"}" \
+    "$(grep "^$k=" .env | cut -d= -f2-)" && echo "$k OK"
+done
+
+# Sau khi Deploy: API phải thấy cả 2 biến
+docker compose -f docker-compose.prod.yml exec -T api sh -c \
+  'test -n "$DISCORD_WEBHOOK_URL" && echo club:set; test -n "$DISCORD_ALERT_WEBHOOK_URL" && echo alert:set'
+```
+
+Workflow **Uptime** chỉ gửi tin khi site lỗi, nên chạy tay mà site khỏe thì sẽ không có tin nào. Đó là đúng.
+
+Lần bật đầu tiên: 17/11/2026 (kênh CLB và kênh vận hành, secret repo đã thêm).
 
 **Ý nghĩa từng tin:**
 
