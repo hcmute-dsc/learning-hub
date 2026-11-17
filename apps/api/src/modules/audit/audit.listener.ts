@@ -2,7 +2,12 @@ import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { ContentEvents, type ContentVersionEvent } from '../content/content.events';
-import { UserEvents } from '../users/users.events';
+import {
+  UserEvents,
+  type RolesChangedEvent,
+  type UserReactivatedEvent,
+  type UserSuspendedEvent,
+} from '../users/users.events';
 
 /**
  * Writes audit_logs from domain events (SECURITY §11). Audit never calls other
@@ -60,8 +65,23 @@ export class AuditListener {
   }
 
   @OnEvent(UserEvents.RolesChanged)
-  onRolesChanged(e: { actorId: string; userId: string; roles: string[] }) {
-    return this.write('role.set', 'user', e.userId, e.actorId, { roles: e.roles });
+  onRolesChanged(e: RolesChangedEvent) {
+    return this.write('role.set', 'user', e.userId, e.actorId, {
+      roles: e.roles,
+      previousRoles: e.previousRoles,
+    });
+  }
+
+  @OnEvent(UserEvents.Suspended)
+  onSuspended(e: UserSuspendedEvent) {
+    return this.write('user.suspend', 'user', e.userId, e.actorId, {
+      previousStatus: e.previousStatus,
+    });
+  }
+
+  @OnEvent(UserEvents.Reactivated)
+  onReactivated(e: UserReactivatedEvent) {
+    return this.write('user.reactivate', 'user', e.userId, e.actorId);
   }
 
   @OnEvent(ContentEvents.Synced)

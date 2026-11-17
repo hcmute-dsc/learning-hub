@@ -4,6 +4,7 @@ export const metadata: Metadata = { title: 'Đăng nhập' };
 
 const ERRORS: Record<string, string> = {
   state: 'Phiên đăng nhập đã hết hạn hoặc không hợp lệ. Vui lòng thử lại.',
+  suspended: 'Tài khoản của bạn đang bị tạm khóa. Liên hệ Ban chủ nhiệm nếu đây là nhầm lẫn.',
 };
 
 export default async function LoginPage({

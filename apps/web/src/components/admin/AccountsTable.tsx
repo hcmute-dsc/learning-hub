@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import type { AdminUserRow } from '@hub/shared';
-import { ROLE_LABEL, visibleRoles } from '@/components/profile/profile';
 import { Avatar } from '@/components/ui/Avatar';
 import { ProblemAlert } from '@/components/exercise/ProblemAlert';
 import { formatDateTime } from '@/lib/format';
@@ -15,6 +14,8 @@ import {
   type StatusFilter,
 } from './account-filter';
 import { ApproveButton } from './ApproveButton';
+import { RolesCell } from './RolesCell';
+import { SuspendButton } from './SuspendButton';
 import { useApproveAccount } from './use-approve';
 
 const TABS: { value: StatusFilter; label: string }[] = [
@@ -33,8 +34,9 @@ const STATUS_CLASS: Record<AdminUserRow['status'], string> = {
 /**
  * Every account with its email (admin only, SECURITY §1). Filtering happens in the
  * browser: a club has at most a few thousand accounts (ADMIN_USERS_LIMIT).
+ * `meId` is the viewing admin, who cannot suspend themselves or drop their own admin role.
  */
-export function AccountsTable({ rows }: { rows: AdminUserRow[] }) {
+export function AccountsTable({ rows, meId }: { rows: AdminUserRow[]; meId: string }) {
   const [status, setStatus] = useState<StatusFilter>('all');
   const [search, setSearch] = useState('');
   const [copied, setCopied] = useState(false);
@@ -94,7 +96,7 @@ export function AccountsTable({ rows }: { rows: AdminUserRow[] }) {
         <p className="muted text-sm">Không có tài khoản nào khớp.</p>
       ) : (
         <div className="table-wrap overflow-x-auto" tabIndex={0}>
-          <table className="w-full min-w-[52rem] text-left text-sm">
+          <table className="w-full min-w-[60rem] text-left text-sm">
             <thead className="muted">
               <tr className="border-b border-[var(--border)]">
                 <th className="py-2 pr-4 font-medium">Thành viên</th>
@@ -102,7 +104,8 @@ export function AccountsTable({ rows }: { rows: AdminUserRow[] }) {
                 <th className="py-2 pr-4 font-medium">Trạng thái</th>
                 <th className="py-2 pr-4 font-medium">Vai trò</th>
                 <th className="py-2 pr-4 font-medium">Tham gia</th>
-                <th className="py-2 font-medium">Đăng nhập gần nhất</th>
+                <th className="py-2 pr-4 font-medium">Đăng nhập gần nhất</th>
+                <th className="py-2 font-medium">Thao tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
@@ -165,15 +168,16 @@ export function AccountsTable({ rows }: { rows: AdminUserRow[] }) {
                     )}
                   </td>
                   <td className="py-2 pr-4 text-xs">
-                    {visibleRoles(row.roles)
-                      .map((role) => ROLE_LABEL[role])
-                      .join(', ')}
+                    <RolesCell row={row} isSelf={row.id === meId} />
                   </td>
                   <td className="py-2 pr-4 text-xs whitespace-nowrap">
                     {formatDateTime(row.createdAt)}
                   </td>
-                  <td className="py-2 text-xs whitespace-nowrap">
+                  <td className="py-2 pr-4 text-xs whitespace-nowrap">
                     {row.lastLoginAt ? formatDateTime(row.lastLoginAt) : '—'}
+                  </td>
+                  <td className="py-2">
+                    <SuspendButton row={row} isSelf={row.id === meId} />
                   </td>
                 </tr>
               ))}

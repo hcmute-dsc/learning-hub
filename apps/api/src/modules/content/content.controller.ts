@@ -17,7 +17,7 @@ const syncSchema = z
   .strict()
   .default({});
 
-/** Admin content pipeline (BACKEND-DESIGN §2 content). UI comes in MVP-Full. */
+/** Admin content pipeline (BACKEND-DESIGN §2 content). UI: web /admin/content. */
 @ApiTags('admin')
 @Controller('admin/content')
 export class AdminContentController {
