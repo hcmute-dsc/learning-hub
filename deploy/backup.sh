@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Daily database backup on the VPS (deploy/README.md, "Sao lưu").
-# Cron (as the deploy user): 30 2 * * * /opt/learning-hub/backup.sh >> /opt/learning-hub/backups/backup.log 2>&1
+# Cron (as the learnhub user): 30 2 * * * /opt/learning-hub/backup.sh >> /opt/learning-hub/backups/backup.log 2>&1
 # Restore: see the README. Keeps the last KEEP_DAYS days.
 set -euo pipefail
 

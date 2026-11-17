@@ -70,15 +70,15 @@ curl -fsSL https://get.docker.com | sudo sh
 
 Cần Docker Compose ≥ 2.20 (lệnh `docker compose`, không phải `docker-compose`).
 
-## Bước 3. Tạo user `deploy`
+## Bước 3. Tạo user `learnhub`
 
 GitHub Actions sẽ SSH vào VPS bằng user riêng này, không dùng `root` hay user của bạn.
 
 ```bash
-sudo adduser --disabled-password --gecos "" deploy
-sudo usermod -aG docker deploy
+sudo adduser --disabled-password --gecos "" learnhub
+sudo usermod -aG docker learnhub
 sudo mkdir -p /opt/learning-hub/backups
-sudo chown -R deploy:deploy /opt/learning-hub
+sudo chown -R learnhub:learnhub /opt/learning-hub
 ```
 
 > User trong nhóm `docker` có quyền gần bằng root trên VPS. Vì vậy chỉ dùng user này cho deploy, và chỉ đăng nhập bằng SSH key.
@@ -97,15 +97,15 @@ Lệnh tạo 2 file: `learning-hub-deploy` (khóa bí mật, cho GitHub) và `le
 
 ```bash
 # trên VPS
-sudo -u deploy mkdir -p /home/deploy/.ssh
-sudo -u deploy nano /home/deploy/.ssh/authorized_keys   # dán nội dung learning-hub-deploy.pub
-sudo chmod 700 /home/deploy/.ssh && sudo chmod 600 /home/deploy/.ssh/authorized_keys
+sudo -u learnhub mkdir -p /home/learnhub/.ssh
+sudo -u learnhub nano /home/learnhub/.ssh/authorized_keys   # dán nội dung learning-hub-deploy.pub
+sudo chmod 700 /home/learnhub/.ssh && sudo chmod 600 /home/learnhub/.ssh/authorized_keys
 ```
 
 Kiểm tra từ máy bạn:
 
 ```bash
-ssh -i learning-hub-deploy deploy@VPS_IP "docker ps"
+ssh -i learning-hub-deploy learnhub@VPS_IP "docker ps"
 ```
 
 Lấy "host key" của VPS (để GitHub chỉ nói chuyện với đúng VPS này):
@@ -132,7 +132,7 @@ Tạo xong, bấm **Generate a new client secret**. Giữ lại Client ID và Cl
 
 ```bash
 # trên VPS
-sudo -u deploy nano /opt/learning-hub/.env
+sudo -u learnhub nano /opt/learning-hub/.env
 ```
 
 Dán nội dung của [`deploy/.env.example`](.env.example) rồi sửa:
@@ -145,7 +145,7 @@ Dán nội dung của [`deploy/.env.example`](.env.example) rồi sửa:
 Khóa quyền đọc:
 
 ```bash
-sudo chmod 600 /opt/learning-hub/.env && sudo chown deploy:deploy /opt/learning-hub/.env
+sudo chmod 600 /opt/learning-hub/.env && sudo chown learnhub:learnhub /opt/learning-hub/.env
 ```
 
 ## Bước 7. Secret và biến trên GitHub
@@ -155,7 +155,7 @@ Repo `hcmute-dsc/learning-hub` → **Settings → Environments → New environme
 | Secret            | Giá trị                                                   |
 | ----------------- | --------------------------------------------------------- |
 | `VPS_HOST`        | `VPS_IP` (hoặc tên miền của VPS)                          |
-| `VPS_USER`        | `deploy`                                                  |
+| `VPS_USER`        | `learnhub`                                                |
 | `VPS_PORT`        | cổng SSH, bỏ qua nếu là `22`                              |
 | `VPS_SSH_KEY`     | toàn bộ nội dung file `learning-hub-deploy` (khóa bí mật) |
 | `VPS_KNOWN_HOSTS` | kết quả `ssh-keyscan` ở Bước 4                            |
@@ -204,7 +204,7 @@ Rồi mở https://learn.hcmute-dsc.io.vn, đăng nhập bằng GitHub của tec
 ## Bước 11. Sao lưu hằng ngày
 
 ```bash
-sudo -u deploy crontab -e
+sudo -u learnhub crontab -e
 ```
 
 Thêm dòng (2:30 sáng giờ UTC, giữ 14 ngày):
@@ -213,9 +213,9 @@ Thêm dòng (2:30 sáng giờ UTC, giữ 14 ngày):
 30 2 * * * /opt/learning-hub/backup.sh >> /opt/learning-hub/backups/backup.log 2>&1
 ```
 
-Chạy thử ngay: `sudo -u deploy /opt/learning-hub/backup.sh`.
+Chạy thử ngay: `sudo -u learnhub /opt/learning-hub/backup.sh`.
 
-Bản sao lưu chỉ nằm trên VPS. Nên định kỳ chép về máy khác (ví dụ `scp deploy@VPS_IP:/opt/learning-hub/backups/*.sql.gz .`), vì hỏng VPS là mất cả hai.
+Bản sao lưu chỉ nằm trên VPS. Nên định kỳ chép về máy khác (ví dụ `scp learnhub@VPS_IP:/opt/learning-hub/backups/*.sql.gz .`), vì hỏng VPS là mất cả hai.
 
 ---
 
@@ -261,7 +261,7 @@ docker compose -f docker-compose.prod.yml up -d
 | Hiện tượng                                                 | Nguyên nhân hay gặp                                                                                         |
 | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | Job "Copy compose file" báo `Host key verification failed` | `VPS_KNOWN_HOSTS` sai hoặc VPS được cài lại: chạy lại `ssh-keyscan`                                         |
-| `Permission denied (publickey)`                            | khóa công khai chưa nằm trong `/home/deploy/.ssh/authorized_keys`, hoặc sai quyền file                      |
+| `Permission denied (publickey)`                            | khóa công khai chưa nằm trong `/home/learnhub/.ssh/authorized_keys`, hoặc sai quyền file                    |
 | `migrate` thoát với lỗi                                    | xem `docker compose -f docker-compose.prod.yml logs migrate`; thường do `DATABASE_URL` sai mật khẩu         |
 | Trang báo 404 hoặc bị chuyển về trang khác                 | Traefik chưa thấy container `web`: kiểm tra `ps` (web healthy?) và `docker logs traefik --tail 50`          |
 | Trang báo 502/504                                          | web chưa sẵn sàng, hoặc `web` không nằm trong mạng `edge` (`docker inspect learning-hub-web-1`)             |
@@ -273,7 +273,7 @@ docker compose -f docker-compose.prod.yml up -d
 
 ## Bàn giao cho tech lead mới
 
-1. Thêm SSH key của người mới vào user của họ trên VPS (không chia sẻ khóa `deploy`).
+1. Thêm SSH key của người mới vào user của họ trên VPS (không chia sẻ khóa của `learnhub`).
 2. Chuyển quyền admin repo và org GitHub; chuyển quyền DNS nếu cần.
 3. Chuyển OAuth app sang org hoặc tạo lại (đổi `GITHUB_CLIENT_*` trong `.env`, rồi chạy lại Deploy).
 4. Tạo SSH key deploy mới (Bước 4, 7), xóa khóa cũ khỏi `authorized_keys`.
