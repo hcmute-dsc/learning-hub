@@ -27,12 +27,13 @@ Người dùng → Cloudflare → Traefik trên VPS (container `traefik`, mạng
 
 ## Cần chuẩn bị
 
-| Thứ                                                  | Ghi chú                                       |
-| ---------------------------------------------------- | --------------------------------------------- |
-| VPS Ubuntu 22.04/24.04                               | ≥ 2 GB RAM, ≥ 20 GB đĩa, có Docker và Traefik |
-| Quyền sửa DNS của `hcmute-dsc.io.vn` trên Cloudflare | để tạo bản ghi `learn`                        |
-| Quyền admin repo `hcmute-dsc/learning-hub`           | để thêm secret và biến                        |
-| Tài khoản GitHub của bạn                             | để tạo OAuth app production                   |
+| Thứ                                                                  | Ghi chú                                                                                                                                        |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| VPS Ubuntu 22.04/24.04                                               | ≥ 2 GB RAM, ≥ 20 GB đĩa, có Docker và Traefik                                                                                                  |
+| Quyền sửa DNS của `hcmute-dsc.io.vn` trên Cloudflare                 | để tạo bản ghi `learn`                                                                                                                         |
+| Quyền admin repo `hcmute-dsc/learning-hub`                           | để thêm secret và biến                                                                                                                         |
+| Tài khoản GitHub của bạn                                             | để tạo OAuth app production                                                                                                                    |
+| GitHub CLI `gh` trên máy bạn, quyền `repo,workflow,read:org,project` | để đặt secret, chạy Deploy; cách cài và lỗi hay gặp: [GH-CLI.md](https://github.com/hcmute-dsc/learning-hub-docs/blob/main/docs/ops/GH-CLI.md) |
 
 Trong các lệnh dưới, `VPS_IP` là IP của VPS, `you` là user bạn đang SSH vào. Đây là chữ giữ chỗ: **thay bằng giá trị thật** trước khi chạy (lỗi `Could not resolve hostname vps_ip` là do quên thay).
 
