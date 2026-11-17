@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { ExerciseType, SubmissionStatus } from './index';
+import type { CompletedReview } from './review';
 
 /**
  * API contract for E4 (learning) and E5 (exercises & submissions).
@@ -219,4 +220,6 @@ export interface SubmissionView {
   /** quiz only */
   score: number | null;
   submittedAt: string;
+  /** the mentor's finished review (project exercises); never an in-progress draft */
+  review: CompletedReview | null;
 }

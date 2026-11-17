@@ -13,13 +13,15 @@ const NAV = [
 
 /** Only for people who can approve accounts; the page and API check roles again. */
 const ADMIN_LINK = { href: '/admin/members', label: 'Quản trị', phone: false };
+/** Mentor review queue (E7), same audience as the admin link. */
+const REVIEW_LINK = { href: '/review', label: 'Review', phone: true };
 
 const canManageMembers = (me: Me | null) =>
   !!me && (me.roles.includes('admin') || me.roles.includes('mentor'));
 
 /** Top bar in the style of the club website: white bar, DSC mark, dark links with orange hover. */
 export function SiteHeader({ me }: { me: Me | null }) {
-  const links = canManageMembers(me) ? [...NAV, ADMIN_LINK] : NAV;
+  const links = canManageMembers(me) ? [...NAV, REVIEW_LINK, ADMIN_LINK] : NAV;
   return (
     <header className="surface sticky top-0 z-20 border-x-0 border-t-0 shadow-sm">
       <nav

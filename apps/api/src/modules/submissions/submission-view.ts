@@ -1,4 +1,9 @@
-import type { QuizAttemptInput, SubmissionStatus, SubmissionView } from '@hub/shared';
+import type {
+  CompletedReview,
+  QuizAttemptInput,
+  SubmissionStatus,
+  SubmissionView,
+} from '@hub/shared';
 
 /**
  * What a quiz submission stores in `submissions.answers`. The table has no score
@@ -44,7 +49,11 @@ export function scoreOf(row: { sourceType: string; answers: unknown }): number |
   return typeof score === 'number' ? score : null;
 }
 
-export function toSubmissionView(row: SubmissionRow): SubmissionView {
+/** `review` is the finished mentor review of this submission, if any (never a draft). */
+export function toSubmissionView(
+  row: SubmissionRow,
+  review: CompletedReview | null = null,
+): SubmissionView {
   return {
     id: row.id,
     exerciseId: row.exerciseId,
@@ -56,5 +65,6 @@ export function toSubmissionView(row: SubmissionRow): SubmissionView {
     status: row.status as SubmissionStatus,
     score: scoreOf(row),
     submittedAt: row.submittedAt.toISOString(),
+    review,
   };
 }

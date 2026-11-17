@@ -19,7 +19,9 @@ export class CompletionListener {
     private readonly enrollments: EnrollmentService,
   ) {}
 
+  // An approved project completes its exercise just like a passed quiz (E7).
   @OnEvent(SubmissionEvents.Passed)
+  @OnEvent(SubmissionEvents.Approved)
   async onSubmissionPassed(event: SubmissionEvent): Promise<void> {
     try {
       const exercise = await this.catalog.exercise(event.exerciseId);

@@ -128,6 +128,7 @@ describe('toSubmissionView', () => {
       status: 'passed',
       score: 0.75,
       submittedAt: '2026-11-16T10:00:00.000Z',
+      review: null,
     });
   });
 
