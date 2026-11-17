@@ -46,8 +46,11 @@ export default async function ExercisePage({ params }: Params) {
   const sidebar = <TrackSidebar track={track} progress={progress} currentId={exercise.id} />;
 
   return (
-    <div className="lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-10">
-      <aside className="hidden lg:block">
+    // Wide page (see `.page-wide` in globals.css). The track outline gets its own column
+    // only on 2xl screens; below that the statement and the "Làm bài" panel share the
+    // width and the outline folds into "Mục lục lộ trình".
+    <div className="page-wide 2xl:grid 2xl:grid-cols-[16rem_minmax(0,1fr)] 2xl:gap-8">
+      <aside className="hidden 2xl:block">
         <div className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto pr-2 pb-6">
           {sidebar}
         </div>
@@ -60,12 +63,12 @@ export default async function ExercisePage({ params }: Params) {
           review={bannerReview(exercise.state, submissions)}
         />
 
-        <details className="surface rounded-xl p-4 lg:hidden">
+        <details className="surface rounded-xl p-4 2xl:hidden">
           <summary className="cursor-pointer font-medium">Mục lục lộ trình</summary>
           <div className="mt-3">{sidebar}</div>
         </details>
 
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] xl:items-start">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start">
           <section
             aria-labelledby="statement-title"
             className="surface motion-fade-up min-w-0 rounded-2xl p-5 sm:p-7"

@@ -79,6 +79,15 @@ body {
 
 /* In the components layer so Tailwind utilities (e.g. a gradient background or a
    colored border on a card) can still override them. */
+/* Pages that work beside a side panel (lesson, exercise, review) put `.page-wide` on
+   their root element to widen <main> from 72rem (max-w-6xl in layout.tsx) to 96rem.
+   At 72rem the exercise statement was squeezed to ~400px between the track outline and
+   the "Làm bài" panel, leaving big empty margins on wide screens. Unlayered, so it wins
+   over the Tailwind utility. */
+main:has(> .page-wide) {
+  max-width: 96rem;
+}
+
 @layer components {
   .surface {
     background: var(--surface);

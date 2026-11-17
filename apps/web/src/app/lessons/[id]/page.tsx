@@ -39,7 +39,9 @@ export default async function LessonPage({ params }: Params) {
   const sidebar = <TrackSidebar track={track} progress={progress} currentId={lesson.id} />;
 
   return (
-    <div className="lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-10">
+    // Wide page, but the reading column stops at 60rem so lines stay readable; the
+    // outline + text pair is centred (see `.page-wide` in globals.css).
+    <div className="page-wide lg:grid lg:grid-cols-[17rem_minmax(0,60rem)] lg:justify-center lg:gap-10">
       <aside className="hidden lg:block">
         <div className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto pr-2 pb-6">
           {sidebar}

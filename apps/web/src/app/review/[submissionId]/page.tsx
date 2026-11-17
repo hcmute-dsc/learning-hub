@@ -34,7 +34,7 @@ export default async function ReviewSubmissionPage({ params }: Params) {
   const { submission, member, exercise } = page;
 
   return (
-    <div className="space-y-6">
+    <div className="page-wide space-y-6">
       <header className="motion-fade-up space-y-4">
         <Breadcrumbs
           items={[{ label: 'Hàng đợi review', href: '/review' }, { label: exercise.title }]}
