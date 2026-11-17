@@ -1,6 +1,8 @@
 # Web image (Next.js standalone server). Build from the repo root:
 #   docker build -f apps/web/Dockerfile -t learning-hub-web .
-# API_INTERNAL_URL is the API's address inside the Docker network. It is needed twice:
+# API_INTERNAL_URL is the API's address inside the Docker network: the network alias
+# `learning-hub-api` from deploy/docker-compose.prod.yml, unique on purpose because the
+# web container also joins the VPS's shared `edge` network. It is needed twice:
 # at BUILD time for the /api/* rewrite (compiled into next.config.mjs) and at RUN time
 # for the server-side calls in src/lib/api.ts, so both stages set it.
 
@@ -10,7 +12,7 @@ WORKDIR /repo
 
 # ---- build
 FROM base AS build
-ARG API_INTERNAL_URL=http://api:4000
+ARG API_INTERNAL_URL=http://learning-hub-api:4000
 ENV API_INTERNAL_URL=$API_INTERNAL_URL NEXT_TELEMETRY_DISABLED=1
 COPY . .
 RUN pnpm install --frozen-lockfile
@@ -18,7 +20,7 @@ RUN pnpm --filter @hub/shared --filter @hub/web build
 
 # ---- runtime: only the standalone output, static files and public assets
 FROM node:22-bookworm-slim AS runtime
-ARG API_INTERNAL_URL=http://api:4000
+ARG API_INTERNAL_URL=http://learning-hub-api:4000
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0
 ENV API_INTERNAL_URL=$API_INTERNAL_URL
 WORKDIR /app

@@ -14,7 +14,7 @@ push / merge vào main
 
 Người dùng → Cloudflare → Traefik trên VPS (container `traefik`, mạng `edge`, HTTPS)
   → web (Next.js, nằm trong mạng `edge` và mạng riêng của Learning Hub)
-      → api:4000 (NestJS, chỉ trong mạng riêng)
+      → learning-hub-api:4000 (NestJS, chỉ trong mạng riêng; tên riêng để không trùng site khác trên `edge`)
           → db:5432 (PostgreSQL 16, chỉ trong mạng riêng, dữ liệu ở volume)
 ```
 

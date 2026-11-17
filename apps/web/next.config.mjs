@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url';
 
 // Read at BUILD time (rewrites are compiled into the build): the Docker image is built
-// with API_INTERNAL_URL=http://api:4000, the service name in deploy/docker-compose.prod.yml.
+// with API_INTERNAL_URL=http://learning-hub-api:4000 (alias in deploy/docker-compose.prod.yml).
 const API = process.env.API_INTERNAL_URL ?? 'http://localhost:4000';
 
 /** @type {import('next').NextConfig} */

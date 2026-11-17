@@ -49,6 +49,12 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
+    networks:
+      default:
+        # The web image calls the API by this name (API_INTERNAL_URL in apps/web/Dockerfile).
+        # Not plain "api": the web container is also on the shared `edge` network, where
+        # another site's container already answers to "api" (found on the first deploy).
+        aliases: [learning-hub-api]
 
   web:
     image: ghcr.io/hcmute-dsc/learning-hub-web:${IMAGE_TAG:?IMAGE_TAG is written to .env by the deploy workflow}
