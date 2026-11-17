@@ -2,6 +2,8 @@
 
 Hướng dẫn này dành cho tech lead hiện tại và các thế hệ sau. Làm theo thứ tự, mỗi bước có lệnh kiểm tra. Cài đặt lần đầu mất khoảng 1 giờ; sau đó mỗi lần merge vào `main` là tự deploy.
 
+> Bản tổng quan cho bàn giao (hiện trạng, lỗi đã gặp) nằm ở [`learning-hub-docs/docs/ops/DEPLOYMENT.md`](https://github.com/hcmute-dsc/learning-hub-docs/blob/main/docs/ops/DEPLOYMENT.md). Đổi cách deploy thì sửa cả hai.
+
 ## Cách hoạt động
 
 ```
