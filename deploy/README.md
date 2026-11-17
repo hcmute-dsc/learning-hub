@@ -93,6 +93,15 @@ ssh-keygen -t ed25519 -N "" -C "learning-hub-deploy" -f learning-hub-deploy
 
 Lệnh tạo 2 file: `learning-hub-deploy` (khóa bí mật, cho GitHub) và `learning-hub-deploy.pub` (khóa công khai, cho VPS).
 
+> **Trên Windows (PowerShell):** chạy trong thư mục `$HOME\.ssh` (không chạy trong thư mục repo nào) và bỏ `-N ""`, rồi bấm Enter 2 lần khi được hỏi passphrase:
+>
+> ```powershell
+> cd $HOME\.ssh
+> ssh-keygen -t ed25519 -C "learning-hub-deploy" -f learning-hub-deploy
+> ```
+>
+> Lý do: PowerShell truyền `-N '""'` thành passphrase là 2 dấu ngoặc kép, nên khóa có passphrase và GitHub Actions không dùng được (triệu chứng: `ssh -v` báo `Server accepts key` rồi vẫn `Permission denied`). Nếu Windows báo `UNPROTECTED PRIVATE KEY FILE`, chỉ để tài khoản của bạn có quyền đọc: `icacls KEY /inheritance:r /grant:r "$(whoami):F"`. Dùng `whoami` (dạng `MÁY\user`), vì khi máy và user trùng tên, chỉ ghi tên user sẽ cấp quyền nhầm cho máy.
+
 Đưa khóa công khai lên VPS:
 
 ```bash
