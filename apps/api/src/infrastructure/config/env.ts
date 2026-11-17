@@ -14,6 +14,12 @@ export const envSchema = z.object({
     .optional()
     .transform((v) => (v ? v.trim().toLowerCase() : undefined)),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
+  /**
+   * Proxy hops in front of the API (Express "trust proxy"), so req.ip is the member's
+   * IP for the per-IP rate limit. 1 = the web app's /api rewrite and server-side calls.
+   * Production behind Cloudflare + Traefik: 2 (deploy/.env.example).
+   */
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(1),
   // Content source (CONTENT-SPECIFICATION §8): a local folder for dev, or a GitHub repo
   CONTENT_SOURCE: z.enum(['local', 'github']).default('local'),
   CONTENT_LOCAL_DIR: z.string().default('../../content-example'),

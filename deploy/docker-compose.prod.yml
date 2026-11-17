@@ -3,9 +3,12 @@
 # into /opt/learning-hub/.env and runs `docker compose -f docker-compose.prod.yml up -d`.
 # Secrets live only in that .env on the VPS (template: deploy/.env.example).
 #
-# Only the web app is reachable, and only from the VPS itself (127.0.0.1): the reverse
-# proxy already on the VPS (Caddy/Nginx/Traefik) serves HTTPS and forwards to it.
-# The API and the database have no published ports at all.
+# The club VPS already runs Traefik (in Docker, network `edge`, Let's Encrypt through
+# Cloudflare). Only the web container joins `edge`, and its labels tell Traefik to send
+# learn.hcmute-dsc.io.vn to it over HTTPS. No port is published on the VPS; the API and
+# the database stay on this stack's own network, out of reach of the other sites there.
+# Without Traefik: drop the labels and the `edge` network and publish
+# '127.0.0.1:3100:3000' instead (examples for Caddy/Nginx in deploy/proxy/).
 
 name: learning-hub
 
@@ -53,8 +56,23 @@ services:
     depends_on:
       api:
         condition: service_healthy
-    ports:
-      - '127.0.0.1:${WEB_PORT:-3100}:3000'
+    networks: [default, edge]
+    labels:
+      traefik.enable: 'true'
+      traefik.docker.network: edge
+      traefik.http.routers.learning-hub.rule: Host(`learn.hcmute-dsc.io.vn`)
+      traefik.http.routers.learning-hub.entrypoints: websecure
+      traefik.http.routers.learning-hub.tls: 'true'
+      traefik.http.routers.learning-hub.tls.certresolver: letsencrypt
+      traefik.http.routers.learning-hub.middlewares: learning-hub-gz@docker,learning-hub-hsts@docker
+      traefik.http.middlewares.learning-hub-gz.compress: 'true'
+      traefik.http.middlewares.learning-hub-hsts.headers.stsSeconds: '31536000'
+      traefik.http.services.learning-hub.loadbalancer.server.port: '3000'
+
+networks:
+  # Traefik's network, created outside this stack
+  edge:
+    external: true
 
 volumes:
   db-data:

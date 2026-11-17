@@ -18,7 +18,7 @@ async function bootstrap(): Promise<void> {
   const env = app.get<Env>(ENV);
   app.useLogger(app.get(Logger));
   app.use(cookieParser());
-  app.set('trust proxy', 1);
+  app.set('trust proxy', env.TRUST_PROXY_HOPS);
   app.disable('x-powered-by');
   app.setGlobalPrefix('api/v1', { exclude: ['health/live', 'health/ready'] });
   app.enableShutdownHooks();

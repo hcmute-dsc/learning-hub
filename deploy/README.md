@@ -12,25 +12,25 @@ push / merge vào main
       2. SSH vào VPS → docker compose pull → chạy migration → khởi động lại
       3. kiểm tra https://learn.hcmute-dsc.io.vn còn trả lời
 
-Trên VPS (/opt/learning-hub):
-  reverse proxy có sẵn (Caddy/Nginx/Traefik, cổng 80/443, HTTPS)
-    → 127.0.0.1:3100  web (Next.js)
-                        → api:4000 (NestJS, chỉ trong mạng Docker)
-                            → db:5432 (PostgreSQL 16, chỉ trong mạng Docker, dữ liệu ở volume)
+Người dùng → Cloudflare → Traefik trên VPS (container `traefik`, mạng `edge`, HTTPS)
+  → web (Next.js, nằm trong mạng `edge` và mạng riêng của Learning Hub)
+      → api:4000 (NestJS, chỉ trong mạng riêng)
+          → db:5432 (PostgreSQL 16, chỉ trong mạng riêng, dữ liệu ở volume)
 ```
 
+- VPS của CLB đã có Traefik dùng chung cho nhiều site. Traefik tự nhận Learning Hub qua các `labels` của container `web` trong [`docker-compose.prod.yml`](docker-compose.prod.yml) và tự lấy chứng chỉ HTTPS (Let's Encrypt qua Cloudflare). Không cần sửa cấu hình Traefik.
 - Mật khẩu và secret chỉ nằm trong `/opt/learning-hub/.env` trên VPS, không nằm trên GitHub.
-- API và database không mở cổng ra ngoài. Web chỉ nghe ở `127.0.0.1`, nên chỉ reverse proxy trên VPS gọi được.
+- Không mở cổng nào trên VPS. API và database không nằm trong mạng `edge`, nên các site khác trên VPS không gọi được.
 - Bước SSH chỉ chạy khi biến `DEPLOY_ENABLED` = `true`. Trước đó workflow chỉ build image.
 
 ## Cần chuẩn bị
 
-| Thứ                                        | Ghi chú                     |
-| ------------------------------------------ | --------------------------- |
-| VPS Ubuntu 22.04/24.04                     | ≥ 2 GB RAM, ≥ 20 GB đĩa     |
-| Quyền sửa DNS của `hcmute-dsc.io.vn`       | để tạo bản ghi `learn`      |
-| Quyền admin repo `hcmute-dsc/learning-hub` | để thêm secret và biến      |
-| Tài khoản GitHub của bạn                   | để tạo OAuth app production |
+| Thứ                                                  | Ghi chú                                       |
+| ---------------------------------------------------- | --------------------------------------------- |
+| VPS Ubuntu 22.04/24.04                               | ≥ 2 GB RAM, ≥ 20 GB đĩa, có Docker và Traefik |
+| Quyền sửa DNS của `hcmute-dsc.io.vn` trên Cloudflare | để tạo bản ghi `learn`                        |
+| Quyền admin repo `hcmute-dsc/learning-hub`           | để thêm secret và biến                        |
+| Tài khoản GitHub của bạn                             | để tạo OAuth app production                   |
 
 Trong các lệnh dưới, `VPS_IP` là IP của VPS, `you` là user bạn đang SSH vào.
 
@@ -38,11 +38,13 @@ Trong các lệnh dưới, `VPS_IP` là IP của VPS, `you` là user bạn đang
 
 ## Bước 1. DNS
 
-Ở nơi quản lý DNS của `hcmute-dsc.io.vn`, thêm bản ghi:
+Cloudflare → zone `hcmute-dsc.io.vn` → **DNS → Records → Add record**:
 
-| Type | Name    | Value    |
-| ---- | ------- | -------- |
-| A    | `learn` | `VPS_IP` |
+| Type | Name    | IPv4 address | Proxy status          |
+| ---- | ------- | ------------ | --------------------- |
+| A    | `learn` | `VPS_IP`     | Proxied (đám mây cam) |
+
+Làm giống bản ghi `club-day` đã có. Nếu chọn **DNS only** (đám mây xám) thì đặt `TRUST_PROXY_HOPS=1` ở Bước 6.
 
 Kiểm tra (trên máy bạn, có thể phải chờ vài phút):
 
@@ -50,7 +52,7 @@ Kiểm tra (trên máy bạn, có thể phải chờ vài phút):
 nslookup learn.hcmute-dsc.io.vn
 ```
 
-Kết quả phải là `VPS_IP`.
+Có kết quả là được (với Proxied, IP trả về là IP của Cloudflare, không phải `VPS_IP`).
 
 ## Bước 2. Cài Docker trên VPS
 
@@ -138,6 +140,7 @@ Dán nội dung của [`deploy/.env.example`](.env.example) rồi sửa:
 - `POSTGRES_PASSWORD`: tạo bằng `openssl rand -hex 24`. Thay **cả hai chỗ** `change-me` (dòng `POSTGRES_PASSWORD` và trong `DATABASE_URL`) bằng cùng một mật khẩu.
 - `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`: từ Bước 5.
 - `BOOTSTRAP_ADMIN_GITHUB_LOGIN`: login GitHub của tech lead.
+- `TRUST_PROXY_HOPS`: `2` nếu bản ghi DNS là Proxied (đám mây cam), `1` nếu DNS only.
 
 Khóa quyền đọc:
 
@@ -161,17 +164,17 @@ Sau đó xóa file `learning-hub-deploy` trên máy bạn (GitHub đã giữ nó
 
 Chưa bật biến `DEPLOY_ENABLED` vội; làm Bước 8 trước.
 
-## Bước 8. Reverse proxy
+## Bước 8. Kiểm tra Traefik
 
-VPS đã có reverse proxy trên cổng 80/443, nên chỉ cần thêm một "site" trỏ tới `127.0.0.1:3100`. Chọn file mẫu đúng loại:
+Không cần sửa gì ở Traefik. Chỉ kiểm tra mạng `edge` có tồn tại (container `web` sẽ gia nhập mạng này):
 
-- Caddy: [`proxy/Caddyfile.example`](proxy/Caddyfile.example)
-- Nginx: [`proxy/nginx.conf.example`](proxy/nginx.conf.example) (HTTPS bằng `certbot --nginx`)
-- Traefik: [`proxy/traefik-dynamic.yml.example`](proxy/traefik-dynamic.yml.example)
+```bash
+docker network ls --filter name=^edge$
+```
 
-Nếu proxy chạy **trong Docker**, `127.0.0.1` là chính container proxy, nên phải dùng `host.docker.internal:3100` (xem ghi chú trong file mẫu).
+Phải thấy một dòng `edge`. Các tên Learning Hub dùng (mạng `edge`, entry point `websecure`, cert resolver `letsencrypt`) khớp với cấu hình Traefik hiện tại của VPS; nếu sau này Traefik đổi tên, sửa các `labels` trong `docker-compose.prod.yml`.
 
-Proxy phải gửi header `X-Forwarded-For` (cả 3 mẫu đều có): API giới hạn số request theo IP của từng thành viên.
+> VPS không có Traefik? Xóa `labels` và mạng `edge` của service `web`, thêm `ports: ['127.0.0.1:3100:3000']`, rồi trỏ reverse proxy tới đó: mẫu cho [Caddy](proxy/Caddyfile.example) và [Nginx](proxy/nginx.conf.example).
 
 ## Bước 9. Deploy lần đầu
 
@@ -255,15 +258,18 @@ docker compose -f docker-compose.prod.yml up -d
 
 ## Lỗi thường gặp
 
-| Hiện tượng                                                 | Nguyên nhân hay gặp                                                                                 |
-| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| Job "Copy compose file" báo `Host key verification failed` | `VPS_KNOWN_HOSTS` sai hoặc VPS được cài lại: chạy lại `ssh-keyscan`                                 |
-| `Permission denied (publickey)`                            | khóa công khai chưa nằm trong `/home/deploy/.ssh/authorized_keys`, hoặc sai quyền file              |
-| `migrate` thoát với lỗi                                    | xem `docker compose -f docker-compose.prod.yml logs migrate`; thường do `DATABASE_URL` sai mật khẩu |
-| Trang báo 502 Bad Gateway                                  | web chưa chạy (`ps`), hoặc proxy chạy trong Docker mà vẫn trỏ `127.0.0.1`                           |
-| Đăng nhập GitHub báo `redirect_uri` sai                    | Callback URL của OAuth app phải đúng `https://learn.hcmute-dsc.io.vn/api/v1/auth/github/callback`   |
-| Đăng nhập xong vẫn bị đá ra                                | site phải chạy HTTPS: cookie `__Host-sid` chỉ dùng được qua HTTPS                                   |
-| Lỗi 403 "Origin" khi bấm nút                               | `WEB_ORIGIN` trong `.env` phải đúng `https://learn.hcmute-dsc.io.vn` (không có `/` cuối)            |
+| Hiện tượng                                                 | Nguyên nhân hay gặp                                                                                         |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Job "Copy compose file" báo `Host key verification failed` | `VPS_KNOWN_HOSTS` sai hoặc VPS được cài lại: chạy lại `ssh-keyscan`                                         |
+| `Permission denied (publickey)`                            | khóa công khai chưa nằm trong `/home/deploy/.ssh/authorized_keys`, hoặc sai quyền file                      |
+| `migrate` thoát với lỗi                                    | xem `docker compose -f docker-compose.prod.yml logs migrate`; thường do `DATABASE_URL` sai mật khẩu         |
+| Trang báo 404 hoặc bị chuyển về trang khác                 | Traefik chưa thấy container `web`: kiểm tra `ps` (web healthy?) và `docker logs traefik --tail 50`          |
+| Trang báo 502/504                                          | web chưa sẵn sàng, hoặc `web` không nằm trong mạng `edge` (`docker inspect learning-hub-web-1`)             |
+| Chứng chỉ HTTPS lỗi                                        | xem `docker logs traefik` (dòng `acme`); token Cloudflare của Traefik phải có quyền zone `hcmute-dsc.io.vn` |
+| Mọi thành viên bị báo "quá nhiều request" cùng lúc         | `TRUST_PROXY_HOPS` sai: `2` khi Cloudflare Proxied, `1` khi DNS only                                        |
+| Đăng nhập GitHub báo `redirect_uri` sai                    | Callback URL của OAuth app phải đúng `https://learn.hcmute-dsc.io.vn/api/v1/auth/github/callback`           |
+| Đăng nhập xong vẫn bị đá ra                                | site phải chạy HTTPS: cookie `__Host-sid` chỉ dùng được qua HTTPS                                           |
+| Lỗi 403 "Origin" khi bấm nút                               | `WEB_ORIGIN` trong `.env` phải đúng `https://learn.hcmute-dsc.io.vn` (không có `/` cuối)                    |
 
 ## Bàn giao cho tech lead mới
 
