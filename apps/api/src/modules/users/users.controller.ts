@@ -43,4 +43,18 @@ export class AdminUsersController {
   ) {
     return this.users.setRoles(actor.id, id, body.roles);
   }
+
+  @Post(':id/suspend')
+  @Roles('admin')
+  @HttpCode(204)
+  suspend(@CurrentUser() actor: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.users.suspend(actor.id, id);
+  }
+
+  @Post(':id/reactivate')
+  @Roles('admin')
+  @HttpCode(204)
+  reactivate(@CurrentUser() actor: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.users.reactivate(actor.id, id);
+  }
 }

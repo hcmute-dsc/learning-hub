@@ -41,6 +41,33 @@ export async function sendJson<T>(
   };
 }
 
+/**
+ * Browser-side read through the same /api rewrite, e.g. a "Xem thêm" page. Returns the
+ * whole body, because paged lists carry `page` next to `data`.
+ */
+export async function getJson<T>(path: string): Promise<SendResult<T>> {
+  let res: Response;
+  try {
+    res = await fetch(`/api/v1${path}`, {
+      credentials: 'same-origin',
+      headers: { Accept: 'application/json' },
+    });
+  } catch {
+    return { ok: false, problem: offlineProblem() };
+  }
+  if (res.ok) return { ok: true, data: (await res.json()) as T };
+  const problem = (await res.json().catch(() => null)) as ProblemDetails | null;
+  return {
+    ok: false,
+    problem: problem ?? {
+      type: 'about:blank',
+      title: res.statusText,
+      status: res.status,
+      code: 'INTERNAL_ERROR',
+    },
+  };
+}
+
 function offlineProblem(): ProblemDetails {
   return {
     type: 'about:blank',

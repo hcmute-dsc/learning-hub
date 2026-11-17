@@ -52,3 +52,96 @@ export interface AdminUserRow {
 
 /** GET /api/v1/admin/users  (admin only: contains emails) → { data: AdminUserRow[] } */
 export const ADMIN_USERS_LIMIT = 2000;
+
+// PUT  /api/v1/admin/users/:id/roles       { roles: Role[] } → 204 (admin; `member` is always kept)
+// POST /api/v1/admin/users/:id/suspend     → 204 (admin; signs the account out everywhere)
+// POST /api/v1/admin/users/:id/reactivate  → 204 (admin)
+
+// ---------- Content versions (/admin/content) ----------
+
+export const CONTENT_VERSION_STATUSES = ['draft', 'published', 'superseded', 'rejected'] as const;
+export type ContentVersionStatus = (typeof CONTENT_VERSION_STATUSES)[number];
+
+export const CONTENT_ITEM_KINDS = ['track', 'module', 'lesson', 'exercise'] as const;
+export type ContentItemKind = (typeof CONTENT_ITEM_KINDS)[number];
+
+export interface ContentDiffCount {
+  added: number;
+  changed: number;
+  removed: number;
+  unchanged: number;
+}
+
+/** `summary` of a content version, as written by the content module at sync/publish. */
+export interface ContentVersionSummary {
+  counts?: Record<'tracks' | 'modules' | 'lessons' | 'exercises', number>;
+  /** null when the content was invalid (nothing to compare) */
+  diff?: Record<ContentItemKind, ContentDiffCount> | null;
+  issueCount?: number;
+  issues?: { path: string; message: string }[];
+  /** set when the version was published */
+  appliedAt?: string;
+}
+
+/** Who did something, as shown in admin tables (never the email). */
+export interface UserRef {
+  id: string;
+  githubLogin: string;
+  displayName: string;
+  avatarUrl: string | null;
+}
+
+/** GET /api/v1/admin/content/versions[/:id]  (content_maintainer + admin) → { data } */
+export interface ContentVersionView {
+  id: string;
+  /** `owner/repo` for GitHub, a folder path for local development */
+  sourceRepo: string;
+  commitSha: string;
+  status: ContentVersionStatus;
+  summary: ContentVersionSummary;
+  createdAt: string;
+  publishedAt: string | null;
+  syncedBy: UserRef | null;
+  publishedBy: UserRef | null;
+}
+
+// ---------- Audit log (/admin/audit) ----------
+
+/** GET /api/v1/admin/audit?cursor=&action=&limit=  (admin only), newest first */
+export const auditQuerySchema = z
+  .object({
+    /** opaque: the `page.nextCursor` of the previous response */
+    cursor: z
+      .string()
+      .regex(/^\d{1,19}$/)
+      .optional(),
+    action: z
+      .string()
+      .regex(/^[a-z_.]{1,60}$/)
+      .optional(),
+    limit: z.coerce.number().int().min(1).max(100).default(50),
+  })
+  .strict();
+export type AuditQuery = z.infer<typeof auditQuerySchema>;
+
+export interface AuditLogRow {
+  id: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  /** null for actions done by the system (e.g. automatic approval at sign-in) */
+  actor: UserRef | null;
+  /** the account acted on, when `entityType` is `user` */
+  target: UserRef | null;
+  /** counts and codes only: the email list never goes into the audit log (SECURITY §1) */
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
+/** → { data: AuditLogRow[], page: AuditPage } */
+export interface AuditPage {
+  nextCursor: string | null;
+  limit: number;
+}
+
+/** GET /api/v1/admin/audit/actions  (admin only) → { data: string[] } — for the filter */

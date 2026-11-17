@@ -81,6 +81,11 @@ export class AuthController {
       redirectUri: this.redirectUri,
     });
     const user = await this.users.upsertFromGithub(profile);
+    // A session would be refused on every request anyway; say why instead of /pending.
+    if (user.status === 'suspended') {
+      res.redirect(this.webUrl('/login?error=suspended'));
+      return;
+    }
     const token = await this.sessions.create(user.id, {
       userAgent: req.headers['user-agent'],
       ip: req.ip,

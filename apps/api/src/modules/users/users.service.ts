@@ -6,6 +6,7 @@ import {
   type Me,
   type Role,
   type Theme,
+  type UserRef,
   type UserStatus,
 } from '@hub/shared';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
@@ -15,6 +16,7 @@ import { newId } from '../../infrastructure/ids';
 import { DomainError } from '../../common/errors';
 import { ROLE_IDS } from './roles';
 import { approvalReason, type SignInFacts } from './approval';
+import { reactivateRefusal, roleChangeRefusal, suspendRefusal } from './account-rules';
 import { UserEvents } from './users.events';
 
 export interface GithubSignIn extends SignInFacts {
@@ -203,19 +205,118 @@ export class UsersService {
     await this.events.emitAsync(UserEvents.Approved, { actorId, userId });
   }
 
-  /** Replace a user's roles. Admins cannot remove their own admin role. */
+  /**
+   * Replace a user's roles (rules in account-rules.ts). The admin count is read in the
+   * same transaction as the write, so two admins demoting each other at once cannot
+   * both succeed and leave the club without an admin.
+   */
   async setRoles(actorId: string, userId: string, roles: Role[]): Promise<void> {
-    if (actorId === userId && !roles.includes('admin')) {
-      throw DomainError.conflict('You cannot remove your own admin role');
-    }
     const unique = [...new Set<Role>(['member', ...roles])];
-    await this.prisma.$transaction([
-      this.prisma.userRole.deleteMany({ where: { userId } }),
-      this.prisma.userRole.createMany({
-        data: unique.map((code) => ({ userId, roleId: ROLE_IDS[code], grantedBy: actorId })),
-      }),
-    ]);
-    await this.events.emitAsync(UserEvents.RolesChanged, { actorId, userId, roles: unique });
+    const previous = await this.prisma
+      .$transaction(
+        async (tx) => {
+          const user = await tx.user.findUnique({
+            where: { id: userId },
+            include: { roles: { include: { role: true } } },
+          });
+          if (!user || user.deletedAt) throw DomainError.notFound('User');
+          const currentRoles = user.roles.map((r) => r.role.code as Role);
+          const activeAdminCount = await tx.user.count({
+            where: {
+              status: 'active',
+              deletedAt: null,
+              roles: { some: { roleId: ROLE_IDS.admin } },
+            },
+          });
+          const refusal = roleChangeRefusal({
+            actorId,
+            targetId: userId,
+            currentRoles,
+            nextRoles: unique,
+            activeAdminCount,
+          });
+          if (refusal) throw DomainError.conflict(refusal);
+
+          await tx.userRole.deleteMany({ where: { userId } });
+          await tx.userRole.createMany({
+            data: unique.map((code) => ({ userId, roleId: ROLE_IDS[code], grantedBy: actorId })),
+          });
+          return currentRoles;
+        },
+        { isolationLevel: 'Serializable' },
+      )
+      .catch((err: unknown) => {
+        // P2034 = Postgres refused one of two concurrent serializable transactions.
+        if ((err as { code?: unknown }).code === 'P2034') {
+          throw DomainError.conflict('Roles changed at the same time, reload and try again');
+        }
+        throw err;
+      });
+    await this.events.emitAsync(UserEvents.RolesChanged, {
+      actorId,
+      userId,
+      roles: unique,
+      previousRoles: previous,
+    });
+  }
+
+  /**
+   * Block an account (spam, a member who left…). The session guard refuses suspended
+   * accounts on every request; the identity module also deletes their sessions when it
+   * hears UserEvents.Suspended, so nothing stays signed in (SECURITY §2).
+   */
+  async suspend(actorId: string, userId: string): Promise<void> {
+    const user = await this.findLiveUser(userId);
+    const refusal = suspendRefusal({
+      actorId,
+      targetId: userId,
+      targetStatus: user.status as UserStatus,
+    });
+    if (refusal) throw DomainError.conflict(refusal);
+    // `where.status` guards against a concurrent change between the read and the write.
+    const { count } = await this.prisma.user.updateMany({
+      where: { id: userId, status: user.status },
+      data: { status: 'suspended' },
+    });
+    if (!count) throw DomainError.conflict('The account changed meanwhile, reload and try again');
+    await this.events.emitAsync(UserEvents.Suspended, {
+      actorId,
+      userId,
+      previousStatus: user.status,
+    });
+  }
+
+  async reactivate(actorId: string, userId: string): Promise<void> {
+    const user = await this.findLiveUser(userId);
+    const refusal = reactivateRefusal(user.status as UserStatus);
+    if (refusal) throw DomainError.conflict(refusal);
+    const { count } = await this.prisma.user.updateMany({
+      where: { id: userId, status: 'suspended' },
+      data: { status: 'active' },
+    });
+    if (!count) throw DomainError.conflict('The account changed meanwhile, reload and try again');
+    await this.events.emitAsync(UserEvents.Reactivated, { actorId, userId });
+  }
+
+  private async findLiveUser(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.deletedAt) throw DomainError.notFound('User');
+    return user;
+  }
+
+  /**
+   * Public name and avatar of these accounts (never the email), for other modules that
+   * show "who did it" (content versions, audit log). Deleted accounts are still listed:
+   * their past actions must stay readable.
+   */
+  async refsByIds(ids: (string | null)[]): Promise<Map<string, UserRef>> {
+    const unique = [...new Set(ids.filter((id): id is string => !!id))];
+    if (!unique.length) return new Map();
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: unique } },
+      select: { id: true, githubLogin: true, displayName: true, avatarUrl: true },
+    });
+    return new Map(users.map((u) => [u.id, u]));
   }
 }
 

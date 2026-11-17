@@ -1,12 +1,14 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { parseContent, type ContentIssue, type ContentTree } from '@hub/content';
+import type { ContentVersionStatus, ContentVersionSummary, ContentVersionView } from '@hub/shared';
 import type { ContentVersion, Prisma } from '@prisma/client';
 import { DomainError } from '../../common/errors';
 import { Clock } from '../../infrastructure/clock';
 import { newId } from '../../infrastructure/ids';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { CatalogWriter } from '../catalog/catalog.writer';
+import { UsersService } from '../users/users.service';
 import { ContentEvents, type ContentVersionEvent } from './content.events';
 import { planChanges, type ChangePlan } from './domain/plan';
 import { CONTENT_SOURCE, loadFileMap, type ContentSource } from './ports/content-source';
@@ -69,6 +71,7 @@ export class ContentService {
     private readonly writer: CatalogWriter,
     private readonly clock: Clock,
     private readonly events: EventEmitter2,
+    private readonly users: UsersService,
     @Inject(CONTENT_SOURCE) private readonly source: ContentSource,
   ) {}
 
@@ -201,17 +204,32 @@ export class ContentService {
     return view(version);
   }
 
-  async list(limit = 50): Promise<VersionView[]> {
+  async list(limit = 50): Promise<ContentVersionView[]> {
     const rows = await this.prisma.contentVersion.findMany({
       orderBy: { createdAt: 'desc' },
       take: limit,
     });
-    return rows.map(view);
+    return this.withActors(rows);
   }
 
-  async get(versionId: string): Promise<VersionView> {
+  async get(versionId: string): Promise<ContentVersionView> {
     const v = await this.prisma.contentVersion.findUnique({ where: { id: versionId } });
     if (!v) throw DomainError.notFound('Content version');
-    return view(v);
+    const [withActor] = await this.withActors([v]);
+    return withActor;
+  }
+
+  /** Names of who synced/published, read through UsersService (users owns that table). */
+  private async withActors(rows: ContentVersion[]): Promise<ContentVersionView[]> {
+    const refs = await this.users.refsByIds(rows.flatMap((v) => [v.syncedBy, v.publishedBy]));
+    return rows.map((v) => ({
+      ...view(v),
+      status: v.status as ContentVersionStatus,
+      summary: (v.summary ?? {}) as ContentVersionSummary,
+      createdAt: v.createdAt.toISOString(),
+      publishedAt: v.publishedAt?.toISOString() ?? null,
+      syncedBy: v.syncedBy ? (refs.get(v.syncedBy) ?? null) : null,
+      publishedBy: v.publishedBy ? (refs.get(v.publishedBy) ?? null) : null,
+    }));
   }
 }

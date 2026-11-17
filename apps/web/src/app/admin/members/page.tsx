@@ -50,10 +50,11 @@ export default async function MembersAdminPage() {
             Tất cả tài khoản ({accounts.length})
           </h2>
           <p className="muted mt-1 text-sm">
-            Mọi tài khoản đã từng đăng nhập, kèm email GitHub. Chỉ admin xem được.
+            Mọi tài khoản đã từng đăng nhập, kèm email GitHub. Chỉ admin xem được. Đổi vai trò và
+            tạm khóa đều được ghi vào nhật ký.
           </p>
           <div className="mt-4">
-            <AccountsTable rows={accounts} />
+            <AccountsTable rows={accounts} meId={me.id} />
           </div>
         </section>
       )}

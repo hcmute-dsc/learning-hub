@@ -32,7 +32,7 @@ content-example/               small content repo used for local dev and tests
 | `learning`    | enrollments, lesson progress, track progress and completion; depends on `submissions` and `catalog`                                               | `progress.ts`, `enrollment.service.ts`      |
 | `submissions` | submissions and each exercise's state for a member, including prerequisite locks (`exercise-state.ts`); depends on `catalog`, never on `learning` | `exercise-state.ts`, `submission-writer.ts` |
 | `reviews`     | mentor review: queue, claim/release, complete with rubric scores; depends on `submissions` (which owns the status change) and `users`             | `review-rules.ts`, `reviews.service.ts`     |
-| `audit`       | writes `audit_logs` from domain events                                                                                                            | `audit.listener.ts`                         |
+| `audit`       | writes `audit_logs` from domain events; `AuditReader` serves the admin "Nhật ký" page (names via `UsersService.refsByIds`)                        | `audit.listener.ts`, `audit.reader.ts`      |
 
 ## Rules that keep the code maintainable
 

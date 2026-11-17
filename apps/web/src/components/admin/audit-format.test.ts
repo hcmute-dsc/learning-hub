@@ -1,0 +1,58 @@
+import { describe, expect, it } from 'vitest';
+import { actionLabel, describeAudit } from './audit-format';
+
+describe('actionLabel', () => {
+  it('names known actions and falls back to the code', () => {
+    expect(actionLabel('role.set')).toBe('Đổi vai trò');
+    expect(actionLabel('review.completed')).toBe('review.completed');
+  });
+});
+
+describe('describeAudit', () => {
+  it('shows a role change as before → after', () => {
+    expect(
+      describeAudit({
+        action: 'role.set',
+        metadata: { previousRoles: ['member'], roles: ['member', 'mentor'] },
+      }),
+    ).toBe('Thành viên → Thành viên, Mentor');
+  });
+
+  it('still reads older role.set rows without previousRoles', () => {
+    expect(describeAudit({ action: 'role.set', metadata: { roles: ['admin'] } })).toBe(
+      'Vai trò: Ban chủ nhiệm',
+    );
+  });
+
+  it('shows email list changes as counts only', () => {
+    const text = describeAudit({
+      action: 'approved_emails.update',
+      metadata: { mode: 'append', submitted: 12, total: 40, activated: 2 },
+    });
+    expect(text).toBe('Thêm: 12 email gửi lên, tổng 40, kích hoạt 2 tài khoản');
+    expect(text).not.toContain('@');
+  });
+
+  it('shortens commit SHAs', () => {
+    expect(
+      describeAudit({
+        action: 'content.sync',
+        metadata: { commitSha: 'abcdef0123456789', status: 'draft' },
+      }),
+    ).toBe('Commit abcdef0 → Bản nháp');
+  });
+
+  it('explains approvals and suspensions', () => {
+    expect(describeAudit({ action: 'user.approve', metadata: { reason: 'manual' } })).toBe(
+      'duyệt tay',
+    );
+    expect(describeAudit({ action: 'user.suspend', metadata: { previousStatus: 'active' } })).toBe(
+      'Trước đó: Đang hoạt động',
+    );
+  });
+
+  it('prints unknown metadata as JSON, and nothing when empty', () => {
+    expect(describeAudit({ action: 'x.y', metadata: { a: 1 } })).toBe('{"a":1}');
+    expect(describeAudit({ action: 'user.reactivate', metadata: {} })).toBe('');
+  });
+});
