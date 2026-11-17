@@ -4,13 +4,16 @@ import {
   ExceptionFilter,
   HttpException,
   HttpStatus,
+  Inject,
   Logger,
+  Optional,
 } from '@nestjs/common';
 import { ThrottlerException } from '@nestjs/throttler';
 import type { ErrorCode, ProblemDetails } from '@hub/shared';
 import type { Request, Response } from 'express';
 import { ZodError } from 'zod';
 import { DomainError } from './errors';
+import { ERROR_REPORTER, type ErrorReporter } from './error-reporter';
 
 const TYPE_BASE = 'https://hub.hcmute-dsc.io.vn/errors/';
 
@@ -66,6 +69,11 @@ export function toProblem(exception: unknown, requestId?: string): ProblemDetail
 export class ProblemDetailsFilter implements ExceptionFilter {
   private readonly logger = new Logger(ProblemDetailsFilter.name);
 
+  constructor(
+    // Optional so the filter still works where no reporter is bound (tests, CLI).
+    @Optional() @Inject(ERROR_REPORTER) private readonly reporter?: ErrorReporter,
+  ) {}
+
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const req = ctx.getRequest<Request & { id?: string }>();
@@ -73,6 +81,12 @@ export class ProblemDetailsFilter implements ExceptionFilter {
     const problem = toProblem(exception, req.id ? String(req.id) : undefined);
     if (problem.status >= 500) {
       this.logger.error({ err: exception, requestId: problem.requestId }, 'Unhandled error');
+      this.reporter?.report({
+        method: req.method,
+        url: req.originalUrl ?? req.url,
+        requestId: problem.requestId,
+        error: exception,
+      });
     }
     res.status(problem.status).type('application/problem+json').json(problem);
   }
