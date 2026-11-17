@@ -16,7 +16,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   return (
     // "system" leaves data-theme out so the device decides (see @custom-variant dark in globals.css).
     <html lang="vi" data-theme={me && me.theme !== 'system' ? me.theme : undefined}>
-      <body className="flex min-h-screen flex-col font-sans antialiased">
+      <body className="flex min-h-screen flex-col overflow-x-clip font-sans antialiased">
         <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:p-2">
           Bỏ qua tới nội dung
         </a>

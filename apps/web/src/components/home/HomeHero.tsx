@@ -23,6 +23,9 @@ const CODE_LINES = [
  * Full-width navy hero in the club style (see `.hero-code-bg` in globals.css).
  * `w-screen` + `-translate-x-1/2` step outside the page container from layout.tsx,
  * and `-mt-8` cancels the container's top padding.
+ * 100vw includes the vertical scrollbar on Windows, so the hero is ~15px wider than
+ * the page: `overflow-x-clip` on <body> (layout.tsx) hides that sliver instead of
+ * showing a horizontal scrollbar.
  */
 export function HomeHero() {
   return (
