@@ -1,0 +1,13 @@
+# Keep the Docker build context small and free of secrets (apps/*/Dockerfile).
+**/node_modules
+**/dist
+**/.next
+**/coverage
+**/*.tsbuildinfo
+**/.env
+**/.env.*
+!**/.env.example
+.git
+.github
+deploy
+*.log

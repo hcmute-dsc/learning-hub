@@ -1,5 +1,5 @@
 import 'server-only';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import type { Me, ProblemDetails } from '@hub/shared';
 
@@ -12,14 +12,26 @@ export class ApiError extends Error {
 }
 
 /**
- * Server-side API call that forwards the user's cookies. Permission decisions stay
- * in the API; this only redirects on 401 / pending accounts.
+ * Headers every server-side API call carries for the member: their cookies, and the
+ * client address the reverse proxy put in X-Forwarded-For. The API limits requests per
+ * client IP (ThrottlerModule); without this header every page render would come from
+ * the web container's address, and all members together would share one limit.
+ */
+async function memberHeaders(): Promise<Record<string, string>> {
+  const forwarded: Record<string, string> = { cookie: (await cookies()).toString() };
+  const clientIp = (await headers()).get('x-forwarded-for');
+  if (clientIp) forwarded['x-forwarded-for'] = clientIp;
+  return forwarded;
+}
+
+/**
+ * Server-side API call that forwards the user's cookies and IP. Permission decisions
+ * stay in the API; this only redirects on 401 / pending accounts.
  */
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const cookieHeader = (await cookies()).toString();
   const res = await fetch(`${API}/api/v1${path}`, {
     ...init,
-    headers: { Accept: 'application/json', cookie: cookieHeader, ...(init.headers ?? {}) },
+    headers: { Accept: 'application/json', ...(await memberHeaders()), ...(init.headers ?? {}) },
     cache: 'no-store',
   });
   if (res.ok) return (await res.json()) as T;
@@ -55,10 +67,10 @@ export async function apiOrNotFound<T>(path: string): Promise<T> {
 
 /** Current user or null (never redirects). */
 export async function getMe(): Promise<Me | null> {
-  const cookieHeader = (await cookies()).toString();
-  if (!cookieHeader) return null;
+  const member = await memberHeaders();
+  if (!member.cookie) return null;
   const res = await fetch(`${API}/api/v1/auth/me`, {
-    headers: { Accept: 'application/json', cookie: cookieHeader },
+    headers: { Accept: 'application/json', ...member },
     cache: 'no-store',
   }).catch(() => null);
   if (!res?.ok) return null;

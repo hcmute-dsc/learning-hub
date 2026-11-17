@@ -1,0 +1,121 @@
+name: Deploy
+
+# After CI passes on main: build the Docker images, push them to GHCR, then (once the
+# VPS is set up) update the containers on the VPS over SSH. Runbook: deploy/README.md.
+#
+# The SSH step runs only when the repository variable DEPLOY_ENABLED is "true", so the
+# images are built and checked from day one, before the VPS secrets exist.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  # Manual run from the Actions tab, e.g. to redeploy after changing the VPS .env.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Never run two deploys at the same time; never cancel one half-way.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  # The commit CI tested (workflow_run) or the branch head (manual run)
+  SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+  REGISTRY: ghcr.io/hcmute-dsc
+
+jobs:
+  images:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        app: [api, web]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.SHA }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/${{ matrix.app }}/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/learning-hub-${{ matrix.app }}:${{ env.SHA }}
+            ${{ env.REGISTRY }}/learning-hub-${{ matrix.app }}:latest
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+
+  deploy:
+    needs: images
+    if: vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: https://learn.hcmute-dsc.io.vn
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.SHA }}
+          sparse-checkout: deploy
+
+      - name: Set up SSH
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          # Pinned host key: the job refuses to talk to a server that is not our VPS.
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf 'Host vps\n  HostName %s\n  User %s\n  Port %s\n  IdentityFile ~/.ssh/deploy_key\n  IdentitiesOnly yes\n' \
+            '${{ secrets.VPS_HOST }}' '${{ secrets.VPS_USER }}' '${{ secrets.VPS_PORT || 22 }}' > ~/.ssh/config
+
+      - name: Copy compose file and backup script
+        run: scp deploy/docker-compose.prod.yml deploy/backup.sh vps:/opt/learning-hub/
+
+      - name: Pull images and restart
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # The job token can read the images only while this job runs, and the VPS logs
+        # out right after pulling, so no long-lived registry password is stored there.
+        run: |
+          printf '%s' "$TOKEN" | ssh vps "set -e
+            cd /opt/learning-hub
+            chmod +x backup.sh
+            docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            # Remember the running version in .env, so every later command on the VPS
+            # (logs, content sync, a manual restart) uses the same images.
+            sed -i '/^IMAGE_TAG=/d' .env && echo 'IMAGE_TAG=${{ env.SHA }}' >> .env
+            docker compose -f docker-compose.prod.yml pull
+            docker logout ghcr.io
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans --wait
+            docker image prune -f
+            docker compose -f docker-compose.prod.yml ps"
+
+      - name: Check the site answers
+        run: |
+          for i in $(seq 1 10); do
+            curl -fsS -o /dev/null https://learn.hcmute-dsc.io.vn/ && exit 0
+            sleep 6
+          done
+          echo "::error::https://learn.hcmute-dsc.io.vn/ does not answer after the deploy"
+          exit 1

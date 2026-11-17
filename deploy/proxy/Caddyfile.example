@@ -1,0 +1,10 @@
+# Add this block to the Caddyfile already on the VPS (often /etc/caddy/Caddyfile),
+# then: sudo systemctl reload caddy
+# Caddy gets the HTTPS certificate by itself once DNS points here.
+# If Caddy runs in Docker, use host.docker.internal:3100 (with extra_hosts
+# "host.docker.internal:host-gateway") instead of 127.0.0.1:3100.
+
+learn.hcmute-dsc.io.vn {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:3100
+}

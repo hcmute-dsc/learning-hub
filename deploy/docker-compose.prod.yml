@@ -1,0 +1,60 @@
+# Production stack on the club VPS (runbook: deploy/README.md).
+# The deploy workflow copies this file to /opt/learning-hub, writes IMAGE_TAG=<commit sha>
+# into /opt/learning-hub/.env and runs `docker compose -f docker-compose.prod.yml up -d`.
+# Secrets live only in that .env on the VPS (template: deploy/.env.example).
+#
+# Only the web app is reachable, and only from the VPS itself (127.0.0.1): the reverse
+# proxy already on the VPS (Caddy/Nginx/Traefik) serves HTTPS and forwards to it.
+# The API and the database have no published ports at all.
+
+name: learning-hub
+
+x-api-image: &api-image ghcr.io/hcmute-dsc/learning-hub-api:${IMAGE_TAG:?IMAGE_TAG is written to .env by the deploy workflow}
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hub
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: learning_hub
+      TZ: UTC
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U hub -d learning_hub']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Runs once per deploy, before the new API starts. A failed migration stops the deploy
+  # and the old containers keep running.
+  migrate:
+    image: *api-image
+    env_file: .env
+    command: ['node_modules/.bin/prisma', 'migrate', 'deploy']
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: 'no'
+
+  api:
+    image: *api-image
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  web:
+    image: ghcr.io/hcmute-dsc/learning-hub-web:${IMAGE_TAG:?IMAGE_TAG is written to .env by the deploy workflow}
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - '127.0.0.1:${WEB_PORT:-3100}:3000'
+
+volumes:
+  db-data:

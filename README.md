@@ -29,6 +29,7 @@ apps/web        Next.js App Router + Tailwind; proxies /api/* to the api (same o
 packages/shared Zod schemas, types, constants shared by api and web
 packages/content parser + validator for content repos (`hub-content-validate`)
 content-example small content repo for local dev and tests
+deploy          production: docker compose for the VPS, proxy examples, backups, runbook
 ```
 
 Rule: business modules (`src/modules`) never import from `src/integrations`. They depend on ports (for example `modules/identity/ports/identity-provider.ts`), and the integration module binds the adapter.
@@ -65,3 +66,7 @@ pnpm build
 ```
 
 CI (`.github/workflows/ci.yml`) runs format, typecheck and tests. It then applies the migrations to an empty Postgres, runs the seed, and builds everything.
+
+## Deploy
+
+Production runs on the club VPS with Docker. After CI passes on `main`, `.github/workflows/deploy.yml` builds the `api` and `web` images, pushes them to GHCR and updates the VPS over SSH. Setup and daily operations (in Vietnamese): [deploy/README.md](deploy/README.md).
