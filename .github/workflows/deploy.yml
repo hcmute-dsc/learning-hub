@@ -108,7 +108,10 @@ jobs:
             docker compose -f docker-compose.prod.yml pull
             docker logout ghcr.io
             docker compose -f docker-compose.prod.yml up -d --remove-orphans --wait
-            docker image prune -f
+            # Remove older Learning Hub images (~1 GB per version) that no container uses,
+            # or the shared VPS disk fills up after a few dozen deploys. The label filter
+            # keeps this away from other sites' images. Old versions stay on GHCR.
+            docker image prune -af --filter 'label=org.opencontainers.image.source=https://github.com/${{ github.repository }}'
             docker compose -f docker-compose.prod.yml ps"
 
       - name: Check the site answers
