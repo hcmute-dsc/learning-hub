@@ -216,11 +216,13 @@ Rồi mở https://learn.hcmute-dsc.io.vn, đăng nhập bằng GitHub của tec
 sudo -u learnhub crontab -e
 ```
 
-Thêm dòng (2:30 sáng giờ UTC, giữ 14 ngày):
+Thêm dòng (2:30 sáng giờ Việt Nam = 19:30 UTC, giữ 14 ngày):
 
 ```
-30 2 * * * /opt/learning-hub/backup.sh >> /opt/learning-hub/backups/backup.log 2>&1
+30 19 * * * /opt/learning-hub/backup.sh >> /opt/learning-hub/backups/backup.log 2>&1
 ```
+
+Bản sao lưu chứa email thành viên, nên `backup.sh` chỉ cho user `learnhub` đọc (thư mục `700`, file `600`).
 
 Chạy thử ngay: `sudo -u learnhub /opt/learning-hub/backup.sh`.
 
