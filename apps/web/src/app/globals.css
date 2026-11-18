@@ -488,4 +488,9 @@ main:has(> .page-wide) {
     break-inside: avoid;
     background: white !important;
   }
+  /* A member on the dark theme prints too: light text would vanish on the white page. */
+  .certificate,
+  .certificate * {
+    color: #111 !important;
+  }
 }
