@@ -61,8 +61,8 @@ function startCards(enrollments: TrackProgress[]): StartCard[] {
       emoji: '✍️',
       title: 'Đóng góp nội dung',
       description: 'Viết bài học hoặc bài tập cho các thế hệ thành viên sau.',
-      href: CLUB_LINKS.content,
-      cta: 'Mở kho nội dung',
+      href: CLUB_LINKS.contribute,
+      cta: 'Xem cách đóng góp',
     },
   );
   return cards;

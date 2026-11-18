@@ -8,7 +8,9 @@ export const CLUB_SITE = 'https://hcmute-dsc.io.vn';
 export const CLUB_LINKS = {
   site: CLUB_SITE,
   github: 'https://github.com/hcmute-dsc',
-  /** where members contribute lessons and exercises */
+  /** how to contribute: lessons, new tracks, code (learning-hub#28) */
+  contribute: '/contribute',
+  /** registry of tracks (ADR-10); each track lives in its own repo */
   content: 'https://github.com/hcmute-dsc/learning-hub-content',
 };
 
