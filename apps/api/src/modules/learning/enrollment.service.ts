@@ -143,6 +143,8 @@ export class EnrollmentService {
   ): Promise<EnrollmentRow> {
     if (!shouldMarkCompleted(row.status, allDone)) return row;
     const stored = await this.enrollments.markCompleted(row.id, this.clock.now());
+    // Someone else completed it a moment ago and already announced it.
+    if (!stored) return (await this.enrollments.find(userId, row.trackId)) ?? row;
     const event: TrackCompletedEvent = {
       enrollmentId: stored.id,
       userId,

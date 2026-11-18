@@ -73,11 +73,17 @@ export class EnrollmentRepository {
     });
   }
 
-  markCompleted(id: string, at: Date): Promise<EnrollmentRow> {
-    return this.prisma.enrollment.update({
-      where: { id },
+  /**
+   * Marks an active enrollment completed. Returns null when it was no longer active:
+   * listeners of one event run in parallel (emitAsync), so two of them can try to
+   * complete the same track at once, and only the first may announce it.
+   */
+  async markCompleted(id: string, at: Date): Promise<EnrollmentRow | null> {
+    const { count } = await this.prisma.enrollment.updateMany({
+      where: { id, status: 'active' },
       data: { status: 'completed', completedAt: at },
-      select: columns,
     });
+    if (count === 0) return null;
+    return this.prisma.enrollment.findUniqueOrThrow({ where: { id }, select: columns });
   }
 }
