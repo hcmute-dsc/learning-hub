@@ -10,7 +10,8 @@ import { toggleTagHref, type CatalogFilters } from './catalog';
  * One track in the catalog grid, like Exercism's /tracks cards.
  * `percent` is set only when the member is enrolled in this track.
  *
- * Links cannot nest, so the title link is stretched over the whole card (`after:inset-0`)
+ * Links cannot nest, so the title link is stretched over the whole card (`after:inset-0`,
+ * `after:z-[1]` so animated children such as the progress bar stay under it)
  * and the tag links sit above it (`relative z-10`): a click on a tag filters the catalog,
  * a click anywhere else opens the track.
  */
@@ -34,7 +35,7 @@ export function TrackCard({
         <span className="min-w-0">
           <Link
             href={`/tracks/${track.slug}`}
-            className="block text-lg font-semibold group-hover:underline after:absolute after:inset-0 after:rounded-2xl"
+            className="block text-lg font-semibold group-hover:underline after:absolute after:inset-0 after:z-[1] after:rounded-2xl"
           >
             {track.title}
           </Link>
