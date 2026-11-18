@@ -21,6 +21,7 @@ apps/web/                      Next.js app (App Router + Tailwind)
 packages/shared/               types + Zod schemas shared by api and web
 packages/content/              parser + validator for content repos (pure, no Nest)
 content-example/               small content repo used for local dev and tests
+checker-example/               stand-in for the private checker repo: reference solutions (dev, tests)
 ```
 
 | API module    | Owns                                                                                                                                                       | Read first                                  |

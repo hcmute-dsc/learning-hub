@@ -1,5 +1,5 @@
 import type { ExerciseType, TrackLevel, TrackSummary } from '@hub/shared';
-import type { ExerciseContext, LessonContext, OutlineItem } from './catalog.reader';
+import type { ExerciseContext, LessonContext, OutlineItem, StoredHint } from './catalog.reader';
 
 /**
  * Pure mappers from database rows to what the catalog returns (CONTRIBUTING rule 3:
@@ -190,6 +190,8 @@ export interface ExerciseRow {
   difficulty: string;
   statementMd: string;
   spec: unknown;
+  hints: unknown;
+  solutionMd: string | null;
   requiresReview: boolean;
   contentVersionId: string;
   module: ModuleWithTrack;
@@ -207,6 +209,8 @@ export function toExerciseContext(exercise: ExerciseRow): ExerciseContext {
     difficulty: exercise.difficulty as ExerciseContext['difficulty'],
     statementMd: exercise.statementMd,
     spec: exercise.spec as Record<string, unknown>,
+    hints: toStoredHints(exercise.hints),
+    solutionMd: exercise.solutionMd,
     requiresReview: exercise.requiresReview,
     contentVersionId: exercise.contentVersionId,
     track: {
@@ -227,6 +231,22 @@ export function toExerciseContext(exercise: ExerciseRow): ExerciseContext {
       .filter((r) => r.status === 'active')
       .map((r) => ({ id: r.id, title: r.title })),
   };
+}
+
+/**
+ * Read `exercises.hints` (JSON written at publish). Malformed entries are dropped instead of
+ * failing the whole exercise page, and the result is sorted by position.
+ */
+export function toStoredHints(value: unknown): StoredHint[] {
+  if (!Array.isArray(value)) return [];
+  const hints: StoredHint[] = [];
+  for (const entry of value) {
+    const { position, cost, bodyMd } = (entry ?? {}) as Partial<StoredHint>;
+    if (Number.isInteger(position) && Number.isInteger(cost) && typeof bodyMd === 'string') {
+      hints.push({ position: position!, cost: cost!, bodyMd });
+    }
+  }
+  return hints.sort((a, b) => a.position - b.position);
 }
 
 /** exerciseId → ids of its prerequisites; every asked id is present, even with none. */

@@ -129,6 +129,8 @@ export class CatalogWriter {
             difficulty: e.difficulty,
             statementMd: e.statementMd,
             spec: e.spec as Prisma.InputJsonValue,
+            hints: e.hints as unknown as Prisma.InputJsonValue,
+            solutionMd: e.solutionMd,
             requiresReview: e.requiresReview,
             position: e.position,
             status: 'active',

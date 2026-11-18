@@ -3,6 +3,7 @@ import { CatalogModule } from '../catalog/catalog.module';
 import { ExerciseStateService } from './exercise-state.service';
 import { ExercisesController } from './exercises.controller';
 import { ExercisesService } from './exercises.service';
+import { HintsService } from './hints.service';
 import { SubmissionReviewService } from './submission-review.service';
 import { SubmissionWriter } from './submission-writer';
 import { SubmissionsController } from './submissions.controller';
@@ -18,6 +19,7 @@ import { SubmissionsService } from './submissions.service';
  * Files, by job:
  *   exercise-state.ts   the one rule for how an exercise looks to a member
  *   grading.ts          quiz grading (pure)
+ *   hints.ts            who sees which hint and the reference solution (pure, PRD F11)
  *   submission-url.ts   which submission URLs are accepted (pure, SECURITY §3)
  *   submit-rules.ts     when a member may submit, idempotency, who may read (pure)
  *   exercise-view.ts / submission-view.ts   database rows → API contract (pure)
@@ -30,6 +32,7 @@ import { SubmissionsService } from './submissions.service';
   providers: [
     ExerciseStateService,
     ExercisesService,
+    HintsService,
     SubmissionsService,
     SubmissionWriter,
     SubmissionReviewService,

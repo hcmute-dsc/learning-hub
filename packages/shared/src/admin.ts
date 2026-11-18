@@ -79,6 +79,8 @@ export interface ContentVersionSummary {
   diff?: Record<ContentItemKind, ContentDiffCount> | null;
   issueCount?: number;
   issues?: { path: string; message: string }[];
+  /** checker repo commit the reference solutions were read from (null = solutions off) */
+  solutionsFrom?: { repo: string; commitSha: string } | null;
   /** set when the version was published */
   appliedAt?: string;
 }

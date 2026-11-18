@@ -6,6 +6,7 @@ import {
   toOutlineItems,
   toTrackDetail,
   toTrackSummary,
+  toStoredHints,
   type ExerciseRow,
   type LessonRow,
   type TrackDetailRow,
@@ -175,6 +176,8 @@ describe('toExerciseContext', () => {
       difficulty: 'medium',
       statementMd: '# Đề',
       spec: { passScore: 0.5 },
+      hints: [],
+      solutionMd: null,
       requiresReview: false,
       contentVersionId: 'cv1',
       module: moduleRow,
@@ -215,6 +218,28 @@ describe('toExerciseContext', () => {
     );
     expect(ctx.track.starterRepo).toBe('hcmute-dsc/starter');
     expect(ctx.spec).toEqual({ passScore: 0.5 });
+  });
+});
+
+describe('toStoredHints', () => {
+  it('keeps well-formed hints, sorted by position', () => {
+    expect(
+      toStoredHints([
+        { position: 2, cost: 1, bodyMd: 'B' },
+        { position: 1, cost: 0, bodyMd: 'A' },
+      ]),
+    ).toEqual([
+      { position: 1, cost: 0, bodyMd: 'A' },
+      { position: 2, cost: 1, bodyMd: 'B' },
+    ]);
+  });
+
+  it('drops broken entries and reads anything else as no hints', () => {
+    expect(toStoredHints([{ position: '1', cost: 0, bodyMd: 'A' }, null, { position: 1 }])).toEqual(
+      [],
+    );
+    expect(toStoredHints(null)).toEqual([]);
+    expect(toStoredHints({ position: 1 })).toEqual([]);
   });
 });
 

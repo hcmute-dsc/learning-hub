@@ -128,6 +128,28 @@ export type QuizQuestionView =
   | { id: string; type: 'single' | 'multiple'; prompt: string; options: string[] }
   | { id: string; type: 'short_text'; prompt: string };
 
+/** An opened hint. POST /api/v1/exercises/:id/hints/:position → { data: HintView } */
+export interface HintView {
+  /** 1-based, the NN of hints/NN.md */
+  position: number;
+  /** Markdown from the content repo. The web MUST sanitize when rendering (SECURITY §3). */
+  bodyMd: string;
+}
+
+/** Progressive hints (PRD F11, CONTENT-SPECIFICATION §3.7): only opened hints carry their text. */
+export interface ExerciseHints {
+  total: number;
+  opened: HintView[];
+  /** The hint to open next; null when every hint is open or there are none. */
+  next: {
+    position: number;
+    /** attempts needed before it can be opened (soft: opening never lowers a score) */
+    cost: number;
+    /** false while the exercise is locked or the member has fewer attempts than `cost` */
+    ready: boolean;
+  } | null;
+}
+
 /** GET /api/v1/exercises/:id → { data: ExerciseView } */
 export interface ExerciseView {
   id: string;
@@ -144,6 +166,12 @@ export interface ExerciseView {
   module: { slug: string; title: string };
   lesson: ItemRef | null;
   attempts: number;
+  hints: ExerciseHints;
+  /**
+   * Reference solution (§3.8). null when the exercise has none. `bodyMd` stays null until the
+   * member has made a first attempt (mentors and admins always see it).
+   */
+  solution: { unlocked: boolean; bodyMd: string | null } | null;
   /** Exactly one of these is set, matching `type` */
   quiz?: { passScore: number; questions: QuizQuestionView[] };
   selfCheck?: { checklist: string[] };
