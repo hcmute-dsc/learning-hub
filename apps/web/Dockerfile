@@ -14,8 +14,19 @@ WORKDIR /repo
 FROM base AS build
 ARG API_INTERNAL_URL=http://learning-hub-api:4000
 ENV API_INTERNAL_URL=$API_INTERNAL_URL NEXT_TELEMETRY_DISABLED=1 NEXT_STANDALONE=1
-COPY . .
+# Dependencies first, from the manifests only: this layer and its build cache are reused
+# until pnpm-lock.yaml or a package.json changes. Copying the whole repo first made every
+# commit reinstall everything and fill the Actions cache (learning-hub#15).
+# A new workspace package must be listed here, or the frozen install fails.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/api/package.json apps/api/
+COPY apps/web/package.json apps/web/
+COPY packages/content/package.json packages/content/
+COPY packages/shared/package.json packages/shared/
+# The api package's postinstall runs `prisma generate`, which needs the schema.
+COPY apps/api/prisma/schema.prisma apps/api/prisma/
 RUN pnpm install --frozen-lockfile
+COPY . .
 RUN pnpm --filter @hub/shared --filter @hub/web build
 
 # ---- runtime: only the standalone output, static files and public assets
