@@ -240,6 +240,22 @@ export class ContentService {
     return this.withActors(rows);
   }
 
+  /** The live version and how many drafts wait for a decision (admin overview). */
+  async overviewCounts(): Promise<{
+    published: { id: string; commitSha: string; publishedAt: Date | null } | null;
+    drafts: number;
+  }> {
+    const [published, drafts] = await Promise.all([
+      this.prisma.contentVersion.findFirst({
+        where: { status: 'published' },
+        orderBy: { publishedAt: 'desc' },
+        select: { id: true, commitSha: true, publishedAt: true },
+      }),
+      this.prisma.contentVersion.count({ where: { status: 'draft' } }),
+    ]);
+    return { published, drafts };
+  }
+
   async get(versionId: string): Promise<ContentVersionView> {
     const v = await this.prisma.contentVersion.findUnique({ where: { id: versionId } });
     if (!v) throw DomainError.notFound('Content version');

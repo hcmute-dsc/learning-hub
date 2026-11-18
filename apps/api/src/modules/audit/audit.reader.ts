@@ -44,6 +44,11 @@ export class AuditReader {
     return { data, page: { nextCursor, limit: query.limit } };
   }
 
+  /** Audit rows written at or after `since` (admin overview activity). */
+  countSince(since: Date): Promise<number> {
+    return this.prisma.auditLog.count({ where: { createdAt: { gte: since } } });
+  }
+
   /** Every action code that occurs, for the filter. */
   async actions(): Promise<string[]> {
     const rows = await this.prisma.auditLog.findMany({

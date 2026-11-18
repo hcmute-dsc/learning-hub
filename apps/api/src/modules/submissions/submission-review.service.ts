@@ -55,6 +55,24 @@ export class SubmissionReviewService {
     private readonly events: EventEmitter2,
   ) {}
 
+  /** How many submissions wait for a mentor and since when (admin overview, no names). */
+  async reviewBacklog(): Promise<{ waiting: number; oldestSubmittedAt: Date | null }> {
+    const [waiting, oldest] = await Promise.all([
+      this.prisma.submission.count({ where: { status: 'awaiting_review' } }),
+      this.prisma.submission.findFirst({
+        where: { status: 'awaiting_review' },
+        orderBy: { submittedAt: 'asc' },
+        select: { submittedAt: true },
+      }),
+    ]);
+    return { waiting, oldestSubmittedAt: oldest?.submittedAt ?? null };
+  }
+
+  /** Submissions of any kind made at or after `since` (admin overview activity). */
+  countSubmittedSince(since: Date): Promise<number> {
+    return this.prisma.submission.count({ where: { submittedAt: { gte: since } } });
+  }
+
   /** Project submissions waiting for a mentor, oldest first (partial index on submitted_at). */
   async awaitingReview(): Promise<QueuedSubmission[]> {
     const rows = await this.prisma.submission.findMany({

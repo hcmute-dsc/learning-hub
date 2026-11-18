@@ -7,10 +7,13 @@ export interface AdminTab {
   label: string;
   /** who may open it besides admin (admin passes every check, like the API) */
   roles: Role[];
+  /** active only on this exact path (the overview at /admin is a prefix of every tab) */
+  exact?: boolean;
 }
 
 /** The order is the order of the tabs; the first one a person may open is their "home". */
 export const ADMIN_TABS: AdminTab[] = [
+  { href: '/admin', label: 'Tổng quan', roles: [], exact: true },
   { href: '/admin/members', label: 'Thành viên', roles: ['mentor'] },
   { href: '/admin/content', label: 'Nội dung', roles: ['content_maintainer'] },
   { href: '/admin/audit', label: 'Nhật ký', roles: [] },
@@ -28,5 +31,6 @@ export function adminHomeFor(roles: Role[]): string | null {
 
 /** The tab for this path (/admin/content/versions/x → "Nội dung"), for the active state. */
 export function isTabActive(tab: AdminTab, pathname: string): boolean {
-  return pathname === tab.href || pathname.startsWith(`${tab.href}/`);
+  if (pathname === tab.href) return true;
+  return !tab.exact && pathname.startsWith(`${tab.href}/`);
 }
