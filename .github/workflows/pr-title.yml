@@ -1,0 +1,29 @@
+name: PR title
+
+# The PR title becomes the squash commit on main, so it must follow CONTRIBUTING
+# "Commits": `Area: imperative summary`, at most 72 characters. A separate workflow
+# so that editing the title re-runs only this check, not the whole CI.
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-title-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: scripts
+      # The title goes through an env variable, never into the shell line itself,
+      # so a title with quotes or $(...) cannot run code.
+      - run: node scripts/pr-title.mjs
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
