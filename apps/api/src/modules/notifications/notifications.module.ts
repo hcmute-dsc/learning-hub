@@ -3,19 +3,35 @@ import { ERROR_REPORTER } from '../../common/error-reporter';
 import { NotificationChannelsModule } from '../../integrations/notification-channels.module';
 import { CatalogModule } from '../catalog/catalog.module';
 import { UsersModule } from '../users/users.module';
+import { DigestService } from './digest/digest.service';
 import { ErrorAlerts } from './error-alerts.service';
+import { InboxController, UnsubscribeController } from './inbox/inbox.controller';
+import { InboxListener } from './inbox/inbox.listener';
+import { InboxService } from './inbox/inbox.service';
 import { NotificationsListener } from './notifications.listener';
+import { NotificationDispatcher } from './outbox/notification-dispatcher';
+import { OutboxWorker } from './outbox/outbox.worker';
 
 /**
- * Discord notifications (E9) and server-error alerts (E11). Only listens to events
- * and to the exception filter; nothing else depends on it, so removing it is safe.
+ * Discord notifications (E9), server-error alerts (E11), and since learning-hub#49 the
+ * in-app bell and the email digest. Other modules only reach it through domain events
+ * and the exception filter; nothing else depends on it.
+ *
+ *   domain event → InboxListener → outbox_events → OutboxWorker → NotificationDispatcher
+ *                                                    → notifications rows / SMTP digest
  */
 @Module({
   imports: [NotificationChannelsModule, CatalogModule, UsersModule],
+  controllers: [InboxController, UnsubscribeController],
   providers: [
     NotificationsListener,
     ErrorAlerts,
     { provide: ERROR_REPORTER, useExisting: ErrorAlerts },
+    InboxListener,
+    InboxService,
+    DigestService,
+    NotificationDispatcher,
+    OutboxWorker,
   ],
   exports: [ERROR_REPORTER],
 })

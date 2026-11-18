@@ -45,6 +45,14 @@ export const envSchema = z.object({
     .url()
     .optional()
     .or(z.literal('').transform(() => undefined)),
+  // Email digest (learning-hub#49). Empty SMTP_HOST = no email: the digest toggle is disabled.
+  SMTP_HOST: z.string().default(''),
+  /** 587 = STARTTLS, 465 = TLS from the first byte */
+  SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
+  SMTP_USER: z.string().default(''),
+  SMTP_PASSWORD: z.string().default(''),
+  /** Sender shown to members, e.g. "DSC Learning Hub <no-reply@example.org>" */
+  SMTP_FROM: z.string().default(''),
 });
 
 export type Env = z.infer<typeof envSchema>;

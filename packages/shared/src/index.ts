@@ -121,3 +121,4 @@ export * from './learning';
 export * from './admin';
 export * from './profile';
 export * from './review';
+export * from './notifications';

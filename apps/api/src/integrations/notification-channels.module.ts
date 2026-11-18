@@ -1,20 +1,38 @@
 import { Module } from '@nestjs/common';
 import { ENV, type Env } from '../infrastructure/config/env';
 import {
+  MAIL_SENDER,
+  NoopMailSender,
+  type MailSender,
+} from '../modules/notifications/ports/mail-sender';
+import {
   ALERT_CHANNEL,
   CLUB_CHANNEL,
   NoopChannel,
   type NotificationChannel,
 } from '../modules/notifications/ports/notification-channel';
 import { DiscordWebhookChannel } from './discord/discord-webhook.channel';
+import { SmtpMailSender } from './email/smtp-mail.sender';
 
 function channel(url: string | undefined, name: string): NotificationChannel {
   return url ? new DiscordWebhookChannel(url, name) : new NoopChannel();
 }
 
+/** SMTP needs a host and a sender address; without both the digest is simply off. */
+export function mailSender(env: Env): MailSender {
+  if (!env.SMTP_HOST || !env.SMTP_FROM) return new NoopMailSender();
+  return new SmtpMailSender({
+    host: env.SMTP_HOST,
+    port: env.SMTP_PORT,
+    user: env.SMTP_USER,
+    password: env.SMTP_PASSWORD,
+    from: env.SMTP_FROM,
+  });
+}
+
 /**
- * Binds the two NotificationChannel ports to Discord webhooks from env.
- * An empty URL binds a no-op channel, so local dev and tests send nothing.
+ * Binds the notification ports from env: the two Discord webhooks and the SMTP sender
+ * for the email digest. An empty setting binds a no-op, so local dev and tests send nothing.
  */
 @Module({
   providers: [
@@ -28,7 +46,8 @@ function channel(url: string | undefined, name: string): NotificationChannel {
       inject: [ENV],
       useFactory: (env: Env) => channel(env.DISCORD_ALERT_WEBHOOK_URL, 'alert'),
     },
+    { provide: MAIL_SENDER, inject: [ENV], useFactory: mailSender },
   ],
-  exports: [CLUB_CHANNEL, ALERT_CHANNEL],
+  exports: [CLUB_CHANNEL, ALERT_CHANNEL, MAIL_SENDER],
 })
 export class NotificationChannelsModule {}

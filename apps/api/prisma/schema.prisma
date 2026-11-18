@@ -47,6 +47,8 @@ model User {
   addedApprovedEmails ApprovedEmail[]
   syncedVersions    ContentVersion[]    @relation("SyncedBy")
   publishedVersions ContentVersion[]    @relation("PublishedBy")
+  notifications     Notification[]
+  notificationPreference NotificationPreference?
 
   @@index([githubLogin])
   @@map("users")
@@ -456,4 +458,40 @@ model OutboxEvent {
 
   @@index([status, nextAttemptAt])
   @@map("outbox_events")
+}
+
+// ---------------------------------------------------------------- notifications (P2, F13)
+
+/// One row per recipient for the in-app bell. Written by the outbox worker, never by a request.
+model Notification {
+  id            String    @id @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  /// review_completed | review_requested | track_published (CHECK in SQL migration)
+  type          String
+  /// { title, body?, link } — text is built when the row is written, so the bell needs no joins
+  payload       Json
+  /// the outbox event that produced it; with userId it makes a retried fan-out a no-op
+  sourceEventId BigInt?   @map("source_event_id")
+  readAt        DateTime? @map("read_at") @db.Timestamptz
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceEventId, userId])
+  @@index([userId, readAt, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+/// Email digest choice per member. No row = digest off (the default).
+model NotificationPreference {
+  userId           String    @id @map("user_id") @db.Uuid
+  emailDigest      Boolean   @default(false) @map("email_digest")
+  /// random secret in the digest's unsubscribe link; works without signing in
+  unsubscribeToken String    @unique @map("unsubscribe_token")
+  lastDigestAt     DateTime? @map("last_digest_at") @db.Timestamptz
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
 }
