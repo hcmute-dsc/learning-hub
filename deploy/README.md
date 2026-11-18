@@ -266,7 +266,7 @@ Nguồn nội dung là biến `CONTENT_SOURCE` trong `.env`:
 
 Đổi `CONTENT_SOURCE` xong thì chạy **Actions → Deploy → Run workflow** để API đọc lại `.env`, rồi mới chạy lệnh sync ở trên.
 
-**Lời giải tham khảo (không bắt buộc).** Repo nội dung là công khai, nên lời giải nằm trong repo **riêng tư** `learning-hub-checker`, file `exercises/<track>/<exercise>/solution.md` ([CONTENT-SPECIFICATION §3.8](https://github.com/hcmute-dsc/learning-hub-docs/blob/main/docs/product/CONTENT-SPECIFICATION.md)). Thành viên chỉ thấy lời giải sau lần nộp đầu tiên. Mặc định tắt (`SOLUTIONS_SOURCE=none`). Muốn bật:
+**Lời giải tham khảo (không bắt buộc).** Repo nội dung là công khai, nên lời giải nằm trong repo **riêng tư** `learning-hub-checker`, file `exercises/<track>/<exercise>/solution.md` ([CONTENT-SPECIFICATION §3.8](https://github.com/hcmute-dsc/learning-hub-docs/blob/main/docs/product/CONTENT-SPECIFICATION.md)). Thành viên chỉ thấy lời giải khi đã hoàn thành bài (đạt, hoặc được mentor duyệt nếu bài cần review). Mặc định tắt (`SOLUTIONS_SOURCE=none`). Muốn bật:
 
 1. Tạo fine-grained token **chỉ đọc** (Contents: Read-only) cho đúng repo `learning-hub-checker`.
 2. Trong `.env` trên VPS: `SOLUTIONS_SOURCE=github`, `SOLUTIONS_REPO=hcmute-dsc/learning-hub-checker`, `SOLUTIONS_BRANCH=main`, và dán token vào `SOLUTIONS_GITHUB_TOKEN` (tự gõ trên VPS, không dán vào chat hay issue).

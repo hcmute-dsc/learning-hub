@@ -9,4 +9,4 @@ exercises/<track-slug>/<exercise-slug>/solution.md
 ```
 
 The API reads it when `SOLUTIONS_SOURCE=local` (`SOLUTIONS_LOCAL_DIR`, default `../../checker-example`).
-Members see a solution only after their first attempt on the exercise.
+Members see a solution only once they complete the exercise (passed, or approved after review).

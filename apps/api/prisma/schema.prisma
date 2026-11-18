@@ -228,7 +228,7 @@ model Exercise {
   spec             Json     @default("{}")
   /// [{ position, cost, bodyMd }] from hints/NN.md (CONTENT-SPECIFICATION §3.7). Members only get opened ones.
   hints            Json     @default("[]")
-  /// Reference solution from the private checker repo (§3.8). Members only get it after their first attempt.
+  /// Reference solution from the private checker repo (§3.8). Members only get it once they complete the exercise.
   solutionMd       String?  @map("solution_md")
   requiresReview   Boolean  @default(false) @map("requires_review")
   position         Int

@@ -45,7 +45,7 @@ export interface ExerciseNode {
   hints: HintNode[];
   /**
    * Reference solution from the PRIVATE checker repo (§3.8), never from the public content
-   * repo. Null when there is none. Members only get it after their first attempt.
+   * repo. Null when there is none. Members only get it once they complete the exercise.
    */
   solutionMd: string | null;
   position: number;

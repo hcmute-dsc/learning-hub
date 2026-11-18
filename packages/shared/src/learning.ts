@@ -169,7 +169,7 @@ export interface ExerciseView {
   hints: ExerciseHints;
   /**
    * Reference solution (§3.8). null when the exercise has none. `bodyMd` stays null until the
-   * member has made a first attempt (mentors and admins always see it).
+   * member completed the exercise (mentors and admins always see it).
    */
   solution: { unlocked: boolean; bodyMd: string | null } | null;
   /** Exactly one of these is set, matching `type` */

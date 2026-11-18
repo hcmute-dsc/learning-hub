@@ -49,7 +49,7 @@ export class ExercisesService {
       lockedBy,
       attempts,
       openedHints,
-      solutionUnlocked: canSeeSolution(user, attempts),
+      solutionUnlocked: canSeeSolution(user, state),
     });
   }
 

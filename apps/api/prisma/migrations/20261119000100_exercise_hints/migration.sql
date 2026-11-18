@@ -1,6 +1,6 @@
 -- Progressive hints and reference solutions (PRD F11, CONTENT-SPECIFICATION §3.7–3.8, learning-hub#46).
 -- exercises.hints: [{position, cost, bodyMd}] from hints/NN.md; members only get the ones they opened.
--- exercises.solution_md: from the private checker repo; members only get it after their first attempt.
+-- exercises.solution_md: from the private checker repo; members only get it once they complete the exercise.
 -- hint_unlocks: who opened which hint, for statistics (never lowers a score).
 
 -- AlterTable

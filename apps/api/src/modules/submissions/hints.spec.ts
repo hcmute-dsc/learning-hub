@@ -108,15 +108,25 @@ describe('toHintsView', () => {
 });
 
 describe('solution access (SECURITY §2)', () => {
-  it('needs a first attempt for members', () => {
-    expect(canSeeSolution({ roles: ['member'] }, 0)).toBe(false);
-    expect(canSeeSolution({ roles: ['member'] }, 1)).toBe(true);
+  it('opens for members only once the exercise is completed', () => {
+    const member = { roles: ['member' as const] };
+    expect(canSeeSolution(member, 'completed')).toBe(true);
+    for (const state of [
+      'not_started',
+      'attempted',
+      'testing',
+      'in_review',
+      'needs_changes',
+      'locked',
+    ] as const) {
+      expect(canSeeSolution(member, state)).toBe(false);
+    }
   });
 
   it('is always open to mentors and admins, not to content maintainers', () => {
-    expect(canSeeSolution({ roles: ['member', 'mentor'] }, 0)).toBe(true);
-    expect(canSeeSolution({ roles: ['admin'] }, 0)).toBe(true);
-    expect(canSeeSolution({ roles: ['member', 'content_maintainer'] }, 0)).toBe(false);
+    expect(canSeeSolution({ roles: ['member', 'mentor'] }, 'not_started')).toBe(true);
+    expect(canSeeSolution({ roles: ['admin'] }, 'not_started')).toBe(true);
+    expect(canSeeSolution({ roles: ['member', 'content_maintainer'] }, 'attempted')).toBe(false);
   });
 
   it('hides the text until unlocked, and is null without a solution', () => {

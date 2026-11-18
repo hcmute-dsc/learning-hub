@@ -5,7 +5,7 @@ import { OpenHintButton } from './OpenHintButton';
 
 /**
  * Progressive hints and the reference solution (PRD F11), under the statement. The API only
- * sends the text of hints the member opened, and the solution after a first attempt, so
+ * sends the text of hints the member opened, and the solution once the exercise is completed, so
  * nothing here can reveal more than the member may see.
  */
 export function HintsPanel({ exercise }: { exercise: ExerciseView }) {
@@ -66,7 +66,7 @@ export function HintsPanel({ exercise }: { exercise: ExerciseView }) {
           ) : (
             <p className="muted text-sm">
               <span aria-hidden>🔒 </span>
-              Lời giải tham khảo mở sau khi bạn nộp bài lần đầu.
+              Lời giải tham khảo mở khi bạn hoàn thành bài (bài đạt).
             </p>
           )}
         </div>

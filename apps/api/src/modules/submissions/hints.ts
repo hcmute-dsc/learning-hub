@@ -66,11 +66,12 @@ export function checkHintOpen(input: {
 }
 
 /**
- * SECURITY §2: the reference solution is for members who already tried the exercise (any
- * attempt, passed or not), and for mentors/admins who review it.
+ * SECURITY §2: the reference solution is for members who completed the exercise (passed,
+ * or approved when it needs a review; decided by the club on learning-hub#53), and for
+ * mentors/admins who review it. A failed or waiting attempt is not enough.
  */
-export function canSeeSolution(viewer: { roles: Role[] }, attempts: number): boolean {
-  return attempts > 0 || viewer.roles.includes('mentor') || viewer.roles.includes('admin');
+export function canSeeSolution(viewer: { roles: Role[] }, state: ExerciseState): boolean {
+  return state === 'completed' || viewer.roles.includes('mentor') || viewer.roles.includes('admin');
 }
 
 /** null when the exercise has no solution; the text only once it is unlocked. */
