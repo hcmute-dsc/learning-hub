@@ -1,0 +1,25 @@
+name: Đề xuất tính năng
+description: Thêm hoặc thay đổi một chức năng
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Vấn đề
+      description: Ai gặp khó khăn gì? Vì sao cần?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Đề xuất
+      description: Mô tả cách giải quyết. Link mục liên quan trong learning-hub-docs (PRD, MVP-BACKLOG) nếu có.
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Hoàn thành khi
+      placeholder: '- Thành viên thấy … trên trang …'
+    validations:
+      required: true
