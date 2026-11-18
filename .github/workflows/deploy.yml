@@ -89,8 +89,8 @@ jobs:
           printf 'Host vps\n  HostName %s\n  User %s\n  Port %s\n  IdentityFile ~/.ssh/deploy_key\n  IdentitiesOnly yes\n' \
             '${{ secrets.VPS_HOST }}' '${{ secrets.VPS_USER }}' '${{ secrets.VPS_PORT || 22 }}' > ~/.ssh/config
 
-      - name: Copy compose file and backup script
-        run: scp deploy/docker-compose.prod.yml deploy/backup.sh vps:/opt/learning-hub/
+      - name: Copy compose file and backup scripts
+        run: scp deploy/docker-compose.prod.yml deploy/backup.sh deploy/offsite-export.sh deploy/offsite-serve.sh vps:/opt/learning-hub/
 
       - name: Pull images and restart
         env:
@@ -100,7 +100,7 @@ jobs:
         run: |
           printf '%s' "$TOKEN" | ssh vps "set -e
             cd /opt/learning-hub
-            chmod +x backup.sh
+            chmod +x backup.sh offsite-export.sh offsite-serve.sh
             docker login ghcr.io -u ${{ github.actor }} --password-stdin
             # Remember the running version in .env, so every later command on the VPS
             # (logs, content sync, a manual restart) uses the same images.
