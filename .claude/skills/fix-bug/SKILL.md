@@ -24,7 +24,13 @@ Map the impact to Priority:
 | `P1 - Cao`         | a main feature is unusable              |
 | `P2 - Bình thường` | wrong display, or there is a workaround |
 
-Then follow `start-task` steps 3–4: board, assignee, In progress, branch `fix/<issue>-<slug>`.
+Then follow `start-task` steps 3–4. Fill **every** field (`Type=Bug Label=bug`, Priority from the table, Size, Area, Epic, Milestone, Sprint, Assignee, Status), and branch `fix/<issue>-<slug>`:
+
+```bash
+bash .claude/skills/start-task/project-item.sh <issue-url> Type=Bug Label=bug "Status=In progress"   "Priority=P1 - Cao" Area=Backend Size=S "Epic=Vận hành" Sprint=@current   "Milestone=Phase 0 — Dùng thử" Assignee=@me
+```
+
+A bug found and fixed on the same day: also pass `Start=<date> Target=<date>` with the real dates.
 
 P0 on production: also add a row to the incident log, learning-hub-docs `docs/ops/DEPLOYMENT.md` §7.
 

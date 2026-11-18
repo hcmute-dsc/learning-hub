@@ -31,7 +31,24 @@ case "$url" in */pull/*) kind=pr ;; */issues/*) kind=issue ;; *)
   ;;
 esac
 
-project_id=$(gh project view "$NUMBER" --owner "$OWNER" --format json -q .id)
+# Read each lookup table once (tab-separated: field, field id, option, option id) and search it
+# locally. Small hand-written queries on purpose: `gh project view` and `gh project field-list`
+# also load items, and a few runs of those hit GitHub's per-minute GraphQL limit.
+TAB=$'\t'
+project_table=$(gh api graphql -f query='{ organization(login: "'"$OWNER"'") { projectV2(number: '"$NUMBER"') { id
+    fields(first: 50) { nodes { ... on ProjectV2FieldCommon { id name }
+      ... on ProjectV2SingleSelectField { options { id name } } } } } } }' \
+  -q '.data.organization.projectV2 | ["@project", .id, "", ""], (.fields.nodes[] | . as $f
+      | (.options // [{name: "", id: ""}])[] | [$f.name, $f.id, .name, .id]) | @tsv')
+org_table=$(gh api graphql -f query='{ organization(login: "'"$OWNER"'") { issueFields(first: 50) { nodes {
+    ... on IssueFieldSingleSelect { id name options { id name } }
+    ... on IssueFieldDate { id name } } } } }' \
+  -q '.data.organization.issueFields.nodes[] | . as $f | (.options // [{name: "", id: ""}])[] | [$f.name, $f.id, .name, .id] | @tsv')
+lookup() { # <table> <field> [option] -> "field_id<TAB>option_id"
+  awk -F'\t' -v f="$2" -v o="${3-}" '$1 == f && (o == "" || $3 == o) { print $2 "\t" $4; exit }' <<<"$1"
+}
+
+project_id=$(awk -F'\t' '$1 == "@project" { print $2 }' <<<"$project_table")
 
 # The auto-add workflows may already have added the item; then item-add fails and we look it up.
 item=$(gh project item-add "$NUMBER" --owner "$OWNER" --url "$url" --format json -q .id 2>/dev/null || true)
@@ -47,18 +64,6 @@ fi
   exit 1
 }
 
-# Read each lookup table once (tab-separated: field, field id, option, option id) and search it
-# locally; one API call per field would hit GitHub's secondary rate limit.
-TAB=$'\t'
-project_table=$(gh project field-list "$NUMBER" --owner "$OWNER" --format json \
-  -q '.fields[] | . as $f | (.options // [{name: "", id: ""}])[] | [$f.name, $f.id, .name, .id] | @tsv')
-org_table=$(gh api graphql -f query='{ organization(login: "'"$OWNER"'") { issueFields(first: 50) { nodes {
-    ... on IssueFieldSingleSelect { id name options { id name } }
-    ... on IssueFieldDate { id name } } } } }' \
-  -q '.data.organization.issueFields.nodes[] | . as $f | (.options // [{name: "", id: ""}])[] | [$f.name, $f.id, .name, .id] | @tsv')
-lookup() { # <table> <field> [option] -> "field_id<TAB>option_id"
-  awk -F'\t' -v f="$2" -v o="${3-}" '$1 == f && (o == "" || $3 == o) { print $2 "\t" $4; exit }' <<<"$1"
-}
 die() {
   echo "$1" >&2
   exit 1

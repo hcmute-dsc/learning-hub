@@ -38,23 +38,38 @@ If none fits, create one that follows the repo's template (`.github/ISSUE_TEMPLA
 gh issue create --repo hcmute-dsc/<repo> --title "[Ops] …" --label enhancement --body-file issue.md
 ```
 
-## 3. Put it on the board
+## 3. Fill in everything
+
+**No empty box in the issue sidebar.** The maintainer checks the sidebar, and a half-filled issue is not done (learning-hub#10). One command fills it all:
 
 ```bash
 bash .claude/skills/start-task/project-item.sh <issue-url> \
-  "Status=In progress" "Priority=P1 - Cao" Area=Backend Size=S "Epic=Vận hành"
-gh issue edit <issue-url> --add-assignee @me
+  Type=Task "Status=In progress" "Priority=P1 - Cao" Area=Backend Size=S "Epic=Vận hành" \
+  Sprint=@current "Milestone=Phase 0 — Dùng thử" Assignee=@me Label=enhancement
 ```
 
-Fields and options:
+Required for every issue:
 
-- Priority: `P0 - Gấp`, `P1 - Cao`, `P2 - Bình thường`.
-- Area: `Backend`, `Frontend`, `Content`, `Ops`, `Docs`, `Club`.
-- Size: `S`, `M`, `L`.
-- Epic: `E6 Chấm tự động`, `E8 Mentorship`, `E13 SQL checker`, `E14 Bảng xếp hạng`, `E15 Web Push`, `Phase 0`, `Vận hành`.
-- Status: `Backlog`, `Ready`, `In progress`, `In review`, `Done`.
+| Field       | Values                                                                                                            | How to choose                                                                                                             |
+| ----------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `Type`      | `Bug`, `Feature`, `Task`                                                                                          | Bug = something wrong; Feature = new capability for users; Task = everything else (ops, docs, tests, refactor, club work) |
+| `Label`     | `bug`, `enhancement`, `documentation`, `ops`, `club` (docs repo), `content` (content repo)                        | matches Type/Area. Labels are per repo: `gh label list --repo …`                                                          |
+| `Status`    | `Backlog`, `Ready`, `In progress`, `In review`, `Done`                                                            | In progress when you start now                                                                                            |
+| `Priority`  | `P0 - Gấp`, `P1 - Cao`, `P2 - Bình thường`                                                                        | also sets the org **Priority** (Urgent/High/Medium)                                                                       |
+| `Area`      | `Backend`, `Frontend`, `Content`, `Ops`, `Docs`, `Club`                                                           | where the work happens                                                                                                    |
+| `Size`      | `S` (≤ 1 session), `M` (a few), `L` (a sprint, split it)                                                          | also sets the org **Effort** (Low/Medium/High)                                                                            |
+| `Epic`      | `E6 Chấm tự động`, `E8 Mentorship`, `E13 SQL checker`, `E14 Bảng xếp hạng`, `E15 Web Push`, `Phase 0`, `Vận hành` | ops, fixes and tooling go to `Vận hành`                                                                                   |
+| `Milestone` | `Phase 0 — Dùng thử`, `MVP-Full` (learning-hub only)                                                              | MVP-Full = epics E6/E8/E13/E14/E15                                                                                        |
+| `Assignee`  | `@me` or a login                                                                                                  | whoever does it now. Backlog items stay unassigned on purpose (free to take)                                              |
+| `Sprint`    | `@current` or `Sprint 2`…                                                                                         | anything you start now. Also sets **Start/Target date** to the sprint's dates                                             |
 
-The script needs `gh` with the `project` scope. If it fails with `missing required scopes`, ask the user to run `gh auth refresh -h github.com -s project`.
+Optional:
+
+- `Start=YYYY-MM-DD` and `Target=YYYY-MM-DD` override the sprint dates. A closed issue gets its real start and close dates.
+- **Relationships**: set them when they exist. A blocked task: `addBlockedBy` (GraphQL), or the sidebar → Relationships. Pieces of a big task: sub-issues.
+- **Development**: PRs link themselves through `Closes #n`. A PR in another repo can only `Refs`, so comment its link on the issue.
+
+The script needs `gh` with the `project` scope. If it fails with `missing required scopes`, ask the user to run `gh auth refresh -h github.com -s project`. If GitHub answers `API rate limit exceeded` (a per-minute limit), wait a few minutes before running it again; don't loop.
 
 ## 4. Branch
 

@@ -53,6 +53,16 @@ Fill the body from `.github/pull_request_template.md`:
 
 Open it as `--draft` if it is not ready. Keep one topic per PR, and split anything over about 400 changed lines.
 
+Fill the PR's sidebar too: assignee, label, milestone, and the board fields (same values as its issue):
+
+```bash
+gh pr edit <pr-url> --add-assignee @me --add-label <label> --milestone "<issue's milestone>"
+bash .claude/skills/start-task/project-item.sh <pr-url> "Status=In review" "Priority=…" Area=… Size=… "Epic=…" Sprint=@current
+bash .claude/skills/start-task/project-item.sh <issue-url> "Status=In review"
+```
+
+A PR in another repo than its issue can't use `Closes`. Comment the PR link on the issue, so it shows up there.
+
 ## 4. CI and self-review
 
 ```bash
@@ -89,5 +99,5 @@ gh pr merge <n> --repo hcmute-dsc/<repo> --squash --delete-branch
   Then check the change on https://learn.hcmute-dsc.io.vn. Use the user's browser session for pages behind sign-in.
 
 - **learning-hub-content:** a merged change is live only after an admin syncs and publishes it (Quản trị → Nội dung). Publishing is an outward action, so ask first.
-- **The issue:** confirm it is closed and on Done. If `Closes` didn't fire, close it with a comment and run `project-item.sh <url> Status=Done`. For bugs, post the resolution comment from `fix-bug`.
+- **The issue:** confirm it is closed and on Done. If `Closes` didn't fire, close it with a comment and run `project-item.sh <url> Status=Done`. Check the sidebar once more: no empty box (type, labels, milestone, fields, dates, assignee). For bugs, post the resolution comment from `fix-bug`.
 - **Locally:** run `git switch main && git pull --ff-only` and delete the local branch.
