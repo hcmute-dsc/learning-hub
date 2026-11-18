@@ -72,7 +72,10 @@ gh pr checks <n> --repo hcmute-dsc/<repo> --watch --interval 15
 Run in the background if your harness supports it.
 
 - Fix red CI by pushing to the same branch; never bypass it.
-- Then review your own diff with the `review-pr` checklist (`gh pr diff <n>`), and fix any `must:` before the hand-off.
+- Then run the **automatic review** in `review-pr` ("Automatic review of your own PR"). It is not optional:
+  1. review the diff and the code around it with the checklist;
+  2. fix every `must:` and wait for CI again;
+  3. post the review on the PR with `gh pr review <n> --comment --body-file review.md`.
 
 ## 5. Hand off
 
@@ -80,6 +83,7 @@ Give the user:
 
 - the PR link;
 - a 2–3 line summary;
+- the link to the posted review, and the `nit:` items left;
 - anything not verified.
 
 Ask them to review and merge. Don't merge yourself unless they say so in chat for this PR. Merge with:

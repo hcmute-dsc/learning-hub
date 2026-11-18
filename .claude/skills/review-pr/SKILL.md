@@ -1,6 +1,6 @@
 ---
 name: review-pr
-description: Review a Learning Hub pull request with the team checklist (correctness, security, design rules, tests, readability, docs) and must/nit comments. Use for self-review before handing a PR to the maintainer, or when asked to review someone's PR in learning-hub, learning-hub-content or learning-hub-docs.
+description: Review a Learning Hub pull request with the team checklist (correctness, security, design rules, tests, readability, docs), fix or report must/nit items, and post the result on the PR. Runs automatically on every PR an agent opens, before the hand-off (ship-pr §4), and when asked to review someone's PR in learning-hub, learning-hub-content, learning-hub-docs or a learning-hub-track-* repo.
 ---
 
 # Review a PR
@@ -11,7 +11,11 @@ gh pr diff <n> --repo hcmute-dsc/<repo>
 gh pr checks <n> --repo hcmute-dsc/<repo>
 ```
 
-Read the linked issue first, then the diff. For a large diff, read the files around the change too, not just the hunks.
+Read the linked issue first, then the diff. Then read the code around the change, not just the hunks:
+
+- **Check every assumption the change relies on** in the code that provides it (who writes this row, when, inside which transaction; can this be null; is there only one row with this status). Write down where you checked.
+- Look for the **same bug elsewhere**: other callers, sibling pages or endpoints with the same pattern.
+- Think through rollbacks, retries and the "before the first run" case.
 
 ## Checklist (in this order)
 
@@ -58,4 +62,39 @@ Read the linked issue first, then the diff. For a large diff, read the files aro
 gh pr review <n> --repo hcmute-dsc/<repo> --comment --body-file review.md   # or --approve / --request-changes
 ```
 
-GitHub doesn't allow approving your own PR. For a self-review, don't post anything: fix the `must:` items and list any `nit:` you left in the hand-off message.
+## Automatic review of your own PR (learning-hub#22)
+
+Every PR an agent opens gets this review **before** it is handed to the maintainer, so they read a checked summary instead of starting from zero.
+
+1. Run the checklist above on the final diff, after CI is green.
+2. Fix every `must:` on the branch, push, wait for CI again, and review the new diff.
+3. Post the result as a PR comment (GitHub doesn't allow approving your own PR):
+
+   ```bash
+   gh pr review <n> --repo hcmute-dsc/<repo> --comment --body-file review.md
+   ```
+
+4. Give the review link in the hand-off message, with the `nit:` items you chose to leave.
+
+`review.md` template (Vietnamese, plain and short):
+
+```markdown
+## Review tự động (skill `review-pr`)
+
+**Kết luận:** không còn `must:`, có thể merge. (hoặc: còn N `must:`, chưa nên merge)
+
+### Đã kiểm tra
+
+1. **Đúng chức năng:** … (giả định nào, kiểm ở file nào)
+2. **Trường hợp biên:** …
+3. **Bảo mật:** …
+4. **Thiết kế:** …
+5. **Test:** … CI `<job>` xanh.
+6. **Tài liệu:** …
+
+### Góp ý
+
+- `must:` / `nit:` / `question:` … (`file:line`, vì sao, cách sửa)
+```
+
+Never write secrets, the VPS IP, webhook URLs or member emails in the review: the repos are public.
