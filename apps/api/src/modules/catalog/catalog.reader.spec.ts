@@ -7,6 +7,7 @@ function fakePrisma(found: unknown = null) {
   const prisma = {
     track: { findFirst: jest.fn().mockResolvedValue(found) },
     lesson: { findFirst: jest.fn().mockResolvedValue(found) },
+    contentVersion: { findFirst: jest.fn().mockResolvedValue(null) },
     exercise: {
       findFirst: jest.fn().mockResolvedValue(found),
       findMany: jest.fn().mockResolvedValue([]),
@@ -24,6 +25,29 @@ describe('CatalogReader', () => {
     const { prisma, reader } = fakePrisma();
     await expect(reader.lesson('l1')).rejects.toBeInstanceOf(DomainError);
     expect(prisma.lesson.findFirst.mock.calls[0][0].where).toEqual({ id: 'l1', ...ACTIVE_PATH });
+  });
+
+  it('gives a lesson the source of the published version (learning-hub#20)', async () => {
+    const { prisma, reader } = fakePrisma({
+      id: 'l1',
+      slug: 'day-01',
+      title: 'Ngày 1',
+      bodyMd: '',
+      estMinutes: null,
+      sourcePath: 'tracks/sql/modules/01/lessons/day-01.md',
+      module: { slug: 'm1', title: 'M1', track: { id: 't1', slug: 'sql', title: 'SQL' } },
+      contentVersion: { sourceRepo: 'hcmute-dsc/learning-hub-content', commitSha: 'old' },
+      exercises: [],
+    });
+    prisma.contentVersion.findFirst.mockResolvedValue({
+      sourceRepo: 'hcmute-dsc/learning-hub-content',
+      commitSha: 'new',
+      trackSources: { sql: { repo: 'hcmute-dsc/learning-hub-track-sql', commitSha: 'abc' } },
+    });
+    await expect(reader.lesson('l1')).resolves.toMatchObject({
+      source: { repo: 'hcmute-dsc/learning-hub-track-sql', commitSha: 'abc' },
+    });
+    expect(prisma.contentVersion.findFirst.mock.calls[0][0].where).toEqual({ status: 'published' });
   });
 
   it('reads only active exercises inside an active module and track', async () => {

@@ -149,13 +149,20 @@ export interface LessonRow {
   estMinutes: number | null;
   sourcePath: string;
   module: ModuleWithTrack;
-  /** the version that last wrote this lesson: the commit the member reads */
+  /** the version that last wrote this lesson; only used before the first publish */
   contentVersion: Source;
   /** active exercises linked to this lesson, by position */
   exercises: { id: string; title: string; type: string }[];
 }
 
-export function toLessonContext(lesson: LessonRow): LessonContext {
+/**
+ * Lesson page data. Like `toTrackDetail`, `source` is the version members are reading now
+ * (`published`), not `lesson.contentVersion`: that one only moves when the lesson itself
+ * changes, so after the move to a registry the edit link and images of every unchanged
+ * lesson still pointed at the old content repo (learning-hub#20). The published commit
+ * holds the same file, because a lesson is only rewritten when a publish changes it.
+ */
+export function toLessonContext(lesson: LessonRow, published: Source | null = null): LessonContext {
   const { module } = lesson;
   return {
     id: lesson.id,
@@ -166,7 +173,7 @@ export function toLessonContext(lesson: LessonRow): LessonContext {
     sourcePath: lesson.sourcePath,
     track: { id: module.track.id, slug: module.track.slug, title: module.track.title },
     module: { slug: module.slug, title: module.title },
-    source: sourceFor(lesson.contentVersion, module.track.slug),
+    source: sourceFor(published ?? lesson.contentVersion, module.track.slug),
     exercises: lesson.exercises.map((e) => ({
       id: e.id,
       title: e.title,
