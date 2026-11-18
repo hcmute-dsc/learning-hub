@@ -14,7 +14,7 @@ export class CatalogService {
     const where: Prisma.TrackWhereInput = {
       status: 'active',
       ...(query.level ? { level: query.level } : {}),
-      ...(query.tag ? { tags: { has: query.tag } } : {}),
+      ...(query.tag?.length ? { tags: { hasSome: query.tag } } : {}),
       ...(query.q
         ? {
             OR: [
@@ -51,6 +51,15 @@ export class CatalogService {
       data: tracks.map(toTrackSummary),
       page: { page: query.page, pageSize: query.pageSize, total },
     };
+  }
+
+  /** Every tag used by an active track, sorted, for the catalog's tag filter. */
+  async listTags(): Promise<string[]> {
+    const tracks = await this.prisma.track.findMany({
+      where: { status: 'active' },
+      select: { tags: true },
+    });
+    return [...new Set(tracks.flatMap((t) => t.tags))].sort((a, b) => a.localeCompare(b));
   }
 
   async getTrack(slug: string) {
