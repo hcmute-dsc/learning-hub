@@ -4,7 +4,7 @@ This repo is maintained by successive generations of HCMUTE DSC members. Agents 
 
 ## Non-negotiable
 
-1. **No issue, no work.** Every request (feature, bug, chore, docs) maps to an issue on org Project #1 before any edit. Find an existing one first. Skill: `start-task`.
+1. **No issue, no work.** Every request (feature, bug, chore, docs) maps to an issue on org Project #1 before any edit. Find an existing one first. Skill: `start-task`. Fill **every** sidebar field (type, label, milestone, assignee, board fields, sprint, org Priority/Effort, dates) with `project-item.sh`; a half-filled issue is not acceptable.
 2. **Every bug is logged**, including one you notice and fix in passing. Skill: `fix-bug`.
    - The issue has: repro, expected, actual.
    - The fix has a regression test, or a written reason why there isn't one.
