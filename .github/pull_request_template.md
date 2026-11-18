@@ -14,7 +14,7 @@ Closes #
 
 ## Checklist
 
-- [ ] `pnpm format && pnpm typecheck && pnpm test` xanh trên máy
+- [ ] `pnpm format && pnpm lint && pnpm typecheck && pnpm test` xanh trên máy
 - [ ] Có test cho quy tắc nghiệp vụ mới hoặc lỗi vừa sửa (hoặc ghi lý do không có)
 - [ ] Đổi database: có migration mới, không sửa migration đã chạy; cập nhật `DATABASE.md`
 - [ ] Đổi thiết kế, API, cách vận hành: cập nhật learning-hub-docs và `deploy/README.md`
