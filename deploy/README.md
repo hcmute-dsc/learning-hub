@@ -480,6 +480,7 @@ docker compose -f docker-compose.prod.yml ps                    # 7. kiểm tra
 5. Tạo lại 2 webhook Discord nếu người cũ rời server (Bước 12), cập nhật `.env` và secret repo.
 6. Người mới tự chạy [kiểm tra bản sao lưu](#kiểm-tra-bản-sao-lưu-dùng-được-mỗi-tháng) một lần; người cũ xóa các bản sao lưu đã chép về máy mình.
 7. Kiểm tra cài đặt repo: chỉ squash merge, bảo vệ nhánh `main` (bắt buộc PR, CI `build-test` xanh). Lệnh `gh` và cách đổi sang "1 approval" khi có maintainer thứ hai: [WORKFLOW §7.5](https://github.com/hcmute-dsc/learning-hub-docs/blob/main/docs/ops/WORKFLOW.md#75-cài-đặt-repo-để-ép-quy-trình-admin-làm-mỗi-repo-một-lần).
+8. GitHub App `hcmute-dsc-learning-hub` (tự thêm issue/PR của `learning-hub-content` và `learning-hub-docs` vào project) thuộc org, không cần tạo lại; chỉ cần người mới là owner của org. Cách cài từ đầu và đổi private key: [WORKFLOW §4](https://github.com/hcmute-dsc/learning-hub-docs/blob/main/docs/ops/WORKFLOW.md#4-cài-đặt-làm-bằng-tay-trên-web-api-của-github-chưa-hỗ-trợ).
 
 ## Hiện trạng production (cập nhật khi thay đổi)
 
