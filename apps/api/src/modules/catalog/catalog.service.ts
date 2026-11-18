@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import type { Paginated, TrackLevel, TrackListQuery, TrackSummary } from '@hub/shared';
+import type { Paginated, TrackListQuery, TrackSummary } from '@hub/shared';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { DomainError } from '../../common/errors';
+import { toTrackDetail, toTrackSummary } from './catalog-views';
 
 /** Read side of published content (BACKEND-DESIGN §2 catalog). Writes come from `content`. */
 @Injectable()
@@ -47,18 +48,7 @@ export class CatalogService {
     ]);
 
     return {
-      data: tracks.map((t) => ({
-        id: t.id,
-        slug: t.slug,
-        title: t.title,
-        summary: t.summary,
-        level: t.level as TrackLevel,
-        language: t.language,
-        estHours: t.estHours,
-        tags: t.tags,
-        lessonCount: t.modules.reduce((n, m) => n + m._count.lessons, 0),
-        exerciseCount: t.modules.reduce((n, m) => n + m._count.exercises, 0),
-      })),
+      data: tracks.map(toTrackSummary),
       page: { page: query.page, pageSize: query.pageSize, total },
     };
   }
@@ -87,37 +77,10 @@ export class CatalogService {
       },
     });
     if (!track || track.status !== 'active') throw DomainError.notFound('Track');
-    // track.contentVersion is the version that last wrote the track row, so it stays old
-    // when a publish only changes lessons (the page showed ea5de5c after 95a1924 went live,
-    // 18/11/2026). Show the version members are reading now.
-    const source =
-      (await this.prisma.contentVersion.findFirst({
-        where: { status: 'published' },
-        select: { commitSha: true, sourceRepo: true },
-      })) ?? track.contentVersion;
-    return {
-      id: track.id,
-      slug: track.slug,
-      title: track.title,
-      summary: track.summary,
-      level: track.level,
-      language: track.language,
-      estHours: track.estHours,
-      tags: track.tags,
-      starterRepo: track.starterRepo,
-      source: {
-        repo: source.sourceRepo,
-        commitSha: source.commitSha,
-        path: track.sourcePath,
-      },
-      modules: track.modules.map((m) => ({
-        id: m.id,
-        slug: m.slug,
-        title: m.title,
-        summary: m.summary,
-        lessons: m.lessons,
-        exercises: m.exercises,
-      })),
-    };
+    const published = await this.prisma.contentVersion.findFirst({
+      where: { status: 'published' },
+      select: { commitSha: true, sourceRepo: true },
+    });
+    return toTrackDetail(track, published);
   }
 }

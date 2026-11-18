@@ -2,6 +2,12 @@ import { Injectable } from '@nestjs/common';
 import type { ExerciseType } from '@hub/shared';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { DomainError } from '../../common/errors';
+import {
+  groupPrerequisites,
+  toExerciseContext,
+  toLessonContext,
+  toOutlineItems,
+} from './catalog-views';
 
 /**
  * Read models used by the learning and submissions modules (E4/E5).
@@ -84,20 +90,7 @@ export class CatalogReader {
       },
     });
     if (!track) throw DomainError.notFound('Track');
-    const items: OutlineItem[] = track.modules.flatMap((m) => [
-      ...m.lessons.map((l) => ({
-        kind: 'lesson' as const,
-        id: l.id,
-        title: l.title,
-        moduleSlug: m.slug,
-      })),
-      ...m.exercises.map((e) => ({
-        kind: 'exercise' as const,
-        id: e.id,
-        title: e.title,
-        moduleSlug: m.slug,
-      })),
-    ]);
+    const items = toOutlineItems(track);
     return { id: track.id, slug: track.slug, title: track.title, items };
   }
 
@@ -115,26 +108,7 @@ export class CatalogReader {
       },
     });
     if (!lesson) throw DomainError.notFound('Lesson');
-    const { module } = lesson;
-    return {
-      id: lesson.id,
-      slug: lesson.slug,
-      title: lesson.title,
-      bodyMd: lesson.bodyMd,
-      estMinutes: lesson.estMinutes,
-      sourcePath: lesson.sourcePath,
-      track: { id: module.track.id, slug: module.track.slug, title: module.track.title },
-      module: { slug: module.slug, title: module.title },
-      source: {
-        repo: lesson.contentVersion.sourceRepo,
-        commitSha: lesson.contentVersion.commitSha,
-      },
-      exercises: lesson.exercises.map((e) => ({
-        id: e.id,
-        title: e.title,
-        type: e.type as ExerciseType,
-      })),
-    };
+    return toLessonContext(lesson);
   }
 
   async exercise(id: string): Promise<ExerciseContext> {
@@ -149,34 +123,7 @@ export class CatalogReader {
       },
     });
     if (!exercise) throw DomainError.notFound('Exercise');
-    const { module } = exercise;
-    return {
-      id: exercise.id,
-      slug: exercise.slug,
-      title: exercise.title,
-      type: exercise.type as ExerciseType,
-      difficulty: exercise.difficulty as ExerciseContext['difficulty'],
-      statementMd: exercise.statementMd,
-      spec: exercise.spec as Record<string, unknown>,
-      requiresReview: exercise.requiresReview,
-      contentVersionId: exercise.contentVersionId,
-      track: {
-        id: module.track.id,
-        slug: module.track.slug,
-        title: module.track.title,
-        starterRepo: module.track.starterRepo,
-      },
-      module: { slug: module.slug, title: module.title },
-      lesson:
-        exercise.lesson && exercise.lesson.status === 'active'
-          ? { id: exercise.lesson.id, title: exercise.lesson.title }
-          : null,
-      // An archived prerequisite no longer locks anything.
-      prerequisites: exercise.prerequisites
-        .map((p) => p.requiredExercise)
-        .filter((r) => r.status === 'active')
-        .map((r) => ({ id: r.id, title: r.title })),
-    };
+    return toExerciseContext(exercise);
   }
 
   /** exerciseId → ids of its active prerequisite exercises (for many exercises at once). */
@@ -185,9 +132,7 @@ export class CatalogReader {
       where: { exerciseId: { in: exerciseIds }, requiredExercise: { status: 'active' } },
       select: { exerciseId: true, requiredExerciseId: true },
     });
-    const map = new Map<string, string[]>(exerciseIds.map((id) => [id, []]));
-    for (const r of rows) map.get(r.exerciseId)!.push(r.requiredExerciseId);
-    return map;
+    return groupPrerequisites(exerciseIds, rows);
   }
 
   /** exerciseId → requires_review, for many exercises at once (used by exercise states). */
