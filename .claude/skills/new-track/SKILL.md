@@ -35,7 +35,7 @@ gh api -X PUT repos/$R/collaborators/<mentor> -f permission=maintain   # invites
 
 - Public, always: the registry CI downloads tracks through public links.
 - Don't turn on branch protection or change org settings (WORKFLOW §7.5 needs the board's yes).
-- add-to-project needs `PROJECT_APP_CLIENT_ID` / `PROJECT_APP_PRIVATE_KEY`. Until they live at org level (learning-hub-docs#14), the user sets them per repo with `gh variable set` / `gh secret set`. Never ask them to paste the key into chat.
+- add-to-project reads `PROJECT_APP_CLIENT_ID` / `PROJECT_APP_PRIVATE_KEY` from the **org** (public repos, learning-hub-docs#14), so a new public repo needs nothing. Don't create repo-level copies: they would override the org values. Never ask anyone to paste the key into chat.
 
 Reply on the proposal issue with the repo link and NEW-TRACK.md §3.
 
