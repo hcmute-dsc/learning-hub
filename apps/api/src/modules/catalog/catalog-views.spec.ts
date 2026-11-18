@@ -1,5 +1,6 @@
 import {
   groupPrerequisites,
+  sourceFor,
   toExerciseContext,
   toLessonContext,
   toOutlineItems,
@@ -11,6 +12,13 @@ import {
 } from './catalog-views';
 
 const REPO = 'hcmute-dsc/learning-hub-content';
+const SQL_REPO = 'hcmute-dsc/learning-hub-track-sql-30-days';
+/** A registry version (ADR-10): the registry commit, plus where each track was read from */
+const registryVersion = {
+  sourceRepo: REPO,
+  commitSha: 'b0b0b0b',
+  trackSources: { 'sql-30-days': { repo: SQL_REPO, commitSha: 'c0ffee1' } },
+};
 const track = { id: 't1', slug: 'sql-30-days', title: 'SQL 30 ngày', starterRepo: null };
 const moduleRow = { slug: '01-foundations', title: 'Nền tảng', track };
 
@@ -72,6 +80,14 @@ describe('toTrackDetail', () => {
     expect(toTrackDetail(trackRow(), null).source.commitSha).toBe('ea5de5c');
   });
 
+  it("links a registry version to the track's own repo and commit", () => {
+    expect(toTrackDetail(trackRow(), registryVersion).source).toEqual({
+      repo: SQL_REPO,
+      commitSha: 'c0ffee1',
+      path: 'tracks/sql-30-days',
+    });
+  });
+
   it('keeps modules, lessons and exercises in the given order', () => {
     const detail = toTrackDetail(trackRow(), null);
     expect(detail.modules).toHaveLength(1);
@@ -119,6 +135,13 @@ describe('toLessonContext', () => {
 
   it('keeps the commit that last changed this lesson', () => {
     expect(toLessonContext(lesson).source).toEqual({ repo: REPO, commitSha: '01aaa53' });
+  });
+
+  it("reads a registry lesson from its track's repo, so images and edit links work", () => {
+    expect(toLessonContext({ ...lesson, contentVersion: registryVersion }).source).toEqual({
+      repo: SQL_REPO,
+      commitSha: 'c0ffee1',
+    });
   });
 
   it('names its track, module and linked exercises', () => {
@@ -198,5 +221,27 @@ describe('groupPrerequisites', () => {
   it('ignores rows for exercises that were not asked for', () => {
     const map = groupPrerequisites(['e1'], [{ exerciseId: 'x', requiredExerciseId: 'e1' }]);
     expect(Object.fromEntries(map)).toEqual({ e1: [] });
+  });
+});
+
+describe('sourceFor', () => {
+  it("uses the track's entry of a registry version", () => {
+    expect(sourceFor(registryVersion, 'sql-30-days')).toEqual({
+      repo: SQL_REPO,
+      commitSha: 'c0ffee1',
+    });
+  });
+
+  it('falls back to the version itself for a single repo, a missing track or a bad entry', () => {
+    const own = { repo: REPO, commitSha: 'b0b0b0b' };
+    expect(sourceFor({ sourceRepo: REPO, commitSha: 'b0b0b0b' }, 'sql-30-days')).toEqual(own);
+    expect(sourceFor({ ...registryVersion, trackSources: null }, 'sql-30-days')).toEqual(own);
+    expect(sourceFor(registryVersion, 'java-basics')).toEqual(own);
+    expect(
+      sourceFor(
+        { ...registryVersion, trackSources: { 'sql-30-days': { repo: 1 } } },
+        'sql-30-days',
+      ),
+    ).toEqual(own);
   });
 });

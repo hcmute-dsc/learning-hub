@@ -9,6 +9,7 @@
  *   markdown.ts       front matter + size/HTML rules for .md files
  *   hash.ts           stable content hash, used to skip unchanged items on publish
  *   read-directory.ts read a local checkout into a FileMap
+ *   registry.ts       `tracks.yaml`: which repo and commit each track is published from
  *   cli.ts            `hub-content-validate [dir]`
  */
 export * from './types';
@@ -19,3 +20,5 @@ export { exerciseIndex } from './checks';
 export { contentHash } from './hash';
 export { MAX_MARKDOWN_BYTES, splitFrontMatter } from './markdown';
 export { readDirectory } from './read-directory';
+export { parseRegistry, REGISTRY_FILE, trackSlugOf } from './registry';
+export type { RegistryEntry, RegistryResult } from './registry';

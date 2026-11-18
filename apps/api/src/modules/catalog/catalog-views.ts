@@ -10,6 +10,27 @@ import type { ExerciseContext, LessonContext, OutlineItem } from './catalog.read
 interface Source {
   sourceRepo: string;
   commitSha: string;
+  /** registry versions only (DECISIONS ADR-10): where each track was read from, by slug */
+  trackSources?: unknown;
+}
+
+/**
+ * Repo and commit to link to for one track of a version. A registry version
+ * (`sourceRepo` = learning-hub-content) knows each track's own repo; any other version,
+ * or a track missing from the map, falls back to the version's own repo and commit.
+ */
+export function sourceFor(version: Source, trackSlug: string): { repo: string; commitSha: string } {
+  const own = (version.trackSources as Record<string, unknown> | null | undefined)?.[trackSlug];
+  if (
+    own &&
+    typeof own === 'object' &&
+    typeof (own as { repo?: unknown }).repo === 'string' &&
+    typeof (own as { commitSha?: unknown }).commitSha === 'string'
+  ) {
+    const { repo, commitSha } = own as { repo: string; commitSha: string };
+    return { repo, commitSha };
+  }
+  return { repo: version.sourceRepo, commitSha: version.commitSha };
 }
 
 interface TrackRow {
@@ -65,7 +86,7 @@ export interface TrackDetailRow extends TrackRow {
  * Before the first publish there is no published version, so the track's own version is used.
  */
 export function toTrackDetail(track: TrackDetailRow, published: Source | null) {
-  const source = published ?? track.contentVersion;
+  const source = sourceFor(published ?? track.contentVersion, track.slug);
   return {
     id: track.id,
     slug: track.slug,
@@ -76,11 +97,7 @@ export function toTrackDetail(track: TrackDetailRow, published: Source | null) {
     estHours: track.estHours,
     tags: track.tags,
     starterRepo: track.starterRepo,
-    source: {
-      repo: source.sourceRepo,
-      commitSha: source.commitSha,
-      path: track.sourcePath,
-    },
+    source: { ...source, path: track.sourcePath },
     modules: track.modules.map((m) => ({
       id: m.id,
       slug: m.slug,
@@ -149,10 +166,7 @@ export function toLessonContext(lesson: LessonRow): LessonContext {
     sourcePath: lesson.sourcePath,
     track: { id: module.track.id, slug: module.track.slug, title: module.track.title },
     module: { slug: module.slug, title: module.title },
-    source: {
-      repo: lesson.contentVersion.sourceRepo,
-      commitSha: lesson.contentVersion.commitSha,
-    },
+    source: sourceFor(lesson.contentVersion, module.track.slug),
     exercises: lesson.exercises.map((e) => ({
       id: e.id,
       title: e.title,

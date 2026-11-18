@@ -259,6 +259,13 @@ cd /opt/learning-hub
 docker compose -f docker-compose.prod.yml run --rm api node dist/cli/content-sync.js --publish
 ```
 
+Nguồn nội dung là biến `CONTENT_SOURCE` trong `.env`:
+
+- `github`: đọc thẳng các thư mục `tracks/` trong `CONTENT_REPO`.
+- `registry`: `CONTENT_REPO` (`learning-hub-content`) chỉ chứa `tracks.yaml`. Mỗi track nằm trong repo riêng `learning-hub-track-<slug>`, và được đọc tại đúng commit ghi trong `tracks.yaml` ([ADR-10](https://github.com/hcmute-dsc/learning-hub-docs/blob/main/docs/product/DECISIONS.md#adr-10--mỗi-track-một-repo-learning-hub-content-thành-registry)). Muốn publish phiên bản mới của một track thì mở PR đổi commit của track đó trong `tracks.yaml`.
+
+Đổi `CONTENT_SOURCE` xong thì chạy **Actions → Deploy → Run workflow** để API đọc lại `.env`, rồi mới chạy lệnh sync ở trên.
+
 Rồi mở https://learn.hcmute-dsc.io.vn, đăng nhập bằng GitHub của tech lead (tự thành admin), vào **Quản trị** để thêm danh sách email thành viên.
 
 ## Bước 11. Sao lưu hằng ngày

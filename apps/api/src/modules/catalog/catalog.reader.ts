@@ -99,7 +99,7 @@ export class CatalogReader {
       where: { id, status: 'active', module: { status: 'active', track: { status: 'active' } } },
       include: {
         module: { include: { track: true } },
-        contentVersion: { select: { sourceRepo: true, commitSha: true } },
+        contentVersion: { select: { sourceRepo: true, commitSha: true, trackSources: true } },
         exercises: {
           where: { status: 'active' },
           orderBy: { position: 'asc' },
