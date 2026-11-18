@@ -74,7 +74,8 @@ try {
   Write-Output "copy       (users|submissions|migrations): $copy"
   if ($ProdHost) {
     $prod = ssh $ProdHost "cd /opt/learning-hub && docker compose -f docker-compose.prod.yml exec -T db psql -U hub -d learning_hub -At -c '$Query'"
-    Write-Output "production (users|submissions|migrations): $prod"
+    if ($LASTEXITCODE -ne 0) { Write-Warning "could not read the production counts through ssh $ProdHost" }
+    else { Write-Output "production (users|submissions|migrations): $prod" }
   }
   $name = [IO.Path]::GetFileName($File) -replace '\.sql\.gz\.age$', ''
   $today = (Get-Date).ToString('dd/MM/yyyy')
