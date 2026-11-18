@@ -187,6 +187,25 @@ export class UsersService {
     return rows.sort((a, b) => Number(b.status === 'pending') - Number(a.status === 'pending'));
   }
 
+  /** Accounts per status for the admin overview (counts only, SECURITY §1). */
+  async countByStatus(): Promise<Record<UserStatus, number>> {
+    const groups = await this.prisma.user.groupBy({
+      by: ['status'],
+      where: { deletedAt: null },
+      _count: { _all: true },
+    });
+    const counts: Record<UserStatus, number> = { pending: 0, active: 0, suspended: 0 };
+    for (const g of groups) {
+      if (g.status in counts) counts[g.status as UserStatus] = g._count._all;
+    }
+    return counts;
+  }
+
+  /** Accounts that signed in at or after `since` (admin overview activity). */
+  countSignedInSince(since: Date): Promise<number> {
+    return this.prisma.user.count({ where: { deletedAt: null, lastLoginAt: { gte: since } } });
+  }
+
   async listPending(): Promise<Me[]> {
     const users = await this.prisma.user.findMany({
       where: { status: 'pending', deletedAt: null },

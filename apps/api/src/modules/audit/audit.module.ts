@@ -9,5 +9,6 @@ import { AuditReader } from './audit.reader';
   imports: [UsersModule],
   controllers: [AuditController],
   providers: [AuditListener, AuditReader],
+  exports: [AuditReader],
 })
 export class AuditModule {}

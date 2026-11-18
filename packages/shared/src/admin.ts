@@ -145,3 +145,34 @@ export interface AuditPage {
 }
 
 /** GET /api/v1/admin/audit/actions  (admin only) → { data: string[] } — for the filter */
+
+// ---------- Overview (/admin) ----------
+
+/**
+ * GET /api/v1/admin/overview  (admin only) → { data: AdminOverview }
+ * Counts only: no names or emails, so the page can never leak personal data (SECURITY §1).
+ */
+export interface AdminOverview {
+  members: Record<UserStatus, number>;
+  content: {
+    /** the version members see now, or null before the first publish */
+    published: { id: string; commitSha: string; publishedAt: string | null } | null;
+    /** synced versions waiting for a maintainer to publish or reject */
+    drafts: number;
+  };
+  reviews: {
+    waiting: number;
+    /** the submission waiting longest, or null when the queue is empty */
+    oldest: { submittedAt: string; hoursWaiting: number; overTarget: boolean } | null;
+    targetHours: number;
+  };
+  /** the last `days` days, counted from now */
+  activity: {
+    days: number;
+    /** members who signed in at least once */
+    signedIn: number;
+    submissions: number;
+    /** rows written to the audit log (Nhật ký) */
+    adminActions: number;
+  };
+}
