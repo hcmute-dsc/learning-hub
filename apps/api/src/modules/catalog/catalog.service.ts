@@ -87,6 +87,14 @@ export class CatalogService {
       },
     });
     if (!track || track.status !== 'active') throw DomainError.notFound('Track');
+    // track.contentVersion is the version that last wrote the track row, so it stays old
+    // when a publish only changes lessons (the page showed ea5de5c after 95a1924 went live,
+    // 18/11/2026). Show the version members are reading now.
+    const source =
+      (await this.prisma.contentVersion.findFirst({
+        where: { status: 'published' },
+        select: { commitSha: true, sourceRepo: true },
+      })) ?? track.contentVersion;
     return {
       id: track.id,
       slug: track.slug,
@@ -98,8 +106,8 @@ export class CatalogService {
       tags: track.tags,
       starterRepo: track.starterRepo,
       source: {
-        repo: track.contentVersion.sourceRepo,
-        commitSha: track.contentVersion.commitSha,
+        repo: source.sourceRepo,
+        commitSha: source.commitSha,
         path: track.sourcePath,
       },
       modules: track.modules.map((m) => ({
