@@ -16,6 +16,10 @@ export function QueueFilterForm({
   filter: QueueFilter;
   options: ReviewQueue['options'];
 }) {
+  // Logins match case-insensitively (as in the API), so ?mentee=tiennhm still selects TienNHM.
+  const mentee =
+    options.mentees.find((m) => m.githubLogin.toLowerCase() === filter.mentee?.toLowerCase())
+      ?.githubLogin ?? '';
   return (
     <form method="get" className="flex flex-wrap items-center gap-2" aria-label="Lọc hàng đợi">
       <label htmlFor="track" className="text-sm font-medium">
@@ -35,7 +39,7 @@ export function QueueFilterForm({
           <label htmlFor="mentee" className="ml-2 text-sm font-medium">
             Mentee
           </label>
-          <select id="mentee" name="mentee" defaultValue={filter.mentee ?? ''} className={FIELD}>
+          <select id="mentee" name="mentee" defaultValue={mentee} className={FIELD}>
             <option value="">Tất cả</option>
             {options.mentees.map((m) => (
               <option key={m.id} value={m.githubLogin}>

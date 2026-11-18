@@ -120,6 +120,17 @@ export class SubmissionReviewService {
     return { waiting, claimed, overTarget };
   }
 
+  /** userId → when they last submitted anything (mentor dashboard: inactive mentees). */
+  async lastSubmittedFor(userIds: string[]): Promise<{ userId: string; at: Date | null }[]> {
+    if (!userIds.length) return [];
+    const rows = await this.prisma.submission.groupBy({
+      by: ['userId'],
+      where: { userId: { in: userIds } },
+      _max: { submittedAt: true },
+    });
+    return rows.map((r) => ({ userId: r.userId, at: r._max.submittedAt }));
+  }
+
   /**
    * One submission, its exercise (with the rubric of a project) and the member's
    * earlier attempts, newest first. 404 when the submission or its exercise is gone.

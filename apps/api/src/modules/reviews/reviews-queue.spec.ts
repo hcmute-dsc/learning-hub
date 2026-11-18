@@ -118,7 +118,12 @@ describe('ReviewsService.queue', () => {
 describe('MenteeActivity.forMentor', () => {
   it('returns nothing (and no inactive count) for a mentor without mentees', async () => {
     const prisma = { mentorAssignment: { findMany: jest.fn().mockResolvedValue([]) } };
-    const reader = new MenteeActivity(prisma as never, { byIds: jest.fn() } as never);
+    const reader = new MenteeActivity(
+      prisma as never,
+      { byIds: jest.fn() } as never,
+      {} as never,
+      {} as never,
+    );
     expect(await reader.forMentor('mentor-1', now)).toEqual({ mentees: [], inactive: null });
     expect(prisma.mentorAssignment.findMany).toHaveBeenCalledWith({
       where: { mentorId: 'mentor-1', status: 'active' },
@@ -135,23 +140,28 @@ describe('MenteeActivity.forMentor', () => {
           { menteeId: 'an', startedAt: daysAgo(60) },
         ]),
       },
-      submission: {
-        groupBy: jest
-          .fn()
-          .mockResolvedValue([{ userId: 'an', _max: { submittedAt: daysAgo(20) } }]),
-      },
-      lessonProgress: {
-        groupBy: jest.fn().mockResolvedValue([{ userId: 'binh', _max: { updatedAt: daysAgo(1) } }]),
-      },
     };
     const people = {
       byIds: jest.fn(async (ids: string[]) => new Map(ids.map((id) => [id, person(id)]))),
     };
-    const reader = new MenteeActivity(prisma as never, people as never);
+    // Activity comes from the owning modules: submissions and learning.
+    const submissions = {
+      lastSubmittedFor: jest.fn().mockResolvedValue([{ userId: 'an', at: daysAgo(20) }]),
+    };
+    const lessons = {
+      lastActivityFor: jest.fn().mockResolvedValue([{ userId: 'binh', at: daysAgo(1) }]),
+    };
+    const reader = new MenteeActivity(
+      prisma as never,
+      people as never,
+      submissions as never,
+      lessons as never,
+    );
 
     const result = await reader.forMentor('mentor-1', now);
 
     expect(result.mentees.map((m) => m.id)).toEqual(['an', 'binh']);
     expect(result.inactive).toBe(1);
+    expect(submissions.lastSubmittedFor).toHaveBeenCalledWith(['binh', 'an']);
   });
 });

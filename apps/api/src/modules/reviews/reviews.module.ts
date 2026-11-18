@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { CatalogModule } from '../catalog/catalog.module';
+import { LearningModule } from '../learning/learning.module';
 import { SubmissionsModule } from '../submissions/submissions.module';
 import { UsersModule } from '../users/users.module';
 import { MenteeActivity } from './mentee-activity';
@@ -9,7 +10,7 @@ import { ReviewsService } from './reviews.service';
 
 /**
  * E7: mentor review. Owns the `reviews` table. Depends on submissions (queue, outcome),
- * catalog (track list) and users (names); nothing depends on it except through the COMPLETED_REVIEWS port.
+ * catalog (track list), learning (lesson-progress dates) and users (names); nothing depends on it except through the COMPLETED_REVIEWS port.
  *
  * Files, by job:
  *   review-rules.ts          who may claim/release/complete, rubric scores, waiting time (pure)
@@ -20,7 +21,7 @@ import { ReviewsService } from './reviews.service';
  *   reviews.events.ts        Claimed / Released / Completed (audit and notifications listen)
  */
 @Module({
-  imports: [SubmissionsModule, CatalogModule, UsersModule, ReviewRecordsModule],
+  imports: [SubmissionsModule, CatalogModule, LearningModule, UsersModule, ReviewRecordsModule],
   controllers: [ReviewsController],
   providers: [ReviewsService, MenteeActivity],
 })

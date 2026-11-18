@@ -17,7 +17,8 @@ import { ProgressService } from './progress.service';
 /**
  * E4: enrollments, lesson pages, lesson progress, track progress, "continue" item.
  * Also the member profile (/members/:login), which adds user facts from users.
- * Depends on catalog (content), submissions (exercise states) and users. Nothing depends on it.
+ * Depends on catalog (content), submissions (exercise states) and users. Only reviews uses
+ * it, for the lesson-progress dates behind "inactive mentees" (LessonProgressRepository).
  */
 @Module({
   imports: [CatalogModule, SubmissionsModule, UsersModule],
@@ -36,5 +37,6 @@ import { ProgressService } from './progress.service';
     ProfileService,
     CompletionListener,
   ],
+  exports: [LessonProgressRepository],
 })
 export class LearningModule {}
