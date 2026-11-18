@@ -42,6 +42,24 @@ const REVIEW_SELECT = {
 
 type ReviewOutcome = 'approved' | 'changes_requested';
 
+/** Review queue filters: a track slug and/or the GitHub login of the member who submitted. */
+export interface QueueFilter {
+  track?: string;
+  mentee?: string;
+}
+
+/** The `where` of the review queue (exported for its unit test). */
+export function awaitingReviewWhere(filter: QueueFilter): Prisma.SubmissionWhereInput {
+  return {
+    status: 'awaiting_review',
+    ...(filter.track ? { exercise: { module: { track: { slug: filter.track } } } } : {}),
+    // GitHub logins are case-insensitive, and people type them both ways.
+    ...(filter.mentee
+      ? { user: { githubLogin: { equals: filter.mentee, mode: 'insensitive' as const } } }
+      : {}),
+  };
+}
+
 /**
  * The part of the submissions module that the reviews module uses (E7). Submissions
  * stay the owner of their table and their status: reviews never write `submissions`
@@ -55,10 +73,13 @@ export class SubmissionReviewService {
     private readonly events: EventEmitter2,
   ) {}
 
-  /** Project submissions waiting for a mentor, oldest first (partial index on submitted_at). */
-  async awaitingReview(): Promise<QueuedSubmission[]> {
+  /**
+   * Project submissions waiting for a mentor, oldest first (partial index on submitted_at),
+   * optionally only one track and/or one member.
+   */
+  async awaitingReview(filter: QueueFilter = {}): Promise<QueuedSubmission[]> {
     const rows = await this.prisma.submission.findMany({
-      where: { status: 'awaiting_review' },
+      where: awaitingReviewWhere(filter),
       orderBy: { submittedAt: 'asc' },
       take: QUEUE_LIMIT,
       select: {
@@ -78,6 +99,25 @@ export class SubmissionReviewService {
       exercise: { id: exercise.id, title: exercise.title },
       track: exercise.module.track,
     }));
+  }
+
+  /**
+   * Counts over every waiting submission that matches the filter (not only the first
+   * QUEUE_LIMIT rows). `overdueBefore`: submitted earlier than this = over the target.
+   */
+  async awaitingReviewCounts(
+    filter: QueueFilter,
+    overdueBefore: Date,
+  ): Promise<{ waiting: number; claimed: number; overTarget: number }> {
+    const where = awaitingReviewWhere(filter);
+    const [waiting, claimed, overTarget] = await Promise.all([
+      this.prisma.submission.count({ where }),
+      this.prisma.submission.count({
+        where: { ...where, reviews: { some: { status: 'in_progress' } } },
+      }),
+      this.prisma.submission.count({ where: { ...where, submittedAt: { lt: overdueBefore } } }),
+    ]);
+    return { waiting, claimed, overTarget };
   }
 
   /**

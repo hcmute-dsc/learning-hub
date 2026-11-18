@@ -83,10 +83,59 @@ export interface OpenReview {
   claimedAt: string;
 }
 
+/** Track slug, as in the content repo (lowercase words joined by `-`). */
+export const TRACK_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+/** GitHub login: letters, digits and single `-`, at most 39 characters. */
+export const GITHUB_LOGIN_PATTERN = /^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$/;
+
+/**
+ * GET /api/v1/reviews/queue?track=&mentee= (mentor). Both filters are optional and can be
+ * combined: `track` is a track slug, `mentee` the GitHub login of the member who submitted.
+ */
+export const reviewQueueQuerySchema = z
+  .object({
+    track: z.string().max(80).regex(TRACK_SLUG_PATTERN).optional(),
+    mentee: z.string().regex(GITHUB_LOGIN_PATTERN).optional(),
+  })
+  .strict();
+export type ReviewQueueQuery = z.infer<typeof reviewQueueQuerySchema>;
+
+/** A mentee counts as inactive after this many days without a submission or lesson progress. */
+export const MENTEE_INACTIVE_DAYS = 14;
+
+/** Numbers for the mentor dashboard, counted in the database for the current filter. */
+export interface ReviewQueueStats {
+  /** submissions waiting for review */
+  waiting: number;
+  /** of those, how many a mentor has already claimed */
+  claimed: number;
+  /** of those, how many have waited longer than targetHours */
+  overTarget: number;
+  /** whole hours the oldest waiting submission has waited; null when nothing waits */
+  oldestHoursWaiting: number | null;
+  /**
+   * The viewer's active mentees (mentor_assignments) with no activity for
+   * MENTEE_INACTIVE_DAYS days; null when the viewer has no mentees (E8 not used yet).
+   * Not affected by the filters.
+   */
+  inactiveMentees: number | null;
+}
+
 /** GET /api/v1/reviews/queue (mentor) → { data: ReviewQueue }, oldest submission first */
 export interface ReviewQueue {
   /** REVIEW_TARGET_HOURS: a submission waiting longer is highlighted */
   targetHours: number;
+  /** the filters applied, echoed back (null = not filtered) */
+  filters: { track: string | null; mentee: string | null };
+  stats: ReviewQueueStats;
+  /** choices for the filter form */
+  options: {
+    /** active tracks, in catalog order */
+    tracks: { slug: string; title: string }[];
+    /** the viewer's active mentees; empty → the mentee filter is not shown */
+    mentees: PersonRef[];
+  };
+  /** at most 200 rows; `stats` counts all of them */
   items: ReviewQueueItem[];
 }
 

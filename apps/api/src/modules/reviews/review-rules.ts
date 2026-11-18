@@ -132,3 +132,44 @@ export function waitingTime(
   const hoursWaiting = Math.floor(ms / 3_600_000);
   return { hoursWaiting, overTarget: ms > targetHours * 3_600_000 };
 }
+
+/**
+ * Active mentees with no activity for `days` days. A mentee's last activity is the
+ * latest of: assignment start, last submission, last lesson progress; a mentee just
+ * assigned is therefore not "inactive" on day one. A mentee with several active
+ * assignments (one per track) is counted once.
+ */
+export function countInactiveMentees(
+  mentees: { menteeId: string; startedAt: Date | null }[],
+  lastActivity: Map<string, Date>,
+  now: Date,
+  days: number,
+): number {
+  const cutoff = now.getTime() - days * 86_400_000;
+  const last = latestActivity(
+    mentees.map((m) => ({ userId: m.menteeId, at: m.startedAt })),
+    [...lastActivity].map(([userId, at]) => ({ userId, at })),
+  );
+  const ids = new Set(mentees.map((m) => m.menteeId));
+  let inactive = 0;
+  for (const id of ids) {
+    const at = last.get(id);
+    if (!at || at.getTime() < cutoff) inactive += 1;
+  }
+  return inactive;
+}
+
+/** menteeId → latest of several activity dates (null dates are ignored). */
+export function latestActivity(
+  ...sources: { userId: string; at: Date | null }[][]
+): Map<string, Date> {
+  const latest = new Map<string, Date>();
+  for (const rows of sources) {
+    for (const { userId, at } of rows) {
+      if (!at) continue;
+      const prev = latest.get(userId);
+      if (!prev || at > prev) latest.set(userId, at);
+    }
+  }
+  return latest;
+}
