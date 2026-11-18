@@ -115,6 +115,8 @@ model ContentVersion {
   /// draft | published | superseded | rejected
   status      String    @default("draft")
   summary     Json      @default("{}")
+  /// registry only (ADR-10): { "<track slug>": { "repo": "owner/name", "commitSha": "…" } }
+  trackSources Json?    @map("track_sources")
   syncedBy    String?   @map("synced_by") @db.Uuid
   publishedBy String?   @map("published_by") @db.Uuid
   publishedAt DateTime? @map("published_at") @db.Timestamptz

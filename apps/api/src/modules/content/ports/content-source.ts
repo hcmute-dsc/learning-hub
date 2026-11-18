@@ -11,7 +11,20 @@ export interface ContentSource {
   listFiles(sha: string): Promise<string[]>;
   /** UTF-8 content of one file at that commit */
   readFile(sha: string, path: string): Promise<string>;
+  /**
+   * Only for a registry (DECISIONS ADR-10): the repo and commit each track was read from
+   * at that registry commit, keyed by track slug. Stored on the version so pages link to
+   * the track's own repo instead of the registry.
+   */
+  trackSources?(sha: string): Promise<TrackSources>;
 }
+
+export interface TrackSource {
+  repo: string;
+  commitSha: string;
+}
+
+export type TrackSources = Record<string, TrackSource>;
 
 export const CONTENT_SOURCE = Symbol('CONTENT_SOURCE');
 

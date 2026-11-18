@@ -106,6 +106,7 @@ export class ContentService {
 
     const { tree, issues, plan } = await this.readAndPlan(sha);
     const status = issues.length ? 'rejected' : 'draft';
+    const trackSources = await this.source.trackSources?.(sha);
     const version = await this.prisma.contentVersion.create({
       data: {
         id: newId(),
@@ -113,6 +114,7 @@ export class ContentService {
         commitSha: sha,
         status,
         syncedBy: actorId,
+        ...(trackSources && { trackSources: trackSources as unknown as Prisma.InputJsonValue }),
         summary: {
           counts: counts(tree),
           diff: plan?.diff ?? null,

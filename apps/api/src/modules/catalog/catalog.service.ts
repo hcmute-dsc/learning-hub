@@ -73,13 +73,13 @@ export class CatalogService {
             },
           },
         },
-        contentVersion: { select: { commitSha: true, sourceRepo: true } },
+        contentVersion: { select: { commitSha: true, sourceRepo: true, trackSources: true } },
       },
     });
     if (!track || track.status !== 'active') throw DomainError.notFound('Track');
     const published = await this.prisma.contentVersion.findFirst({
       where: { status: 'published' },
-      select: { commitSha: true, sourceRepo: true },
+      select: { commitSha: true, sourceRepo: true, trackSources: true },
     });
     return toTrackDetail(track, published);
   }

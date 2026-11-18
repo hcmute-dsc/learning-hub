@@ -21,7 +21,8 @@ export const envSchema = z.object({
    */
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(1),
   // Content source (CONTENT-SPECIFICATION §8): a local folder for dev, or a GitHub repo
-  CONTENT_SOURCE: z.enum(['local', 'github']).default('local'),
+  /** local = a folder (dev), github = one content repo, registry = tracks.yaml + one repo per track (ADR-10) */
+  CONTENT_SOURCE: z.enum(['local', 'github', 'registry']).default('local'),
   CONTENT_LOCAL_DIR: z.string().default('../../content-example'),
   CONTENT_REPO: z
     .string()
