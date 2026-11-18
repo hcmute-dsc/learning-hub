@@ -76,8 +76,61 @@ pnpm format && pnpm typecheck && pnpm test
 
 **Work on content locally.** Edit files in `content-example/`, then run `node packages/content/dist/cli.js content-example`. Then run `pnpm --filter @hub/api content:sync -- --publish`.
 
-## Commits and pull requests
+## Workflow: issue → branch → PR → review → merge
 
-- Use one topic per PR, a short imperative title (`Content: archive removed exercises`) and a description of _why_.
-- CI must be green: format, typecheck, tests, migrations on an empty database, seed, content validation and build.
-- Never commit `.env` files or secrets.
+All work is tracked on the org board [DSC Learning Hub · Project #1](https://github.com/orgs/hcmute-dsc/projects/1). The full process (fields, sprints, bug lifecycle) is in [WORKFLOW.md](https://github.com/hcmute-dsc/learning-hub-docs/blob/main/docs/ops/WORKFLOW.md). In short:
+
+1. **Issue first.** Every change starts from an issue (use the templates). Look for an existing one before opening a new one. Assign yourself and set Status = In progress.
+2. **Branch** from up-to-date `main`: `<type>/<issue>-<short-slug>`.
+   - `type`: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`.
+   - Issue in another repo: prefix it, e.g. `chore/docs-4-work-standards`.
+   - Examples: `fix/8-track-source-commit`, `feat/3-sql-checker`.
+3. **Commits**: `Area: imperative summary` (≤ 72 characters), e.g. `Catalog: show the published commit on the track page`.
+   - `Area` is the module or part you touched: `API`, `Web`, `Catalog`, `Content`, `Discord`, `Deploy`, `Runbook`, `CI`…
+   - The body says _why_, and ends with `Refs #8` (or `Refs hcmute-dsc/learning-hub-docs#4`).
+   - Small, self-contained commits. No "wip" or "fix typo" commits in the final PR: squash them locally or let the squash merge do it.
+4. **Pull request** from the template.
+   - Title in the commit format.
+   - First line `Closes #<n>` (or `Closes hcmute-dsc/<repo>#<n>`), so merging closes the issue and moves it to Done.
+   - One topic per PR, ideally under ~400 changed lines. Split bigger work.
+   - Open it as a **draft** while you are still working.
+5. **CI must be green**: format, typecheck, tests, migrations on an empty database, seed, content validation and build.
+6. **Review** (below), then **squash merge**. The PR title becomes the commit on `main`. Delete the branch.
+
+Never push directly to `main`. A production hotfix still goes through a PR. If the reviewer is not available, merge it yourself after CI is green, and ask for a review afterwards in the PR.
+
+### Bugs
+
+- Every bug gets an issue labelled `bug` (template: steps, expected, actual, impact). This includes a bug you find and fix in the same hour.
+- The fix PR adds a test that fails without the fix whenever the code can be unit-tested. If it can't, say why in the PR.
+- The PR (or a closing comment on the issue) records:
+  - the **root cause**;
+  - the **fix**;
+  - **how it was verified** (tests; production after deploy).
+- Incidents on production are also logged in [DEPLOYMENT §7](https://github.com/hcmute-dsc/learning-hub-docs/blob/main/docs/ops/DEPLOYMENT.md).
+
+### Code review
+
+The reviewer checks, in this order:
+
+1. **Correctness**: does it do what the issue asks? Edge cases, errors, empty states.
+2. **Security**: access checks (`@Roles`/`@Public`), input validated with Zod, no personal data in logs or Discord, no secrets.
+3. **Design**: the module rules above (one-way dependencies, ports, pure rules, `DomainError`, events).
+4. **Tests**: new rules and fixed bugs are covered.
+5. **Readability**: a new member can follow it; comments explain _why_.
+6. **Docs**: design docs, `DATABASE.md` and `deploy/README.md` are updated when behaviour, schema or operations change.
+
+How to comment:
+
+- Prefix blocking comments with `must:` and optional ones with `nit:`.
+- Approve when no `must:` comments are left.
+- The author resolves each thread, or answers it, before merging.
+
+### Definition of done
+
+- The PR is merged and CI is green.
+- The change is deployed (Deploy workflow green) and checked on production when users can see it.
+- The issue is closed and its Status is Done on the project.
+- Docs are updated.
+
+Never commit `.env` files or secrets.

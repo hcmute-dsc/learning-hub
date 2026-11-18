@@ -9,3 +9,7 @@ coverage/
 !.env.example
 .DS_Store
 *.log
+
+# Claude Code: local settings and worktrees (shared skills in .claude/skills are committed)
+.claude/settings.local.json
+.claude/worktrees/

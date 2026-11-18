@@ -1,0 +1,53 @@
+name: Báo lỗi
+description: Một chức năng chạy sai, lỗi 500, giao diện hỏng
+title: '[Bug] '
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Repo này **public**. Không dán secret, mật khẩu, URL webhook, IP VPS, cookie hay email thành viên.
+        Lỗi bảo mật: báo riêng cho Ban kỹ thuật, không mở issue.
+  - type: textarea
+    id: steps
+    attributes:
+      label: Các bước tái hiện
+      placeholder: |
+        1. Đăng nhập bằng tài khoản thành viên
+        2. Mở /tracks/sql-30-days
+        3. Bấm …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Mong đợi
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Thực tế
+      description: Kèm ảnh chụp, thông báo lỗi, `requestId` nếu có.
+    validations:
+      required: true
+  - type: dropdown
+    id: env
+    attributes:
+      label: Môi trường
+      options:
+        - Production (learn.hcmute-dsc.io.vn)
+        - Máy local
+    validations:
+      required: true
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Mức ảnh hưởng
+      description: Dùng để đặt Priority trên project.
+      options:
+        - P0 - site sập, mất dữ liệu, lộ dữ liệu
+        - P1 - một chức năng chính không dùng được
+        - P2 - sai hiển thị, có cách khác để làm
+    validations:
+      required: true

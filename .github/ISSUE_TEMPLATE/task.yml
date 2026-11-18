@@ -1,0 +1,23 @@
+name: Việc kỹ thuật
+description: Vận hành, refactor, nâng cấp thư viện, tài liệu kỹ thuật
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Bối cảnh
+    validations:
+      required: true
+  - type: textarea
+    id: todo
+    attributes:
+      label: Việc cần làm
+      value: |
+        - [ ]
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Hoàn thành khi
+    validations:
+      required: true
