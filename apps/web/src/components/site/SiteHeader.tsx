@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Me } from '@hub/shared';
 import { adminHomeFor } from '@/components/admin/admin-tabs';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { Avatar } from '@/components/ui/Avatar';
 import { BrandLogo } from './BrandLogo';
 import { NavLink } from './NavLink';
@@ -59,6 +60,8 @@ export function SiteHeader({ me }: { me: Me | null }) {
                 <Avatar src={me.avatarUrl} size={28} />
                 <span className="hidden sm:inline">@{me.githubLogin}</span>
               </Link>
+              {/* pending accounts have nothing to read yet and the API would refuse them */}
+              {me.status === 'active' && <NotificationBell />}
               <Link
                 href="/settings"
                 aria-label="Cài đặt"
