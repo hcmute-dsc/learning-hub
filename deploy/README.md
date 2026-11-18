@@ -479,6 +479,7 @@ docker compose -f docker-compose.prod.yml ps                    # 7. kiểm tra
 4. Tạo SSH key deploy mới (Bước 4, 7), xóa khóa cũ khỏi `authorized_keys`.
 5. Tạo lại 2 webhook Discord nếu người cũ rời server (Bước 12), cập nhật `.env` và secret repo.
 6. Người mới tự chạy [kiểm tra bản sao lưu](#kiểm-tra-bản-sao-lưu-dùng-được-mỗi-tháng) một lần; người cũ xóa các bản sao lưu đã chép về máy mình.
+7. Kiểm tra cài đặt repo: chỉ squash merge, bảo vệ nhánh `main` (bắt buộc PR, CI `build-test` xanh). Lệnh `gh` và cách đổi sang "1 approval" khi có maintainer thứ hai: [WORKFLOW §7.5](https://github.com/hcmute-dsc/learning-hub-docs/blob/main/docs/ops/WORKFLOW.md#75-cài-đặt-repo-để-ép-quy-trình-admin-làm-mỗi-repo-một-lần).
 
 ## Hiện trạng production (cập nhật khi thay đổi)
 
