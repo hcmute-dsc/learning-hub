@@ -10,7 +10,7 @@ This repo is maintained by successive generations of HCMUTE DSC members. Agents 
    - The fix has a regression test, or a written reason why there isn't one.
    - Closing records the root cause, the fix and how it was verified.
 3. **Never push to `main`.** Branch `<type>/<issue>-<slug>`, commits `Area: imperative summary` + `Refs #n`, PR from the template with `Closes #n`, CI green, review, squash merge. Skill: `ship-pr`.
-4. **The human merges.** Self-review the diff with the `review-pr` checklist, then ask the maintainer to review and merge. Don't merge, change repo settings or branch protection, or touch production without an explicit yes in chat.
+4. **Review every PR automatically, then the human merges.** After CI is green, review your own PR with the `review-pr` checklist, fix every `must:`, and post the review on the PR as a comment (learning-hub#22). Then ask the maintainer to review and merge. Don't merge, change repo settings or branch protection, or touch production without an explicit yes in chat.
 5. **Done means live.** After merge: Deploy workflow green, check the change on https://learn.hcmute-dsc.io.vn, issue closed and Done on the board.
 6. **Docs move with code.**
    - Behaviour, API or schema changes update learning-hub-docs.
@@ -35,4 +35,4 @@ Local setup, module map and code rules: [CONTRIBUTING.md](CONTRIBUTING.md). Prod
 | `start-task` | any new request: find/create the issue, put it on the board, branch                   |
 | `fix-bug`    | something behaves wrong: log, reproduce, root cause, test, fix, close                 |
 | `ship-pr`    | the change is ready: commit, PR, CI, hand to review, after merge verify on production |
-| `review-pr`  | reviewing a PR (yours before hand-off, or someone else's)                             |
+| `review-pr`  | automatic review of every PR you open (posted on the PR), or reviewing someone's PR   |
