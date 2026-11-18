@@ -6,6 +6,7 @@ const hrefs = (roles: Parameters<typeof adminTabsFor>[0]) => adminTabsFor(roles)
 describe('adminTabsFor', () => {
   it('shows every tab to admins', () => {
     expect(hrefs(['member', 'admin'])).toEqual([
+      '/admin',
       '/admin/members',
       '/admin/content',
       '/admin/audit',
@@ -28,7 +29,8 @@ describe('adminTabsFor', () => {
 
 describe('adminHomeFor', () => {
   it('is the first tab the person may open', () => {
-    expect(adminHomeFor(['member', 'admin'])).toBe('/admin/members');
+    expect(adminHomeFor(['member', 'admin'])).toBe('/admin');
+    expect(adminHomeFor(['member', 'mentor'])).toBe('/admin/members');
     expect(adminHomeFor(['member', 'content_maintainer'])).toBe('/admin/content');
     expect(adminHomeFor(['member'])).toBeNull();
   });
@@ -36,9 +38,15 @@ describe('adminHomeFor', () => {
 
 describe('isTabActive', () => {
   it('matches the tab and its sub-pages, not a lookalike prefix', () => {
-    const content = ADMIN_TABS[1];
+    const content = ADMIN_TABS[2];
     expect(isTabActive(content, '/admin/content')).toBe(true);
     expect(isTabActive(content, '/admin/content/versions/abc')).toBe(true);
     expect(isTabActive(content, '/admin/contentx')).toBe(false);
+  });
+
+  it('keeps the overview active on /admin only', () => {
+    const overview = ADMIN_TABS[0];
+    expect(isTabActive(overview, '/admin')).toBe(true);
+    expect(isTabActive(overview, '/admin/members')).toBe(false);
   });
 });

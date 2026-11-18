@@ -9,9 +9,9 @@
   "scripts": {
     "dev": "pnpm -r --parallel --filter ./apps/* dev",
     "build": "pnpm -r build",
-    "lint": "pnpm -r lint",
+    "lint": "pnpm -r lint && node scripts/check-boundaries.mjs",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm -r test",
+    "test": "pnpm -r test && node --test \"scripts/*.test.mjs\"",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "db:up": "docker compose up -d db",

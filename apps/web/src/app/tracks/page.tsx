@@ -3,7 +3,12 @@ import type { CSSProperties } from 'react';
 import type { Paginated, TrackProgress, TrackSummary } from '@hub/shared';
 import { CatalogToolbar } from '@/components/catalog/CatalogToolbar';
 import { TrackCard } from '@/components/catalog/TrackCard';
-import { parseFilters, progressBySlug, tracksQuery } from '@/components/catalog/catalog';
+import {
+  hasFilters,
+  parseFilters,
+  progressBySlug,
+  tracksQuery,
+} from '@/components/catalog/catalog';
 import { api } from '@/lib/api';
 import { CLUB_LINKS } from '@/lib/club';
 
@@ -13,15 +18,16 @@ export const metadata: Metadata = { title: 'Lộ trình' };
 export default async function TracksPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; level?: string }>;
+  searchParams: Promise<{ q?: string; level?: string; tag?: string | string[] }>;
 }) {
   const filters = parseFilters(await searchParams);
-  const [{ data: tracks, page }, { data: enrollments }] = await Promise.all([
+  const [{ data: tracks, page }, { data: enrollments }, { data: tags }] = await Promise.all([
     api<Paginated<TrackSummary>>(`/tracks?${tracksQuery(filters)}`),
     api<{ data: TrackProgress[] }>('/me/enrollments'),
+    api<{ data: string[] }>('/tracks/tags'),
   ]);
   const progress = progressBySlug(enrollments);
-  const filtered = Boolean(filters.q || filters.level);
+  const filtered = hasFilters(filters);
 
   return (
     <section>
@@ -42,7 +48,7 @@ export default async function TracksPage({
       </header>
 
       <div className="mt-8">
-        <CatalogToolbar filters={filters} total={page.total} />
+        <CatalogToolbar filters={filters} tags={tags} total={page.total} />
       </div>
 
       {tracks.length === 0 ? (
@@ -67,7 +73,7 @@ export default async function TracksPage({
               className="motion-fade-up"
               style={{ '--i': index + 2 } as CSSProperties}
             >
-              <TrackCard track={track} percent={progress.get(track.slug)} />
+              <TrackCard track={track} filters={filters} percent={progress.get(track.slug)} />
             </li>
           ))}
         </ul>

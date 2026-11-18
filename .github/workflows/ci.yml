@@ -43,9 +43,12 @@ jobs:
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: pnpm format:check
+      # CONTRIBUTING rule 2: modules/ never imports integrations/ (Nest *.module wiring aside).
+      - run: node scripts/check-boundaries.mjs
       - run: pnpm --filter "./packages/*" build
       - run: node packages/content/dist/cli.js content-example
       - run: pnpm typecheck
+      # Also runs scripts/*.test.mjs (the CI checks' own unit tests).
       - run: pnpm test
       # Backup scripts in deploy/ (offsite copy): bash tests need age; Pester 5 ships with the runner.
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq age
@@ -58,3 +61,26 @@ jobs:
       # Sync + publish the example content twice: the second run must be a no-op.
       - run: pnpm --filter @hub/api content:sync -- --publish
       - run: pnpm --filter @hub/api content:sync -- --publish
+
+  # Secret scan of the whole git history, so a secret committed on a PR branch turns the
+  # PR red even if a later commit deletes it. The gitleaks binary is pinned by version and
+  # SHA-256 instead of using gitleaks-action, which needs a paid licence key for org repos.
+  secrets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GITLEAKS_VERSION: 8.30.1
+      GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Install gitleaks
+        run: |
+          set -euo pipefail
+          tarball="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -sSfL -o "$RUNNER_TEMP/$tarball"             "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/$tarball"
+          echo "$GITLEAKS_SHA256  $RUNNER_TEMP/$tarball" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/$tarball" -C "$RUNNER_TEMP" gitleaks
+      # --redact keeps any secret it finds out of the public log.
+      - run: $RUNNER_TEMP/gitleaks git --redact --no-banner --exit-code 1 .

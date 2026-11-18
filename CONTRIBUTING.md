@@ -33,6 +33,7 @@ content-example/               small content repo used for local dev and tests
 | `submissions` | submissions and each exercise's state for a member, including prerequisite locks (`exercise-state.ts`); depends on `catalog`, never on `learning`          | `exercise-state.ts`, `submission-writer.ts` |
 | `reviews`     | mentor review: queue (filters, mentor numbers), claim/release, complete; depends on `submissions` (owns the status change), `catalog`, `learning`, `users` | `review-rules.ts`, `reviews.service.ts`     |
 | `audit`       | writes `audit_logs` from domain events; `AuditReader` serves the admin "Nhật ký" page (names via `UsersService.refsByIds`)                                 | `audit.listener.ts`, `audit.reader.ts`      |
+| `overview`    | admin `/admin` overview: asks `users`, `content`, `submissions` and `audit` for counts only (no names or emails)                                           | `overview.ts`, `overview.service.ts`        |
 
 ## Rules that keep the code maintainable
 
@@ -63,7 +64,7 @@ pnpm dev
 Before opening a PR:
 
 ```bash
-pnpm format && pnpm typecheck && pnpm test
+pnpm format && pnpm lint && pnpm typecheck && pnpm test   # lint includes the dependency-direction check
 ```
 
 ## How to…
@@ -94,7 +95,10 @@ All work is tracked on the org board [DSC Learning Hub · Project #1](https://gi
    - First line `Closes #<n>` (or `Closes hcmute-dsc/<repo>#<n>`), so merging closes the issue and moves it to Done.
    - One topic per PR, ideally under ~400 changed lines. Split bigger work.
    - Open it as a **draft** while you are still working.
-5. **CI must be green**: format, typecheck, tests, migrations on an empty database, seed, content validation and build.
+5. **CI must be green**: format, typecheck, tests, migrations on an empty database, seed, content validation and build. CI also checks:
+   - **Secrets**: gitleaks scans the whole git history. A secret on the branch turns the PR red even after a later commit deletes it, so rotate the secret, then rewrite the branch history.
+   - **Dependency direction**: `node scripts/check-boundaries.mjs` fails when code in `apps/api/src/modules` imports `integrations/` (rule 2 below). Only a `*.module.ts` may import an integration's `*.module` to bind the adapter.
+   - **PR title** (workflow `PR title`): `Area: imperative summary`, at most 72 characters, no `WIP`, no full stop. Fix the title on GitHub and the check re-runs. No local hook is needed.
 6. **Review** (below), then **squash merge**. The PR title becomes the commit on `main`. Delete the branch.
 
 Never push directly to `main`. A production hotfix still goes through a PR. If the reviewer is not available, merge it yourself after CI is green, and ask for a review afterwards in the PR.

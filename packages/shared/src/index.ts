@@ -53,9 +53,24 @@ export interface ProblemDetails {
 
 // ---------- Catalog ----------
 
+/** Most tags one catalog request may filter by (`?tag=a&tag=b`). */
+export const MAX_TAG_FILTERS = 10;
+
 export const trackListQuerySchema = z.object({
   level: z.enum(TRACK_LEVELS).optional(),
-  tag: z.string().trim().min(1).max(40).optional(),
+  /**
+   * `?tag=` may repeat. A single value arrives as a string, several as an array; both
+   * become a deduplicated list. A track matches when it has ANY of the tags.
+   */
+  tag: z
+    .preprocess(
+      (value) => (Array.isArray(value) ? value : [value]),
+      z
+        .array(z.string().trim().min(1).max(40))
+        .max(MAX_TAG_FILTERS)
+        .transform((tags) => [...new Set(tags)]),
+    )
+    .optional(),
   q: z.string().trim().min(1).max(80).optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
