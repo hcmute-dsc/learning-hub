@@ -32,7 +32,7 @@ const TRACKS: CardItem[] = [
     icon: '✍️',
     title: 'Viết thêm lộ trình',
     description: 'Nội dung do chính thành viên CLB viết và review bằng pull request.',
-    link: { href: CLUB_LINKS.content, label: 'Đóng góp nội dung' },
+    link: { href: CLUB_LINKS.contribute, label: 'Đóng góp nội dung' },
   },
 ];
 

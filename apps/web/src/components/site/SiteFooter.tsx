@@ -16,7 +16,7 @@ export function SiteFooter() {
             </a>
           </li>
           <li>
-            <a className="hover:text-white hover:underline" href={CLUB_LINKS.content}>
+            <a className="hover:text-white hover:underline" href={CLUB_LINKS.contribute}>
               Đóng góp nội dung
             </a>
           </li>

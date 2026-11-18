@@ -53,7 +53,7 @@ export default async function TracksPage({
           </span>
           <p className="muted mt-3">
             Không có lộ trình nào khớp. Thử bỏ bộ lọc, hoặc{' '}
-            <a className="font-medium text-brand-600 underline" href={CLUB_LINKS.content}>
+            <a className="font-medium text-brand-600 underline" href={CLUB_LINKS.contribute}>
               đóng góp một lộ trình mới
             </a>
             .
