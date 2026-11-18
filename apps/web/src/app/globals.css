@@ -458,3 +458,34 @@ main:has(> .page-wide) {
 .markdown .code-block pre {
   padding-right: 4.5rem;
 }
+
+/* ---------------------------------------------------------------- Printing
+   Certificates (/certificates/[code], PRD F19) are printed or saved as PDF from the
+   browser. Only the page content is printed, on white; the certificate gets its own
+   A4 landscape page (a named page, so printing a lesson keeps the browser default). */
+@page certificate {
+  size: A4 landscape;
+  margin: 12mm;
+}
+
+@media print {
+  body > header,
+  body > footer,
+  body > a[href='#main'] {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+  .certificate {
+    page: certificate;
+    box-shadow: none !important;
+    break-inside: avoid;
+    background: white !important;
+  }
+}

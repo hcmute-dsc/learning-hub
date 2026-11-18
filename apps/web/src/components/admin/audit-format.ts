@@ -20,6 +20,7 @@ const ACTION_LABEL: Record<string, string> = {
   'content.publish': 'Publish nội dung',
   'content.reject': 'Từ chối nội dung',
   'review.complete': 'Hoàn thành review',
+  'certificate.revoke': 'Thu hồi chứng nhận',
 };
 
 /** Mentor review outcomes (E7, written by AuditListener.onReviewCompleted). */
@@ -79,6 +80,8 @@ export function describeAudit(row: Pick<AuditLogRow, 'action' | 'metadata'>): st
       return `Commit ${shortSha(str(m.commitSha))}`;
     case 'review.complete':
       return `Kết luận: ${REVIEW_OUTCOME_LABEL[str(m.outcome)] ?? (str(m.outcome) || '—')}`;
+    case 'certificate.revoke':
+      return `Lộ trình ${str(m.trackSlug) || '—'}: ${str(m.reason) || 'không ghi lý do'}`;
     default:
       return Object.keys(m).length ? JSON.stringify(m) : '';
   }
