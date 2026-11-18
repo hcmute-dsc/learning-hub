@@ -36,3 +36,4 @@ Local setup, module map and code rules: [CONTRIBUTING.md](CONTRIBUTING.md). Prod
 | `fix-bug`    | something behaves wrong: log, reproduce, root cause, test, fix, close                 |
 | `ship-pr`    | the change is ready: commit, PR, CI, hand to review, after merge verify on production |
 | `review-pr`  | automatic review of every PR you open (posted on the PR), or reviewing someone's PR   |
+| `new-track`  | a mentor needs a new track: create the track repo, access, first review, publish      |
