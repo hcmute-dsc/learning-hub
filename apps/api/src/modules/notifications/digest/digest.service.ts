@@ -53,9 +53,12 @@ export class DigestService {
         throw DomainError.conflict('Tài khoản GitHub của bạn chưa có email để nhận tóm tắt.');
       }
     }
-    // Turning it on starts the window now: the first digest comes the next morning and
-    // only lists what arrived after the member opted in.
-    const lastDigestAt = emailDigest ? this.clock.now() : undefined;
+    // Turning it on (from off) starts the window now: the first digest comes at the next
+    // 08:00 and only lists what arrived after the member opted in. Saving "on" again while
+    // already on must not push the next digest back.
+    const current = await this.prisma.notificationPreference.findUnique({ where: { userId } });
+    const turningOn = emailDigest && !current?.emailDigest;
+    const lastDigestAt = turningOn ? this.clock.now() : undefined;
     await this.prisma.notificationPreference.upsert({
       where: { userId },
       create: { userId, emailDigest, unsubscribeToken: newUnsubscribeToken(), lastDigestAt },

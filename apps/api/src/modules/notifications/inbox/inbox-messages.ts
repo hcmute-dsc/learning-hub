@@ -79,6 +79,10 @@ export function readPayload(value: unknown): InboxPayload {
   return {
     title: typeof v.title === 'string' ? v.title : 'Thông báo',
     body: typeof v.body === 'string' ? v.body : null,
-    link: typeof v.link === 'string' && v.link.startsWith('/') ? v.link : '/dashboard',
+    // "//host" is protocol-relative: it would leave the site, so only single-slash paths pass.
+    link:
+      typeof v.link === 'string' && v.link.startsWith('/') && !v.link.startsWith('//')
+        ? v.link
+        : '/dashboard',
   };
 }

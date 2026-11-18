@@ -55,6 +55,7 @@ describe('readPayload', () => {
 
   it('never returns a link that leaves the site', () => {
     expect(readPayload({ title: 't', link: 'https://evil.example' }).link).toBe('/dashboard');
+    expect(readPayload({ title: 't', link: '//evil.example/x' }).link).toBe('/dashboard');
     expect(readPayload(null)).toEqual({ title: 'Thông báo', body: null, link: '/dashboard' });
   });
 });

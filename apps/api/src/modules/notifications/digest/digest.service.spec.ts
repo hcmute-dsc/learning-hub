@@ -103,6 +103,14 @@ describe('DigestService settings', () => {
     expect(args.update).toEqual({ emailDigest: true, lastDigestAt: NOW });
   });
 
+  it('saving "on" again keeps the digest window', async () => {
+    const yesterday = new Date('2026-11-17T02:00:00Z');
+    const { service, notificationPreference } = setup({ pref: onPref(yesterday) });
+    await service.updateSettings('u1', true);
+    const args = notificationPreference.upsert.mock.calls[0][0] as { update: object };
+    expect(args.update).toEqual({ emailDigest: true });
+  });
+
   it('can always be turned off, even without SMTP', async () => {
     const { service, notificationPreference } = setup({ smtp: false });
     await service.updateSettings('u1', false);
