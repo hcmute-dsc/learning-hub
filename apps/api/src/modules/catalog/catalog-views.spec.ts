@@ -133,8 +133,21 @@ describe('toLessonContext', () => {
     exercises: [{ id: 'e1', title: 'Bài tập 1', type: 'quiz' }],
   };
 
-  it('keeps the commit that last changed this lesson', () => {
+  it('uses the commit that last changed this lesson before the first publish', () => {
     expect(toLessonContext(lesson).source).toEqual({ repo: REPO, commitSha: '01aaa53' });
+  });
+
+  // learning-hub#20: a publish that changed no lesson left every lesson on the old version,
+  // so after the move to a registry their edit links still pointed at learning-hub-content.
+  it('links to the published version, even when it did not change this lesson', () => {
+    expect(toLessonContext(lesson, registryVersion).source).toEqual({
+      repo: SQL_REPO,
+      commitSha: 'c0ffee1',
+    });
+    expect(toLessonContext(lesson, { sourceRepo: REPO, commitSha: '0b0b0b0' }).source).toEqual({
+      repo: REPO,
+      commitSha: '0b0b0b0',
+    });
   });
 
   it("reads a registry lesson from its track's repo, so images and edit links work", () => {

@@ -108,7 +108,11 @@ export class CatalogReader {
       },
     });
     if (!lesson) throw DomainError.notFound('Lesson');
-    return toLessonContext(lesson);
+    const published = await this.prisma.contentVersion.findFirst({
+      where: { status: 'published' },
+      select: { sourceRepo: true, commitSha: true, trackSources: true },
+    });
+    return toLessonContext(lesson, published);
   }
 
   async exercise(id: string): Promise<ExerciseContext> {
