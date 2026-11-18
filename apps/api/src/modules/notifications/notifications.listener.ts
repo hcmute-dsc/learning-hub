@@ -64,17 +64,22 @@ export class NotificationsListener {
         commitSha: e.commitSha,
         sourceRepo: e.sourceRepo,
         previousCommitSha: e.previousCommitSha,
+        trackSources: e.trackSources,
+        previousTrackSources: e.previousTrackSources,
         tracks: e.changes.tracks,
         removed: e.changes.removed,
       }),
     );
   }
 
-  /** Build and send without blocking the caller; errors are logged, never thrown. */
-  private inBackground(kind: string, build: () => Promise<string>): void {
+  /**
+   * Build and send without blocking the caller; errors are logged, never thrown.
+   * A builder returns null when there is nothing worth posting.
+   */
+  private inBackground(kind: string, build: () => Promise<string | null>): void {
     if (!this.channel.enabled) return; // skip the lookups when Discord is off
     void build()
-      .then((content) => this.channel.send(content))
+      .then((content) => (content === null ? undefined : this.channel.send(content)))
       .catch((err) => this.logger.warn({ err, kind }, 'Notification not sent'));
   }
 }

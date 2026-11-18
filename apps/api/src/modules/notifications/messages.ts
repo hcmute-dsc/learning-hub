@@ -1,3 +1,5 @@
+import type { TrackSource, TrackSources } from '../content/ports/content-source';
+
 /**
  * Pure builders for the Discord messages (E9 club channel, E11 alert channel).
  * Titles come from the content repo and logins from GitHub, so every value is
@@ -75,6 +77,12 @@ export interface ContentPublishedInfo {
   /** owner/repo on GitHub (anything else, e.g. local:…, gets no compare link) */
   sourceRepo: string;
   previousCommitSha: string | null;
+  /**
+   * Registry only (ADR-10): each track's own repo and commit, now and before. When set,
+   * each track links to its own repo, because the registry diff only shows tracks.yaml.
+   */
+  trackSources?: TrackSources | null;
+  previousTrackSources?: TrackSources | null;
   tracks: PublishedTrackInfo[];
   /** lessons + exercises taken off the site */
   removed: number;
@@ -83,14 +91,34 @@ export interface ContentPublishedInfo {
 /** At most this many lesson/exercise titles in one message; the rest become "và N bài khác". */
 export const MAX_PUBLISHED_TITLES = 12;
 
-const isSha = (v: string | null): v is string => !!v && /^[0-9a-f]{7,40}$/i.test(v);
+const isSha = (v: string | null | undefined): v is string => !!v && /^[0-9a-f]{7,40}$/i.test(v);
+const isRepo = (v: string | undefined): v is string => !!v && /^[\w.-]+\/[\w.-]+$/.test(v);
+
+/**
+ * Where to see what changed in one track of a registry version: the compare view of its
+ * repo between the previous and the new commit, or the track folder at the new commit
+ * when there is nothing to compare with (a new track, or the first publish via a registry).
+ */
+function trackChangesLink(slug: string, now?: TrackSource, before?: TrackSource): string | null {
+  if (!now || !isRepo(now.repo) || !isSha(now.commitSha)) return null;
+  const base = `https://github.com/${now.repo}`;
+  if (before && before.repo === now.repo && isSha(before.commitSha)) {
+    if (before.commitSha === now.commitSha) return null;
+    return `Xem thay đổi: <${base}/compare/${before.commitSha}...${now.commitSha}>`;
+  }
+  return `Xem nội dung: <${base}/tree/${now.commitSha}/tracks/${encodeURIComponent(slug)}>`;
+}
 
 /**
  * What a content publish changed, by track and by title, so members know what to read
  * (the first version only showed the commit: 18/11/2026). Stays well under Discord's
  * 2000-character limit: titles are cut to 80 characters and capped at MAX_PUBLISHED_TITLES.
+ *
+ * Returns null when no lesson or exercise was added, changed or removed: the club channel
+ * gets nothing to read, e.g. when the content moved to a registry (learning-hub#25).
  */
-export function contentPublishedMessage(origin: string, info: ContentPublishedInfo): string {
+export function contentPublishedMessage(origin: string, info: ContentPublishedInfo): string | null {
+  if (!info.tracks.length && !info.removed) return null;
   // A sha is hex; anything else is not shown rather than escaped.
   const sha = isSha(info.commitSha) ? info.commitSha.slice(0, 7) : '?';
   const lines = [`📚 **Nội dung mới đã được publish** (commit \`${sha}\`)`];
@@ -120,16 +148,20 @@ export function contentPublishedMessage(origin: string, info: ContentPublishedIn
       lines.push('✏️ Cập nhật thông tin lộ trình');
     }
     lines.push(link(origin, `/tracks/${encodeURIComponent(track.slug)}`));
+    const changes = trackChangesLink(
+      track.slug,
+      info.trackSources?.[track.slug],
+      info.previousTrackSources?.[track.slug],
+    );
+    if (changes) lines.push(changes);
   }
   if (hidden > 0) lines.push(`… và ${hidden} bài khác`);
   if (info.removed > 0) lines.push('', `🗑️ Gỡ ${info.removed} bài khỏi trang`);
-  if (!info.tracks.length && !info.removed) {
-    lines.push('Không có bài học hay bài tập nào thay đổi.');
-  }
 
-  const repoOk = /^[\w.-]+\/[\w.-]+$/.test(info.sourceRepo);
+  // A registry version links each track above; its own diff would only show tracks.yaml.
   if (
-    repoOk &&
+    !info.trackSources &&
+    isRepo(info.sourceRepo) &&
     isSha(info.previousCommitSha) &&
     isSha(info.commitSha) &&
     info.previousCommitSha !== info.commitSha

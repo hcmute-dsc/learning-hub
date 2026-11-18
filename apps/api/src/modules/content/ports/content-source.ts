@@ -26,6 +26,19 @@ export interface TrackSource {
 
 export type TrackSources = Record<string, TrackSource>;
 
+/** Read `content_versions.track_sources` (JSON): keep only well-formed entries, else null. */
+export function toTrackSources(value: unknown): TrackSources | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const sources: TrackSources = {};
+  for (const [slug, entry] of Object.entries(value)) {
+    const { repo, commitSha } = (entry ?? {}) as Partial<TrackSource>;
+    if (typeof repo === 'string' && typeof commitSha === 'string') {
+      sources[slug] = { repo, commitSha };
+    }
+  }
+  return Object.keys(sources).length ? sources : null;
+}
+
 export const CONTENT_SOURCE = Symbol('CONTENT_SOURCE');
 
 const PARSED_FILE = /^tracks\/.+\.(ya?ml|md)$/;
