@@ -16,7 +16,12 @@ import {
 } from './content.events';
 import { planChanges, type ChangePlan } from './domain/plan';
 import { publishedChanges } from './domain/published-changes';
-import { CONTENT_SOURCE, loadFileMap, type ContentSource } from './ports/content-source';
+import {
+  CONTENT_SOURCE,
+  loadFileMap,
+  toTrackSources,
+  type ContentSource,
+} from './ports/content-source';
 
 const SHA = /^[0-9a-f]{40}$/;
 const MAX_STORED_ISSUES = 200;
@@ -152,40 +157,46 @@ export class ContentService {
     const { tree, issues } = parseContent(await loadFileMap(this.source, version.commitSha));
     if (issues.length) throw toValidationError('Content at this commit is no longer valid', issues);
 
-    const { published, plan, previousCommitSha } = await this.prisma.$transaction(
-      async (tx) => {
-        const plan = planChanges(tree, await this.writer.snapshot(tx));
-        if (plan.conflicts.length)
-          throw toValidationError('Content conflicts with the catalog', plan.conflicts);
+    const { published, plan, previousCommitSha, previousTrackSources } =
+      await this.prisma.$transaction(
+        async (tx) => {
+          const plan = planChanges(tree, await this.writer.snapshot(tx));
+          if (plan.conflicts.length)
+            throw toValidationError('Content conflicts with the catalog', plan.conflicts);
 
-        const now = this.clock.now();
-        const previous = await tx.contentVersion.findFirst({
-          where: { status: 'published' },
-          select: { commitSha: true },
-        });
-        await tx.contentVersion.updateMany({
-          where: { status: 'published' },
-          data: { status: 'superseded' },
-        });
-        await this.writer.apply(tx, tree, plan, version.id);
-        const published = await tx.contentVersion.update({
-          where: { id: version.id },
-          data: {
-            status: 'published',
-            publishedBy: actorId,
-            publishedAt: now,
-            summary: {
-              ...(version.summary as object),
-              counts: counts(tree),
-              diff: plan.diff,
-              appliedAt: now.toISOString(),
-            } as unknown as Prisma.InputJsonValue,
-          },
-        });
-        return { published, plan, previousCommitSha: previous?.commitSha ?? null };
-      },
-      { timeout: 60_000, maxWait: 10_000 },
-    );
+          const now = this.clock.now();
+          const previous = await tx.contentVersion.findFirst({
+            where: { status: 'published' },
+            select: { commitSha: true, trackSources: true },
+          });
+          await tx.contentVersion.updateMany({
+            where: { status: 'published' },
+            data: { status: 'superseded' },
+          });
+          await this.writer.apply(tx, tree, plan, version.id);
+          const published = await tx.contentVersion.update({
+            where: { id: version.id },
+            data: {
+              status: 'published',
+              publishedBy: actorId,
+              publishedAt: now,
+              summary: {
+                ...(version.summary as object),
+                counts: counts(tree),
+                diff: plan.diff,
+                appliedAt: now.toISOString(),
+              } as unknown as Prisma.InputJsonValue,
+            },
+          });
+          return {
+            published,
+            plan,
+            previousCommitSha: previous?.commitSha ?? null,
+            previousTrackSources: toTrackSources(previous?.trackSources),
+          };
+        },
+        { timeout: 60_000, maxWait: 10_000 },
+      );
 
     await this.events.emitAsync(ContentEvents.Published, {
       actorId,
@@ -194,6 +205,8 @@ export class ContentService {
       status: published.status,
       sourceRepo: published.sourceRepo,
       previousCommitSha,
+      trackSources: toTrackSources(published.trackSources),
+      previousTrackSources,
       changes: publishedChanges(tree, plan),
     } satisfies ContentPublishedEvent);
     return view(published);

@@ -63,6 +63,12 @@ describe('reviewCompletedMessage', () => {
 });
 
 describe('contentPublishedMessage', () => {
+  /** The message, for cases where one must be sent. */
+  const message = (info: Parameters<typeof contentPublishedMessage>[1]): string => {
+    const msg = contentPublishedMessage(ORIGIN, info);
+    if (msg === null) throw new Error('expected a message');
+    return msg;
+  };
   const base = {
     commitSha: 'abcdef1234567890',
     sourceRepo: 'hcmute-dsc/learning-hub-content',
@@ -72,7 +78,7 @@ describe('contentPublishedMessage', () => {
   const sql = { slug: 'sql-30-days', title: 'SQL 30 ngày', isNew: false };
 
   it('names the track, the changed lessons and links the GitHub diff', () => {
-    const msg = contentPublishedMessage(ORIGIN, {
+    const msg = message({
       ...base,
       tracks: [{ ...sql, added: ['Ngày 31: Ôn tập'], changed: ['Ngày 1: Giới thiệu SQL'] }],
     });
@@ -88,7 +94,7 @@ describe('contentPublishedMessage', () => {
 
   it(`lists at most ${MAX_PUBLISHED_TITLES} titles and counts the rest`, () => {
     const changed = Array.from({ length: 30 }, (_, i) => `Ngày ${i + 1}`);
-    const msg = contentPublishedMessage(ORIGIN, {
+    const msg = message({
       ...base,
       tracks: [{ ...sql, added: [], changed }],
     });
@@ -98,7 +104,7 @@ describe('contentPublishedMessage', () => {
   });
 
   it('announces a new track and removed lessons', () => {
-    const msg = contentPublishedMessage(ORIGIN, {
+    const msg = message({
       ...base,
       removed: 2,
       tracks: [{ slug: 'git', title: 'Git cơ bản', isNew: true, added: ['a', 'b'], changed: [] }],
@@ -108,7 +114,7 @@ describe('contentPublishedMessage', () => {
   });
 
   it('escapes titles and hides values that are not a sha or a GitHub repo', () => {
-    const msg = contentPublishedMessage(ORIGIN, {
+    const msg = message({
       commitSha: '`@everyone`',
       sourceRepo: 'local:D:/content',
       previousCommitSha: null,
@@ -120,10 +126,61 @@ describe('contentPublishedMessage', () => {
     expect(msg).toContain(String.raw`\*\*x\*\*`);
   });
 
-  it('says so when nothing a member can see changed', () => {
-    expect(contentPublishedMessage(ORIGIN, { ...base, tracks: [] })).toContain(
-      'Không có bài học hay bài tập nào thay đổi',
+  // learning-hub#25: moving to the registry changed no lesson, yet #general got a post.
+  it('sends nothing when no lesson or exercise was added, changed or removed', () => {
+    expect(contentPublishedMessage(ORIGIN, { ...base, tracks: [] })).toBeNull();
+    expect(contentPublishedMessage(ORIGIN, { ...base, tracks: [], removed: 1 })).toContain(
+      '🗑️ Gỡ 1 bài',
     );
+  });
+
+  describe('a registry version (ADR-10)', () => {
+    const SQL_REPO = 'hcmute-dsc/learning-hub-track-sql-30-days';
+    const OLD = 'd737046c2dfdd6084c9d087e44a29b044f13c244';
+    const NEW = 'a'.repeat(40);
+    const changedSql = { ...sql, added: [], changed: ['Ngày 1'] };
+
+    // learning-hub#25: the registry diff only shows tracks.yaml, not the lessons.
+    it("links each track's own repo, between its previous and new commit", () => {
+      const msg = message({
+        ...base,
+        trackSources: { 'sql-30-days': { repo: SQL_REPO, commitSha: NEW } },
+        previousTrackSources: { 'sql-30-days': { repo: SQL_REPO, commitSha: OLD } },
+        tracks: [changedSql],
+      });
+      expect(msg).toContain(
+        `Xem thay đổi: <https://github.com/${SQL_REPO}/compare/${OLD}...${NEW}>`,
+      );
+      expect(msg).not.toContain('learning-hub-content/compare');
+    });
+
+    it('links the track folder when there is no earlier commit of that repo', () => {
+      const msg = message({
+        ...base,
+        trackSources: { 'sql-30-days': { repo: SQL_REPO, commitSha: NEW } },
+        previousTrackSources: null,
+        tracks: [changedSql],
+      });
+      expect(msg).toContain(
+        `Xem nội dung: <https://github.com/${SQL_REPO}/tree/${NEW}/tracks/sql-30-days>`,
+      );
+      expect(msg).not.toContain('/compare/');
+    });
+
+    it('adds no link for a track missing from the map or with a value that is not a sha', () => {
+      const msg = message({
+        ...base,
+        trackSources: { other: { repo: SQL_REPO, commitSha: NEW } },
+        tracks: [changedSql],
+      });
+      expect(msg).not.toContain('github.com');
+      const bad = message({
+        ...base,
+        trackSources: { 'sql-30-days': { repo: 'x y', commitSha: 'not-a-sha' } },
+        tracks: [changedSql],
+      });
+      expect(bad).not.toContain('github.com');
+    });
   });
 });
 

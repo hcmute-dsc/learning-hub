@@ -65,6 +65,8 @@ describe('NotificationsListener', () => {
       status: 'published',
       sourceRepo: 'hcmute-dsc/learning-hub-content',
       previousCommitSha: '0123456789',
+      trackSources: null,
+      previousTrackSources: null,
       changes: {
         tracks: [{ slug: 'sql', title: 'SQL', isNew: false, added: [], changed: ['Ngày 1'] }],
         removed: 0,
@@ -75,5 +77,24 @@ describe('NotificationsListener', () => {
     expect(msg).toContain('abcdef0');
     expect(msg).toContain('• Ngày 1');
     expect(msg).toContain('/compare/0123456789...abcdef0123');
+  });
+
+  it('posts nothing for a publish that changed no lesson or exercise (learning-hub#25)', async () => {
+    const { listener, channel } = setup();
+    listener.onContentPublished({
+      actorId: null,
+      versionId: 'v',
+      commitSha: 'abcdef0123',
+      status: 'published',
+      sourceRepo: 'hcmute-dsc/learning-hub-content',
+      previousCommitSha: '0123456789',
+      trackSources: {
+        sql: { repo: 'hcmute-dsc/learning-hub-track-sql', commitSha: 'b'.repeat(40) },
+      },
+      previousTrackSources: null,
+      changes: { tracks: [], removed: 0 },
+    });
+    await flush();
+    expect(channel.send).not.toHaveBeenCalled();
   });
 });
