@@ -20,6 +20,12 @@ export class TracksController {
     return this.catalog.listTracks(query);
   }
 
+  /** Declared before `:slug` so `/tracks/tags` is not read as a track slug. */
+  @Get('tags')
+  tags() {
+    return this.catalog.listTags().then((data) => ({ data }));
+  }
+
   @Get(':slug')
   get(@Param('slug', new ZodPipe(slugSchema)) slug: string) {
     return this.catalog.getTrack(slug).then((data) => ({ data }));

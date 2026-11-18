@@ -4,17 +4,27 @@ import { ProgressBar } from '@/components/learn/ProgressBar';
 import { HexIcon } from '@/components/ui/HexIcon';
 import { LEVEL_LABEL } from '@/lib/labels';
 import { trackIconLabel } from '@/lib/track-icon';
+import { toggleTagHref, type CatalogFilters } from './catalog';
 
 /**
  * One track in the catalog grid, like Exercism's /tracks cards.
  * `percent` is set only when the member is enrolled in this track.
+ *
+ * Links cannot nest, so the title link is stretched over the whole card (`after:inset-0`)
+ * and the tag links sit above it (`relative z-10`): a click on a tag filters the catalog,
+ * a click anywhere else opens the track.
  */
-export function TrackCard({ track, percent }: { track: TrackSummary; percent?: number }) {
+export function TrackCard({
+  track,
+  filters,
+  percent,
+}: {
+  track: TrackSummary;
+  filters: CatalogFilters;
+  percent?: number;
+}) {
   return (
-    <Link
-      href={`/tracks/${track.slug}`}
-      className="surface lift group flex h-full flex-col rounded-2xl p-5 shadow-sm"
-    >
+    <article className="surface lift group relative flex h-full flex-col rounded-2xl p-5 shadow-sm">
       <span className="flex items-start gap-4">
         <HexIcon
           label={trackIconLabel(track)}
@@ -22,7 +32,12 @@ export function TrackCard({ track, percent }: { track: TrackSummary; percent?: n
           className="transition-transform duration-300 group-hover:rotate-6"
         />
         <span className="min-w-0">
-          <span className="block text-lg font-semibold group-hover:underline">{track.title}</span>
+          <Link
+            href={`/tracks/${track.slug}`}
+            className="block text-lg font-semibold group-hover:underline after:absolute after:inset-0 after:rounded-2xl"
+          >
+            {track.title}
+          </Link>
           <span className="muted mt-0.5 block text-sm">
             {track.lessonCount} bài học · {track.exerciseCount} bài tập
             {track.estHours ? ` · ~${track.estHours} giờ` : ''}
@@ -36,18 +51,27 @@ export function TrackCard({ track, percent }: { track: TrackSummary; percent?: n
         <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700">
           {LEVEL_LABEL[track.level]}
         </span>
-        {track.tags.map((tag) => (
-          <span
-            key={tag}
-            className="muted rounded-full border border-[var(--border)] px-2 py-0.5 text-xs"
-          >
-            {tag}
-          </span>
-        ))}
+        {track.tags.map((tag) => {
+          const selected = filters.tags.includes(tag);
+          return (
+            <Link
+              key={tag}
+              href={toggleTagHref(filters, tag)}
+              aria-label={selected ? `Bỏ lọc theo chủ đề ${tag}` : `Lọc theo chủ đề ${tag}`}
+              className={`relative z-10 rounded-full border px-2 py-0.5 text-xs ${
+                selected
+                  ? 'border-brand-600 bg-brand-600 text-white'
+                  : 'muted border-[var(--border)] hover:border-brand-500 hover:text-brand-700'
+              }`}
+            >
+              {tag}
+            </Link>
+          );
+        })}
       </span>
 
       {percent !== undefined && <EnrolledProgress title={track.title} percent={percent} />}
-    </Link>
+    </article>
   );
 }
 

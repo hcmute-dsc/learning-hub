@@ -1,3 +1,4 @@
+import { MAX_TAG_FILTERS, trackListQuerySchema } from '@hub/shared';
 import { DomainError } from '../../common/errors';
 import type { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { CatalogService } from './catalog.service';
@@ -91,9 +92,13 @@ describe('CatalogService.listTracks', () => {
 
   it('lists active tracks only, and applies level, tag and search filters', async () => {
     const { prisma, service } = fakePrisma({});
-    await service.listTracks({ ...query, level: 'beginner', tag: 'sql', q: 'join' });
+    await service.listTracks({ ...query, level: 'beginner', tag: ['sql', 'git'], q: 'join' });
     const { where } = prisma.track.findMany.mock.calls[0][0];
-    expect(where).toMatchObject({ status: 'active', level: 'beginner', tags: { has: 'sql' } });
+    expect(where).toMatchObject({
+      status: 'active',
+      level: 'beginner',
+      tags: { hasSome: ['sql', 'git'] },
+    });
     expect(where.OR).toEqual([
       { title: { contains: 'join', mode: 'insensitive' } },
       { summary: { contains: 'join', mode: 'insensitive' } },
@@ -104,6 +109,36 @@ describe('CatalogService.listTracks', () => {
   it('adds no filter for parameters that are not given', async () => {
     const { prisma, service } = fakePrisma({});
     await service.listTracks(query);
+    await service.listTracks({ ...query, tag: [] });
     expect(prisma.track.findMany.mock.calls[0][0].where).toEqual({ status: 'active' });
+    expect(prisma.track.findMany.mock.calls[1][0].where).toEqual({ status: 'active' });
+  });
+});
+
+describe('CatalogService.listTags', () => {
+  it('returns the distinct tags of active tracks, sorted', async () => {
+    const { prisma, service } = fakePrisma({
+      tracks: [{ tags: ['sql', 'database'] }, { tags: ['git', 'sql'] }, { tags: [] }],
+    });
+    expect(await service.listTags()).toEqual(['database', 'git', 'sql']);
+    expect(prisma.track.findMany).toHaveBeenCalledWith({
+      where: { status: 'active' },
+      select: { tags: true },
+    });
+  });
+});
+
+describe('trackListQuerySchema tag', () => {
+  const parse = (tag: unknown) => trackListQuerySchema.parse({ tag }).tag;
+
+  it('accepts one tag or a repeated ?tag=, trimmed and deduplicated', () => {
+    expect(parse(undefined)).toBeUndefined();
+    expect(parse('sql')).toEqual(['sql']);
+    expect(parse([' sql', 'git', 'sql'])).toEqual(['sql', 'git']);
+  });
+
+  it(`rejects empty tags and more than ${MAX_TAG_FILTERS}`, () => {
+    expect(() => parse('  ')).toThrow();
+    expect(() => parse(Array.from({ length: MAX_TAG_FILTERS + 1 }, (_, i) => `t${i}`))).toThrow();
   });
 });
