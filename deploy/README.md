@@ -284,7 +284,7 @@ Bản sao lưu chứa email thành viên, nên `backup.sh` chỉ cho user `learn
 
 Chạy thử ngay: `sudo -u learnhub /opt/learning-hub/backup.sh`. Kiểm tra cron đã cài: `sudo -u learnhub crontab -l` phải thấy dòng `backup.sh`.
 
-Cách xem bản sao lưu, chép về máy, kiểm tra và khôi phục: xem [Sao lưu và khôi phục database](#sao-lưu-và-khôi-phục-database).
+Cách xem bản sao lưu, kiểm tra và khôi phục: xem [Sao lưu và khôi phục database](#sao-lưu-và-khôi-phục-database). Bản sao mã hóa mỗi tuần ra ngoài VPS (cài một lần, cần `age`): [Chép bản sao lưu ra ngoài VPS](#chép-bản-sao-lưu-ra-ngoài-vps-mỗi-tuần-tự-động).
 
 ## Bước 12. Thông báo Discord (không bắt buộc)
 
@@ -394,16 +394,110 @@ Mọi lệnh dưới chạy trên VPS bằng user `learnhub` (`ssh learnhub`), t
 | Sao lưu ngay (bằng tay) | `./backup.sh`, nên chạy trước mọi thao tác nguy hiểm với DB |
 | Đổi số ngày giữ         | `KEEP_DAYS=30` trước lệnh trong crontab (mặc định 14)       |
 
-### Chép bản sao lưu về máy khác
+### Chép bản sao lưu ra ngoài VPS (mỗi tuần, tự động)
 
-Bản sao lưu chỉ nằm trên VPS: hỏng VPS là mất cả dữ liệu lẫn bản sao lưu. Nên chép về máy riêng định kỳ, ví dụ mỗi tuần. Trên máy bạn (Windows PowerShell, macOS hay Linux đều được), nếu đã có `Host learnhub` trong `~/.ssh/config` (Bước 4):
+Hỏng VPS là mất cả dữ liệu lẫn bản sao lưu nằm trên đó. Vì vậy mỗi tuần có một bản **mã hóa** được kéo về máy của tech lead:
 
-```bash
-mkdir -p ~/learning-hub-backups
-scp "learnhub:/opt/learning-hub/backups/learning_hub-*.sql.gz" ~/learning-hub-backups/
+```
+VPS, cron Chủ nhật 20:00 UTC (= 3:00 sáng thứ Hai giờ VN), user learnhub:
+  offsite-export.sh: lấy bản sao lưu mới nhất → mã hóa bằng age (khóa CÔNG KHAI của tech lead)
+                     → backups/offsite/learning_hub-….sql.gz.age, giữ 4 bản
+Máy tech lead (Windows), Task Scheduler thứ Hai 9:00:
+  offsite-pull.ps1:  ssh learnhub-backup list / get → tải bản mới → giữ 12 bản (~3 tháng)
 ```
 
-File có email thành viên: để trong thư mục riêng của bạn. Không đưa lên Drive công khai, không gửi qua chat, không commit.
+- VPS **không có** khóa giải mã. Chỉ khóa bí mật `age` trên máy tech lead (có passphrase) mới mở được.
+- Máy tech lead dùng một SSH key riêng `learning-hub-backup-pull`. Trong `authorized_keys`, key này bị khóa bằng `command="…/offsite-serve.sh"`: chỉ được `list` và `get <tên file .age>`, không mở được shell, không đọc được `.env` hay bản chưa mã hóa. Lộ key này thì người khác cũng chỉ lấy được file đã mã hóa.
+- Máy tắt lúc 9:00 thứ Hai? Task Scheduler chạy bù khi máy bật lại (`-StartWhenAvailable`).
+- Thư mục chứa bản sao (`-Dest`) phải **ngoài mọi repo git**, ví dụ `$HOME\learning-hub-backups` hoặc `D:\repos\learning-hub-backups`. Script tự từ chối nếu thư mục nằm trong một repo. Dù đã mã hóa: không commit, không đưa lên Drive công khai, không gửi qua chat.
+
+**Cài đặt (một lần).** Trên máy bạn (PowerShell):
+
+```powershell
+winget install --id FiloSottile.age -e          # mở PowerShell mới sau khi cài
+# 1. Khóa age để mã hóa bản sao lưu
+New-Item -ItemType Directory -Force $HOME\.age | Out-Null
+age-keygen -o $HOME\.age\plain.key              # in ra "Public key: age1…": chép dòng age1… lại
+age -p -o $HOME\.age\learning-hub-backup.key $HOME\.age\plain.key   # đặt passphrase cho khóa
+Remove-Item $HOME\.age\plain.key
+# 2. SSH key chỉ dùng để kéo bản sao (bấm Enter 2 lần: không passphrase, để Task Scheduler chạy được)
+ssh-keygen -t ed25519 -C "learning-hub-backup-pull" -f $HOME\.ssh\learning-hub-backup-pull
+Get-Content $HOME\.ssh\learning-hub-backup-pull.pub   # dùng ở bước VPS
+```
+
+Cất **file `learning-hub-backup.key` và passphrase** vào trình quản lý mật khẩu của bạn. Mất một trong hai thì mọi bản sao ngoài VPS đều không mở được.
+
+Thêm vào `~/.ssh/config` trên máy bạn (thay `VPS_IP`):
+
+```
+Host learnhub-backup
+  HostName VPS_IP
+  User learnhub
+  IdentityFile ~/.ssh/learning-hub-backup-pull
+  IdentitiesOnly yes
+```
+
+Trên VPS (sau khi PR có `offsite-export.sh` đã merge và Deploy xanh, vì Deploy chép script lên VPS):
+
+```bash
+sudo apt install -y age                                          # user admin có sudo
+sudo -u learnhub nano /opt/learning-hub/offsite-recipients.txt   # dán dòng age1… (khóa công khai, không phải secret)
+sudo -u learnhub nano /home/learnhub/.ssh/authorized_keys
+#   thêm 1 dòng MỚI (đừng sửa dòng của khóa deploy):
+#   restrict,command="/opt/learning-hub/offsite-serve.sh" <nội dung learning-hub-backup-pull.pub>
+sudo -u learnhub crontab -e
+#   thêm dòng:
+#   0 20 * * 0 /opt/learning-hub/offsite-export.sh >> /opt/learning-hub/backups/offsite.log 2>&1
+sudo -u learnhub /opt/learning-hub/offsite-export.sh             # chạy thử: phải thấy "offsite ok"
+```
+
+Kéo lần đầu và đặt lịch, trên máy bạn, trong thư mục clone `learning-hub` (đã `git pull` sau khi merge):
+
+```powershell
+ssh learnhub-backup list                     # lần đầu: gõ yes để lưu host key; phải thấy tên file .age
+ssh learnhub-backup "cat /opt/learning-hub/.env"   # phải bị từ chối: "only 'list' and 'get <name>' are allowed"
+powershell -NoProfile -ExecutionPolicy Bypass -File deploy\offsite-pull.ps1 -Dest D:\repos\learning-hub-backups
+
+$script = (Resolve-Path deploy\offsite-pull.ps1).Path
+$action = New-ScheduledTaskAction -Execute powershell.exe `
+  -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$script`" -Dest D:\repos\learning-hub-backups"
+$trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Monday -At 9am
+$settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -RunOnlyIfNetworkAvailable
+Register-ScheduledTask -TaskName "Learning Hub offsite backup" -Action $action -Trigger $trigger -Settings $settings
+Start-ScheduledTask "Learning Hub offsite backup"; Start-Sleep 20
+Get-Content D:\repos\learning-hub-backups\pull.log -Tail 3   # phải thấy "pull ok"
+```
+
+**Theo dõi.** Trên VPS: `tail backups/offsite.log` (mỗi tuần một dòng `offsite ok`). Trên máy bạn: `pull.log` trong thư mục `-Dest` (mỗi tuần một dòng `pull ok`). Thấy `FAILED`, hoặc hơn 2 tuần không có dòng mới, thì xem lỗi ghi ngay trên dòng đó.
+
+| Đổi gì                   | Cách làm                                                                              |
+| ------------------------ | ------------------------------------------------------------------------------------- |
+| Số bản giữ trên VPS      | `KEEP_COPIES=8` trước lệnh trong crontab (mặc định 4)                                 |
+| Số bản giữ trên máy bạn  | thêm `-Keep 24` vào lệnh của task (mặc định 12)                                       |
+| Thêm người giữ bản sao   | thêm dòng `age1…` của họ vào `offsite-recipients.txt` (từ tuần sau mã hóa cho cả hai) |
+| Ngừng cho một máy kéo về | xóa dòng `learning-hub-backup-pull` của máy đó trong `authorized_keys` của `learnhub` |
+
+**Khôi phục từ bản sao ngoài VPS** (khi VPS mất hẳn). Trên máy bạn:
+
+```powershell
+$f = "D:\repos\learning-hub-backups\learning_hub-YYYYMMDD-HHMMSS.sql.gz.age"
+age -d -i $HOME\.age\learning-hub-backup.key -o $HOME\learning_hub-restore.sql.gz $f   # hỏi passphrase
+scp $HOME\learning_hub-restore.sql.gz learnhub@VPS_MỚI:/opt/learning-hub/backups/learning_hub-YYYYMMDD-HHMMSS.sql.gz
+Remove-Item $HOME\learning_hub-restore.sql.gz   # file giải mã có email thành viên: xóa ngay
+```
+
+Rồi làm theo [Chuyển sang VPS mới](#chuyển-sang-vps-mới) và [Khôi phục database production](#khôi-phục-database-production).
+
+### Kiểm tra bản sao ngoài VPS (mỗi tháng)
+
+Chạy trên máy bạn (cần `age` và Docker Desktop). Script giải mã bản mới nhất vào thư mục tạm, nạp vào một Postgres **tạm, không nối mạng**, in số dòng, rồi xóa container và file giải mã (kể cả khi lỗi). Có `-ProdHost learnhub` (alias quản trị ở Bước 4) thì in thêm số dòng production để so; production chỉ được đọc.
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File deploy\offsite-restore-check.ps1 `
+  -Dest D:\repos\learning-hub-backups -ProdHost learnhub
+```
+
+Kết quả đúng: `Decrypt OK`, `gzip OK`, `Restore OK`, và 2 dòng số gần bằng nhau. Dòng cuối script in sẵn một hàng để chép vào bảng kiểm tra ở learning-hub-docs `docs/ops/DEPLOYMENT.md` §5.3.
 
 ### Kiểm tra bản sao lưu dùng được (mỗi tháng)
 
@@ -485,7 +579,7 @@ docker compose -f docker-compose.prod.yml ps                    # 7. kiểm tra
 3. Chuyển OAuth app sang org hoặc tạo lại (đổi `GITHUB_CLIENT_*` trong `.env`, rồi chạy lại Deploy).
 4. Tạo SSH key deploy mới (Bước 4, 7), xóa khóa cũ khỏi `authorized_keys`.
 5. Tạo lại 2 webhook Discord nếu người cũ rời server (Bước 12), cập nhật `.env` và secret repo.
-6. Người mới tự chạy [kiểm tra bản sao lưu](#kiểm-tra-bản-sao-lưu-dùng-được-mỗi-tháng) một lần; người cũ xóa các bản sao lưu đã chép về máy mình.
+6. Bản sao ngoài VPS: người mới làm phần cài đặt ở [Chép bản sao lưu ra ngoài VPS](#chép-bản-sao-lưu-ra-ngoài-vps-mỗi-tuần-tự-động) với khóa `age` và SSH key của **họ**, thay dòng `age1…` trong `offsite-recipients.txt`, rồi tự chạy [kiểm tra bản sao lưu](#kiểm-tra-bản-sao-lưu-dùng-được-mỗi-tháng) và [kiểm tra bản sao ngoài VPS](#kiểm-tra-bản-sao-ngoài-vps-mỗi-tháng) một lần. Người cũ xóa dòng `learning-hub-backup-pull` của mình trong `authorized_keys`, gỡ task trong Task Scheduler, xóa các bản sao và khóa `age` trên máy mình.
 7. Kiểm tra cài đặt repo: chỉ squash merge, bảo vệ nhánh `main` (bắt buộc PR, CI `build-test` xanh). Lệnh `gh` và cách đổi sang "1 approval" khi có maintainer thứ hai: [WORKFLOW §7.5](https://github.com/hcmute-dsc/learning-hub-docs/blob/main/docs/ops/WORKFLOW.md#75-cài-đặt-repo-để-ép-quy-trình-admin-làm-mỗi-repo-một-lần).
 8. GitHub App `hcmute-dsc-learning-hub` (cài cho mọi repo của org; tự thêm issue/PR của `learning-hub-content`, `learning-hub-docs` và các repo track vào project) thuộc org, không cần tạo lại; chỉ cần người mới là owner của org. Cách cài từ đầu và đổi private key: [WORKFLOW §4](https://github.com/hcmute-dsc/learning-hub-docs/blob/main/docs/ops/WORKFLOW.md#4-cài-đặt-làm-bằng-tay-trên-web-api-của-github-chưa-hỗ-trợ).
 9. Nội dung: mỗi track một repo `learning-hub-track-<slug>`, `learning-hub-content` là registry (`tracks.yaml`). Tạo track mới cho mentor, cấp quyền, publish: [NEW-TRACK.md](https://github.com/hcmute-dsc/learning-hub-docs/blob/main/docs/ops/NEW-TRACK.md), skill `new-track`.
@@ -502,4 +596,5 @@ docker compose -f docker-compose.prod.yml ps                    # 7. kiểm tra
 | Biến repo                       | `DEPLOY_ENABLED=true`                                                                                      |
 | DNS                             | `learn` → VPS, Cloudflare Proxied, `TRUST_PROXY_HOPS=2`                                                    |
 | Sao lưu                         | cron 19:30 UTC của `learnhub`, giữ 14 ngày, `/opt/learning-hub/backups`                                    |
+| Bản sao ngoài VPS               | chưa bật (learning-hub#1): mã hóa `age` Chủ nhật 20:00 UTC, kéo về máy tech lead thứ Hai, giữ 4 + 12 bản   |
 | Discord                         | bật 17/11/2026 (kênh CLB + kênh vận hành)                                                                  |
