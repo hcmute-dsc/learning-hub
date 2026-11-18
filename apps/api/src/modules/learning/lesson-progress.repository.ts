@@ -32,6 +32,17 @@ export class LessonProgressRepository {
     return rows.map((r) => r.completedAt!);
   }
 
+  /** userId → when they last touched any lesson (mentor dashboard: inactive mentees). */
+  async lastActivityFor(userIds: string[]): Promise<{ userId: string; at: Date | null }[]> {
+    if (!userIds.length) return [];
+    const rows = await this.prisma.lessonProgress.groupBy({
+      by: ['userId'],
+      where: { userId: { in: userIds } },
+      _max: { updatedAt: true },
+    });
+    return rows.map((r) => ({ userId: r.userId, at: r._max.updatedAt }));
+  }
+
   /** completed_at records when the lesson was completed; it is cleared if the member reopens it. */
   async save(
     userId: string,

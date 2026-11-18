@@ -139,6 +139,15 @@ export class CatalogReader {
     return groupPrerequisites(exerciseIds, rows);
   }
 
+  /** Active tracks, slug and title only, in catalog order (filter choices). */
+  async activeTracks(): Promise<{ slug: string; title: string }[]> {
+    return this.prisma.track.findMany({
+      where: { status: 'active' },
+      orderBy: [{ position: 'asc' }, { title: 'asc' }],
+      select: { slug: true, title: true },
+    });
+  }
+
   /** exerciseId → requires_review, for many exercises at once (used by exercise states). */
   async reviewFlags(exerciseIds: string[]): Promise<Map<string, boolean>> {
     const rows = await this.prisma.exercise.findMany({

@@ -1,9 +1,11 @@
-import { completeReviewSchema, type Role } from '@hub/shared';
+import { completeReviewSchema, reviewQueueQuerySchema, type Role } from '@hub/shared';
 import { DomainError } from '../../common/errors';
 import {
   assertCanClaim,
   assertCanComplete,
   assertCanRelease,
+  countInactiveMentees,
+  latestActivity,
   rubricTotal,
   scoreRubric,
   waitingTime,
@@ -204,5 +206,88 @@ describe('completeReviewSchema (shared)', () => {
     expect(completeReviewSchema.safeParse({ outcome: 'approved', summaryMd: long }).success).toBe(
       false,
     );
+  });
+});
+
+describe('reviewQueueQuerySchema (shared)', () => {
+  it('accepts no filter, a track slug and a GitHub login', () => {
+    expect(reviewQueueQuerySchema.parse({})).toEqual({});
+    expect(reviewQueueQuerySchema.parse({ track: 'sql-30-days', mentee: 'Tien-NHM' })).toEqual({
+      track: 'sql-30-days',
+      mentee: 'Tien-NHM',
+    });
+  });
+
+  it('rejects malformed values and unknown parameters', () => {
+    for (const bad of [
+      { track: 'SQL 30' },
+      { track: '-sql' },
+      { mentee: '-bad' },
+      { mentee: 'a--b' },
+      { mentee: 'a'.repeat(40) },
+      { status: 'approved' },
+    ]) {
+      expect(reviewQueueQuerySchema.safeParse(bad).success).toBe(false);
+    }
+  });
+});
+
+describe('latestActivity', () => {
+  it('keeps the latest date per user and ignores nulls', () => {
+    const map = latestActivity(
+      [
+        { userId: 'a', at: new Date('2026-11-01') },
+        { userId: 'b', at: null },
+      ],
+      [
+        { userId: 'a', at: new Date('2026-11-10') },
+        { userId: 'a', at: new Date('2026-11-05') },
+      ],
+    );
+    expect(map.get('a')).toEqual(new Date('2026-11-10'));
+    expect(map.has('b')).toBe(false);
+  });
+});
+
+describe('countInactiveMentees', () => {
+  const now = new Date('2026-11-18T12:00:00Z');
+  const daysAgo = (n: number) => new Date(now.getTime() - n * 86_400_000);
+
+  it('counts mentees whose latest activity is older than the limit', () => {
+    const mentees = [
+      { menteeId: 'active', startedAt: daysAgo(60) },
+      { menteeId: 'quiet', startedAt: daysAgo(60) },
+      { menteeId: 'never', startedAt: daysAgo(30) },
+    ];
+    const last = new Map([
+      ['active', daysAgo(3)],
+      ['quiet', daysAgo(15)],
+    ]);
+    expect(countInactiveMentees(mentees, last, now, 14)).toBe(2);
+  });
+
+  it('does not flag a mentee assigned recently with no activity yet', () => {
+    expect(
+      countInactiveMentees([{ menteeId: 'new', startedAt: daysAgo(2) }], new Map(), now, 14),
+    ).toBe(0);
+  });
+
+  it('treats exactly the limit as still active and no date at all as inactive', () => {
+    expect(
+      countInactiveMentees([{ menteeId: 'x', startedAt: daysAgo(14) }], new Map(), now, 14),
+    ).toBe(0);
+    expect(countInactiveMentees([{ menteeId: 'y', startedAt: null }], new Map(), now, 14)).toBe(1);
+  });
+
+  it('counts a mentee with two active assignments once', () => {
+    const mentees = [
+      { menteeId: 'm', startedAt: daysAgo(40) },
+      { menteeId: 'm', startedAt: daysAgo(30) },
+    ];
+    expect(countInactiveMentees(mentees, new Map(), now, 14)).toBe(1);
+  });
+
+  it('is 0 with no mentees', () => {
+    expect(countInactiveMentees([], new Map(), now, 14)).toBe(0);
   });
 });

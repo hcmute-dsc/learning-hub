@@ -6,6 +6,7 @@ import type {
   OpenReview,
   ReviewPage,
   ReviewQueue,
+  ReviewQueueQuery,
 } from '@hub/shared';
 import type { AuthUser } from '../../common/auth.decorators';
 import { DomainError } from '../../common/errors';
@@ -14,6 +15,7 @@ import { ENV, type Env } from '../../infrastructure/config/env';
 import { newId } from '../../infrastructure/ids';
 import { isUniqueViolation } from '../../infrastructure/prisma/errors';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { CatalogReader } from '../catalog/catalog.reader';
 import { SubmissionReviewService } from '../submissions/submission-review.service';
 import { PeopleReader } from '../users/people.reader';
 import {
@@ -23,6 +25,7 @@ import {
   rubricTotal,
   scoreRubric,
 } from './review-rules';
+import { MenteeActivity } from './mentee-activity';
 import { ReviewRecords } from './review-records';
 import { toOpenReview, toQueueItem, toReviewedSubmission, unknownPerson } from './review-view';
 import { ReviewEvents, type ReviewClaimedEvent, type ReviewCompletedEvent } from './reviews.events';
@@ -44,30 +47,51 @@ export class ReviewsService {
     private readonly submissions: SubmissionReviewService,
     private readonly records: ReviewRecords,
     private readonly people: PeopleReader,
+    private readonly catalog: CatalogReader,
+    private readonly mentees: MenteeActivity,
     private readonly events: EventEmitter2,
     private readonly clock: Clock,
     @Inject(ENV) private readonly env: Env,
   ) {}
 
-  async queue(): Promise<ReviewQueue> {
-    const rows = await this.submissions.awaitingReview();
+  /**
+   * The queue for one mentor: waiting submissions (filtered by track and/or member),
+   * dashboard numbers for the same filter, and the choices for the filter form.
+   */
+  async queue(viewer: AuthUser, query: ReviewQueueQuery = {}): Promise<ReviewQueue> {
+    const now = this.clock.now();
+    const targetHours = this.env.REVIEW_TARGET_HOURS;
+    const overdueBefore = new Date(now.getTime() - targetHours * 3_600_000);
+    const [rows, counts, tracks, mentorship] = await Promise.all([
+      this.submissions.awaitingReview(query),
+      this.submissions.awaitingReviewCounts(query, overdueBefore),
+      this.catalog.activeTracks(),
+      this.mentees.forMentor(viewer.id, now),
+    ]);
     const [members, open] = await Promise.all([
       this.people.byIds(rows.map((r) => r.userId)),
       this.records.openFor(rows.map((r) => r.id)),
     ]);
-    const now = this.clock.now();
-    const targetHours = this.env.REVIEW_TARGET_HOURS;
+    const items = rows.map((row) =>
+      toQueueItem({
+        row,
+        member: members.get(row.userId) ?? unknownPerson(row.userId),
+        openReview: open.get(row.id) ?? null,
+        now,
+        targetHours,
+      }),
+    );
     return {
       targetHours,
-      items: rows.map((row) =>
-        toQueueItem({
-          row,
-          member: members.get(row.userId) ?? unknownPerson(row.userId),
-          openReview: open.get(row.id) ?? null,
-          now,
-          targetHours,
-        }),
-      ),
+      filters: { track: query.track ?? null, mentee: query.mentee ?? null },
+      stats: {
+        ...counts,
+        // Rows are oldest first, so the first one has waited longest.
+        oldestHoursWaiting: items[0]?.hoursWaiting ?? null,
+        inactiveMentees: mentorship.inactive,
+      },
+      options: { tracks, mentees: mentorship.mentees },
+      items,
     };
   }
 

@@ -1,6 +1,6 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { completeReviewSchema } from '@hub/shared';
+import { completeReviewSchema, reviewQueueQuerySchema, type ReviewQueueQuery } from '@hub/shared';
 import { z } from 'zod';
 import { AuthUser, CurrentUser, Roles } from '../../common/auth.decorators';
 import { ZodPipe } from '../../common/zod';
@@ -19,9 +19,13 @@ const idPipe = new ZodPipe(z.string().uuid());
 export class ReviewsController {
   constructor(private readonly reviews: ReviewsService) {}
 
+  /** ?track=<slug>&mentee=<github login>, both optional; anything else is a 422. */
   @Get('reviews/queue')
-  queue() {
-    return this.reviews.queue().then((data) => ({ data }));
+  queue(
+    @CurrentUser() user: AuthUser,
+    @Query(new ZodPipe(reviewQueueQuerySchema)) query: ReviewQueueQuery,
+  ) {
+    return this.reviews.queue(user, query).then((data) => ({ data }));
   }
 
   @Get('reviews/submissions/:submissionId')
