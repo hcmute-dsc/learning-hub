@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { Achievements } from './achievements';
 import type { Role } from './index';
 import type { TrackProgress } from './learning';
 
@@ -28,8 +29,16 @@ export const profileUpdateSchema = z
   .strict();
 export type ProfileUpdateInput = z.input<typeof profileUpdateSchema>;
 
-/** PUT /api/v1/me/settings → { data: Me } */
-export const settingsUpdateSchema = z.object({ theme: z.enum(THEMES) }).strict();
+/**
+ * PUT /api/v1/me/settings → { data: Me }. Send only what changed; at least one field.
+ * showAchievements: false hides badges and the streak on the dashboard and the profile (F12).
+ */
+export const settingsUpdateSchema = z
+  .object({ theme: z.enum(THEMES).optional(), showAchievements: z.boolean().optional() })
+  .strict()
+  .refine((input) => input.theme !== undefined || input.showAchievements !== undefined, {
+    message: 'Nothing to update',
+  });
 export type SettingsUpdateInput = z.infer<typeof settingsUpdateSchema>;
 
 /** Number of learning actions (lessons completed + submissions) on one day. */
@@ -45,9 +54,6 @@ export interface LearningStats {
   tracksCompleted: number;
   /** days with at least one action, over the whole history */
   activeDays: number;
-  /** consecutive active days ending today (or yesterday, so the streak survives until tonight) */
-  currentStreak: number;
-  longestStreak: number;
 }
 
 /**
@@ -65,6 +71,8 @@ export interface MemberProfile {
   /** true when the viewer is looking at their own profile */
   isMe: boolean;
   stats: LearningStats;
+  /** badges and streak; null when the member hid them in /settings (F12) */
+  achievements: Achievements | null;
   /** last ACTIVITY_WEEKS weeks, oldest first, one entry per day (zeros included) */
   activity: ActivityDay[];
   tracks: TrackProgress[];

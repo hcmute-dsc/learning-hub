@@ -49,28 +49,42 @@ export function activityGrid(
 }
 
 /**
- * Current streak: consecutive active days ending today, or ending yesterday when the
- * member has not learned yet today (the streak is not lost until the day is over).
- * Longest streak: the longest run of consecutive active days ever.
+ * How far apart two active days can be and still be in the same streak: 2 means one
+ * missed day in between is forgiven (PRD F12, "không phạt nặng"). Two missed days in a
+ * row end the streak.
+ */
+export const STREAK_MAX_GAP_DAYS = 2;
+
+function daysBetween(from: string, to: string): number {
+  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / DAY_MS);
+}
+
+/**
+ * Streaks over Vietnam days (PRD F12). A run is a list of active days where each day is
+ * at most STREAK_MAX_GAP_DAYS after the one before, so one missed day never breaks it.
+ * Its length is the number of active days, not calendar days.
+ *
+ * Current streak: the latest run, while it can still continue. It is alive when the
+ * last active day is today, yesterday, or the day before yesterday (yesterday was the
+ * one forgiven day, so learning today keeps the run going). Otherwise it is 0.
+ * Longest streak: the longest run ever. Days after today are ignored.
  */
 export function streaks(
   activeDays: Iterable<string>,
   today: string,
 ): { current: number; longest: number } {
-  const days = new Set(activeDays);
+  const days = [...new Set(activeDays)].filter((day) => day <= today).sort();
   let longest = 0;
+  let run = 0;
+  let previous: string | null = null;
   for (const day of days) {
-    if (days.has(addDays(day, -1))) continue; // not the start of a run
-    let length = 1;
-    while (days.has(addDays(day, length))) length++;
-    longest = Math.max(longest, length);
+    const continues = previous !== null && daysBetween(previous, day) <= STREAK_MAX_GAP_DAYS;
+    run = continues ? run + 1 : 1;
+    longest = Math.max(longest, run);
+    previous = day;
   }
 
-  let end = days.has(today) ? today : addDays(today, -1);
-  let current = 0;
-  while (days.has(end)) {
-    current++;
-    end = addDays(end, -1);
-  }
-  return { current, longest };
+  const last = days.at(-1);
+  const alive = last !== undefined && daysBetween(last, today) <= STREAK_MAX_GAP_DAYS;
+  return { current: alive ? run : 0, longest };
 }

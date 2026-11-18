@@ -114,6 +114,8 @@ export const meSchema = z.object({
   bio: z.string().nullable(),
   /** color scheme picked in /settings (see profile.ts) */
   theme: z.enum(['system', 'light', 'dark']),
+  /** false hides badges and the streak everywhere (F12, /settings) */
+  showAchievements: z.boolean(),
 });
 export type Me = z.infer<typeof meSchema>;
 
@@ -121,3 +123,4 @@ export * from './learning';
 export * from './admin';
 export * from './profile';
 export * from './review';
+export * from './achievements';
