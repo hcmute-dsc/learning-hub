@@ -4,6 +4,7 @@ import type { ExerciseView, SubmissionView } from '@hub/shared';
 import { AttemptHistory } from '@/components/exercise/AttemptHistory';
 import { ExerciseActions } from '@/components/exercise/ExerciseActions';
 import { ExerciseHeader } from '@/components/exercise/ExerciseHeader';
+import { HintsPanel } from '@/components/exercise/HintsPanel';
 import { bannerReview } from '@/components/exercise/exercise-status';
 import { TrackSidebar } from '@/components/learn/TrackSidebar';
 import { Markdown } from '@/components/markdown/Markdown';
@@ -69,17 +70,17 @@ export default async function ExercisePage({ params }: Params) {
         </details>
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start">
-          <section
-            aria-labelledby="statement-title"
-            className="surface motion-fade-up min-w-0 rounded-2xl p-5 sm:p-7"
-            style={{ '--i': 1 } as CSSProperties}
-          >
-            <PanelTitle id="statement-title" icon="📄">
-              Đề bài
-            </PanelTitle>
-            {/* The API sends no source path for statements yet, so relative links stay as written. */}
-            <Markdown source={exercise.statementMd} />
-          </section>
+          {/* Statement, then hints and the reference solution (PRD F11) under it. */}
+          <div className="motion-fade-up min-w-0 space-y-6" style={{ '--i': 1 } as CSSProperties}>
+            <section aria-labelledby="statement-title" className="surface rounded-2xl p-5 sm:p-7">
+              <PanelTitle id="statement-title" icon="📄">
+                Đề bài
+              </PanelTitle>
+              {/* The API sends no source path for statements yet, so relative links stay as written. */}
+              <Markdown source={exercise.statementMd} />
+            </section>
+            <HintsPanel exercise={exercise} />
+          </div>
 
           {/* Sticky on xl with its own scroll, so "Nộp bài" stays reachable beside a long
               statement. The small padding keeps focus outlines from being clipped. */}
