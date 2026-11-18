@@ -349,6 +349,46 @@ Kiểm tra: **Actions → Uptime → Run workflow**. Job xanh là site đang ch�
 curl -H 'content-type: application/json' -d '{"content":"thử webhook"}' "URL_WEBHOOK"
 ```
 
+## Bước 13. Email tóm tắt qua SMTP (không bắt buộc)
+
+Chuông thông báo trên header luôn chạy, không cần cấu hình gì. Email tóm tắt là tuỳ chọn: thành viên tự bật trong `/settings` (mặc định tắt), mỗi sáng khoảng 8 giờ nhận một email liệt kê thông báo chưa đọc; không có gì mới thì không gửi. Mỗi email có link "Tắt email tóm tắt" dùng được cả khi chưa đăng nhập.
+
+Để trống `SMTP_HOST` hoặc `SMTP_FROM` thì không có email nào được gửi, và nút bật trong `/settings` bị khoá kèm lời giải thích. Mọi thứ khác vẫn chạy.
+
+**Chọn nơi gửi.** Cần một tài khoản SMTP của CLB (không dùng email cá nhân của ai):
+
+| Cách                                             | `SMTP_HOST` / `SMTP_PORT`                      | `SMTP_USER` / `SMTP_PASSWORD`                                                            | Ghi chú                                                                            |
+| ------------------------------------------------ | ---------------------------------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Gmail/Google Workspace của CLB                   | `smtp.gmail.com` / `465`                       | địa chỉ Gmail đó / **App password** (Google Account → Security → 2-Step → App passwords) | cần bật xác minh 2 bước; giới hạn khoảng 500 email/ngày, đủ cho CLB                |
+| Dịch vụ gửi email (Brevo, Resend, Mailgun, SES…) | theo trang SMTP của dịch vụ, thường cổng `587` | SMTP login / SMTP key mà dịch vụ cấp                                                     | phải xác minh tên miền gửi (bản ghi SPF/DKIM trong DNS) theo hướng dẫn của dịch vụ |
+
+- `SMTP_FROM`: tên và địa chỉ người gửi, ví dụ `DSC Learning Hub <dia-chi-gui@ten-mien-cua-clb>`. Với Gmail phải là chính địa chỉ Gmail đó.
+- Cổng `587` bắt buộc STARTTLS, cổng `465` dùng TLS ngay; API không bao giờ gửi mật khẩu qua kết nối không mã hoá. Nhiều VPS chặn cổng `25`, nên đừng dùng cổng đó.
+- `SMTP_PASSWORD` là mật khẩu: không dán vào chat, issue, PR hay code. Lộ thì thu hồi App password/SMTP key cũ và tạo cái mới.
+
+**Đặt vào đâu:** chỉ trong `/opt/learning-hub/.env` trên VPS (API đọc file này qua `env_file`; không cần secret GitHub). Đăng nhập bằng user `learnhub`, `nano /opt/learning-hub/.env`, điền 5 dòng `SMTP_*` (mẫu trong [`deploy/.env.example`](.env.example); giá trị liền, không dấu cách quanh `=`; `SMTP_FROM` có dấu cách thì để trong ngoặc kép), lưu, rồi **Actions → Deploy → Run workflow** để API đọc lại `.env`.
+
+**Kiểm tra** (trên VPS, sau khi Deploy; gửi 1 email thử tới địa chỉ bạn gõ, không in mật khẩu):
+
+```bash
+cd /opt/learning-hub
+docker compose -f docker-compose.prod.yml exec -T api node dist/cli/smtp-check.js email-cua-ban@example.org
+# "SMTP OK: …" và email tới hộp thư (xem cả thư mục Spam) là xong
+# "SMTP is off" → .env thiếu SMTP_HOST/SMTP_FROM hoặc chưa Deploy lại
+# "SMTP FAILED: …" → đọc câu lỗi: sai mật khẩu (535), cổng bị chặn (timeout), sai người gửi (553)
+```
+
+Sau đó vào `/settings` trên site: mục **Thông báo** phải cho bật "Email tóm tắt mỗi ngày".
+
+**Cách hoạt động (để gỡ lỗi):** sự kiện (bài được review, bài chờ review, lộ trình mới) được ghi vào bảng `outbox_events`; API đọc bảng này mỗi 15 giây, tạo dòng trong `notifications` cho từng người nhận, và mỗi 10 phút xếp hàng email tóm tắt cho ai đến hạn. Lỗi gửi được thử lại (1, 2, 4… phút, tối đa 8 lần), sau đó dòng có `status = 'failed'` và câu lỗi trong `last_error`:
+
+```bash
+docker compose -f docker-compose.prod.yml exec -T db psql -U hub -d learning_hub -c \
+  "select id, type, status, attempts, last_error, created_at from outbox_events where status <> 'sent' order by id desc limit 20"
+```
+
+Discord không đi qua bảng này; tắt SMTP không ảnh hưởng Discord hay chuông.
+
 ---
 
 ## Việc thường ngày
@@ -570,13 +610,15 @@ docker compose -f docker-compose.prod.yml ps                    # 7. kiểm tra
 | Lỗi 403 "Origin" khi bấm nút                                  | `WEB_ORIGIN` trong `.env` phải đúng `https://learn.hcmute-dsc.io.vn` (không có `/` cuối)                            |
 | Không có tin Discord nào                                      | `DISCORD_WEBHOOK_URL` / `DISCORD_ALERT_WEBHOOK_URL` trống hoặc sai, hoặc chưa Deploy lại sau khi sửa `.env`         |
 | Link trong tin Discord trỏ sai trang                          | link lấy từ `WEB_ORIGIN` trong `.env`                                                                               |
+| Nút "Email tóm tắt" trong /settings bị khoá                   | `SMTP_HOST`/`SMTP_FROM` trống, hoặc chưa Deploy lại sau khi sửa `.env` (Bước 13)                                    |
+| Bật email tóm tắt rồi mà không nhận được                      | chỉ gửi sau 8 giờ sáng và khi có thông báo chưa đọc; xem `outbox_events` lỗi và `smtp-check.js` ở Bước 13           |
 | Workflow Uptime đỏ nhưng site vẫn mở được                     | xem log của job: thường do `/api/v1/tracks` trả `502` (container `api` chết) chứ không phải `401`                   |
 
 ## Bàn giao cho tech lead mới
 
 1. Thêm SSH key của người mới vào user của họ trên VPS (không chia sẻ khóa của `learnhub`).
 2. Chuyển quyền admin repo và org GitHub; chuyển quyền DNS nếu cần.
-3. Chuyển OAuth app sang org hoặc tạo lại (đổi `GITHUB_CLIENT_*` trong `.env`, rồi chạy lại Deploy).
+3. Chuyển OAuth app sang org hoặc tạo lại (đổi `GITHUB_CLIENT_*` trong `.env`, rồi chạy lại Deploy). Nếu đã bật email tóm tắt: đổi App password/SMTP key (`SMTP_PASSWORD`) của tài khoản gửi.
 4. Tạo SSH key deploy mới (Bước 4, 7), xóa khóa cũ khỏi `authorized_keys`.
 5. Tạo lại 2 webhook Discord nếu người cũ rời server (Bước 12), cập nhật `.env` và secret repo.
 6. Bản sao ngoài VPS: người mới làm phần cài đặt ở [Chép bản sao lưu ra ngoài VPS](#chép-bản-sao-lưu-ra-ngoài-vps-mỗi-tuần-tự-động) với khóa `age` và SSH key của **họ**, thay dòng `age1…` trong `offsite-recipients.txt`, rồi tự chạy [kiểm tra bản sao lưu](#kiểm-tra-bản-sao-lưu-dùng-được-mỗi-tháng) và [kiểm tra bản sao ngoài VPS](#kiểm-tra-bản-sao-ngoài-vps-mỗi-tháng) một lần. Người cũ xóa dòng `learning-hub-backup-pull` của mình trong `authorized_keys`, gỡ task trong Task Scheduler, xóa các bản sao và khóa `age` trên máy mình.
@@ -598,3 +640,4 @@ docker compose -f docker-compose.prod.yml ps                    # 7. kiểm tra
 | Sao lưu                         | cron 19:30 UTC của `learnhub`, giữ 14 ngày, `/opt/learning-hub/backups`                                    |
 | Bản sao ngoài VPS               | chưa bật (learning-hub#1): mã hóa `age` Chủ nhật 20:00 UTC, kéo về máy tech lead thứ Hai, giữ 4 + 12 bản   |
 | Discord                         | bật 17/11/2026 (kênh CLB + kênh vận hành)                                                                  |
+| Email tóm tắt (SMTP)            | chưa bật: `SMTP_*` trong `.env` còn trống (Bước 13)                                                        |
