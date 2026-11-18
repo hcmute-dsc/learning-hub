@@ -42,6 +42,15 @@ export class EnrollmentRepository {
     });
   }
 
+  /** Completed enrollments with their date, oldest completion first. */
+  listCompleted(userId: string): Promise<EnrollmentRow[]> {
+    return this.prisma.enrollment.findMany({
+      where: { userId, status: 'completed', completedAt: { not: null } },
+      orderBy: { completedAt: 'asc' },
+      select: columns,
+    });
+  }
+
   /**
    * Insert a new active enrollment. Returns null when a concurrent request inserted the
    * same (user, track) first: the unique key makes enrolling idempotent (BACKEND-DESIGN §3.7).

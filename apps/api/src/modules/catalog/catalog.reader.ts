@@ -4,6 +4,7 @@ import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { DomainError } from '../../common/errors';
 import {
   groupPrerequisites,
+  sourceFor,
   toExerciseContext,
   toLessonContext,
   toOutlineItems,
@@ -42,6 +43,14 @@ export interface LessonContext {
   source: { repo: string; commitSha: string };
   /** exercises whose `lesson:` is this lesson, by position */
   exercises: { id: string; title: string; type: ExerciseType }[];
+}
+
+/** A track and the content members read now: its repo and commit (certificates, F19). */
+export interface TrackSource {
+  id: string;
+  slug: string;
+  title: string;
+  source: { repo: string; commitSha: string };
 }
 
 export interface ExerciseContext {
@@ -166,5 +175,34 @@ export class CatalogReader {
       select: { id: true, requiresReview: true },
     });
     return new Map(rows.map((e) => [e.id, e.requiresReview]));
+  }
+
+  /**
+   * The track's title and the content commit members are reading now: the published
+   * version (registry versions know each track's own repo, ADR-10), or the track's own
+   * version before the first publish. Archived tracks are included: a certificate may
+   * be issued for a completion stored before the track was archived.
+   */
+  async trackSource(trackId: string): Promise<TrackSource> {
+    const track = await this.prisma.track.findUnique({
+      where: { id: trackId },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        contentVersion: { select: { sourceRepo: true, commitSha: true, trackSources: true } },
+      },
+    });
+    if (!track) throw DomainError.notFound('Track');
+    const published = await this.prisma.contentVersion.findFirst({
+      where: { status: 'published' },
+      select: { sourceRepo: true, commitSha: true, trackSources: true },
+    });
+    return {
+      id: track.id,
+      slug: track.slug,
+      title: track.title,
+      source: sourceFor(published ?? track.contentVersion, track.slug),
+    };
   }
 }

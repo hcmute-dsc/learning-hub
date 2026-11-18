@@ -5,7 +5,10 @@ import { CatalogReader } from './catalog.reader';
 /** Query-level checks; the row → result mapping is covered in catalog-views.spec.ts. */
 function fakePrisma(found: unknown = null) {
   const prisma = {
-    track: { findFirst: jest.fn().mockResolvedValue(found) },
+    track: {
+      findFirst: jest.fn().mockResolvedValue(found),
+      findUnique: jest.fn().mockResolvedValue(found),
+    },
     lesson: { findFirst: jest.fn().mockResolvedValue(found) },
     contentVersion: { findFirst: jest.fn().mockResolvedValue(null) },
     exercise: {
@@ -86,5 +89,32 @@ describe('CatalogReader', () => {
       requiredExercise: { status: 'active' },
     });
     expect(map.get('e1')).toEqual([]);
+  });
+
+  it('gives a certificate the repo and commit of its track in the published version', async () => {
+    const { prisma, reader } = fakePrisma({
+      id: 't1',
+      slug: 'sql',
+      title: 'SQL',
+      contentVersion: { sourceRepo: 'hcmute-dsc/learning-hub-content', commitSha: 'old' },
+    });
+    prisma.contentVersion.findFirst.mockResolvedValue({
+      sourceRepo: 'hcmute-dsc/learning-hub-content',
+      commitSha: 'new',
+      trackSources: { sql: { repo: 'hcmute-dsc/learning-hub-track-sql', commitSha: 'abc' } },
+    });
+    await expect(reader.trackSource('t1')).resolves.toEqual({
+      id: 't1',
+      slug: 'sql',
+      title: 'SQL',
+      source: { repo: 'hcmute-dsc/learning-hub-track-sql', commitSha: 'abc' },
+    });
+    // archived tracks too: no status filter
+    expect(prisma.track.findUnique.mock.calls[0][0].where).toEqual({ id: 't1' });
+  });
+
+  it('is a 404 for a track that does not exist', async () => {
+    const { reader } = fakePrisma();
+    await expect(reader.trackSource('missing')).rejects.toBeInstanceOf(DomainError);
   });
 });

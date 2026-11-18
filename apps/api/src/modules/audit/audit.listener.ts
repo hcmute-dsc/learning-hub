@@ -1,6 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import {
+  CertificateEvents,
+  type CertificateRevokedEvent,
+} from '../certificates/certificates.events';
 import { ContentEvents, type ContentVersionEvent } from '../content/content.events';
 import { ReviewEvents, type ReviewCompletedEvent } from '../reviews/reviews.events';
 import {
@@ -113,6 +117,16 @@ export class AuditListener {
       submissionId: e.submissionId,
       memberId: e.memberId,
       outcome: e.outcome,
+    });
+  }
+
+  /** The reason is kept: admins need it later, and it names no personal data. */
+  @OnEvent(CertificateEvents.Revoked)
+  onCertificateRevoked(e: CertificateRevokedEvent) {
+    return this.write('certificate.revoke', 'certificate', e.certificateId, e.actorId, {
+      userId: e.userId,
+      trackSlug: e.trackSlug,
+      reason: e.reason,
     });
   }
 }
