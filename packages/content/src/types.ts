@@ -18,6 +18,15 @@ export interface LessonNode {
   hash: string;
 }
 
+/** One `hints/NN.md` file: opened one by one by members (CONTENT-SPECIFICATION §3.7). */
+export interface HintNode {
+  /** 1-based, from the file name `NN.md` */
+  position: number;
+  /** attempts needed before it can be opened (soft, never lowers a score) */
+  cost: number;
+  bodyMd: string;
+}
+
 export interface ExerciseNode {
   uid: string;
   slug: string;
@@ -32,6 +41,13 @@ export interface ExerciseNode {
   /** logical refs to exercises: <track>/<module>/<slug> */
   prerequisites: string[];
   tags: string[];
+  /** `hints/NN.md`, by position; empty when the exercise has none */
+  hints: HintNode[];
+  /**
+   * Reference solution from the PRIVATE checker repo (§3.8), never from the public content
+   * repo. Null when there is none. Members only get it after their first attempt.
+   */
+  solutionMd: string | null;
   position: number;
   sourcePath: string;
   hash: string;

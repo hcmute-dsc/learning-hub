@@ -5,10 +5,11 @@ const MAX_FILE_BYTES = 1024 * 1024;
 const TEXT_FILE = /\.(ya?ml|md)$/i;
 
 /**
- * Read every .yaml/.md file under `<root>/tracks` into a FileMap (paths use `/`).
- * Binary assets are skipped: the parser never needs them.
+ * Read every .yaml/.md file under `<root>/<top>` into a FileMap (paths use `/`, relative to
+ * `root`). Binary assets are skipped: the parser never needs them. `top` is `tracks` for a
+ * content repo and `exercises` for the checker repo (solutions, §3.8).
  */
-export function readDirectory(root: string): Map<string, string> {
+export function readDirectory(root: string, top = 'tracks'): Map<string, string> {
   const files = new Map<string, string>();
   const walk = (dir: string) => {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -24,6 +25,6 @@ export function readDirectory(root: string): Map<string, string> {
       }
     }
   };
-  walk(join(root, 'tracks'));
+  walk(join(root, top));
   return files;
 }
