@@ -89,7 +89,7 @@ export default async function SettingsPage() {
         </h2>
         <p className="muted mt-1 text-sm">
           Chuông 🔔 trên thanh trên cùng báo khi mentor review bài của bạn, khi có bài chờ review
-          (mentor) và khi có lộ trình mới. Email là tuỳ chọn, mặc định tắt.
+          (mentor và admin) và khi có lộ trình mới. Email là tuỳ chọn, mặc định tắt.
         </p>
         <EmailDigestToggle settings={notify} />
       </section>
