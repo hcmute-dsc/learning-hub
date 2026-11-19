@@ -8,7 +8,7 @@
 export const OutboxTypes = {
   /** payload: ReviewCompletedPayload → one bell row for the member */
   ReviewCompleted: 'inbox.review_completed',
-  /** payload: ReviewRequestedPayload → one bell row per mentor */
+  /** payload: ReviewRequestedPayload → one bell row per mentor and admin */
   ReviewRequested: 'inbox.review_requested',
   /** payload: TrackPublishedPayload → one bell row per active member */
   TrackPublished: 'inbox.track_published',

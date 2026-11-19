@@ -45,7 +45,7 @@ export function reviewCompletedNotice(info: {
   };
 }
 
-/** To every mentor: a project is waiting in the review queue. No member name (SECURITY §1). */
+/** To every mentor and admin: a project is waiting in the review queue. No member name (SECURITY §1). */
 export function reviewRequestedNotice(info: {
   submissionId: string;
   exerciseTitle: string;

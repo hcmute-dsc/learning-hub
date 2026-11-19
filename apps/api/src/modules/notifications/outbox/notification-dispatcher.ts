@@ -57,16 +57,17 @@ export class NotificationDispatcher {
       }
       case OutboxTypes.ReviewRequested: {
         const p = payload as ReviewRequestedPayload;
-        const [exercise, mentors] = await Promise.all([
+        // Admins pass every @Roles('mentor') check, so they can open the review page too.
+        const [exercise, reviewers] = await Promise.all([
           this.catalog.exercise(p.exerciseId),
-          this.users.activeIds(['mentor']),
+          this.users.activeIds(['mentor', 'admin']),
         ]);
         const notice = reviewRequestedNotice({
           submissionId: p.submissionId,
           exerciseTitle: exercise.title,
           trackTitle: exercise.track.title,
         });
-        const recipients = mentors.filter((id) => id !== p.memberId);
+        const recipients = reviewers.filter((id) => id !== p.memberId);
         await this.inbox.deliver(eventId, recipients, notice);
         return;
       }

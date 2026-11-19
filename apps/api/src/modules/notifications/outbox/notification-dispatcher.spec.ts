@@ -48,14 +48,14 @@ describe('NotificationDispatcher', () => {
     expect(delivered[0].notice.payload.title).toContain('Todo API');
   });
 
-  it('notifies mentors about a new review request, never the member who submitted', async () => {
+  it('notifies mentors and admins about a new review request, never the member who submitted', async () => {
     const { dispatcher, delivered, users } = setup();
     await dispatcher.dispatch(2n, OutboxTypes.ReviewRequested, {
       submissionId: 's1',
       exerciseId: 'ex-1',
       memberId: 'm1',
     });
-    expect(users.activeIds).toHaveBeenCalledWith(['mentor']);
+    expect(users.activeIds).toHaveBeenCalledWith(['mentor', 'admin']);
     expect(delivered[0].userIds).toEqual(['mentor-1']);
     expect(delivered[0].notice.payload.link).toBe('/review/s1');
   });
