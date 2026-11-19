@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import type { Me, NotificationSettings } from '@hub/shared';
+import type { Me, MyCertificate, NotificationSettings } from '@hub/shared';
+import { CertificateVisibility } from '@/components/certificate/CertificateVisibility';
 import { AchievementsToggle } from '@/components/settings/AchievementsToggle';
 import { EmailDigestToggle } from '@/components/settings/EmailDigestToggle';
 import { ProfileForm } from '@/components/settings/ProfileForm';
@@ -11,8 +12,9 @@ export const metadata: Metadata = { title: 'Cài đặt' };
 
 /** Personal settings: what other members see on the profile, the color scheme, the email digest. */
 export default async function SettingsPage() {
-  const [{ data: me }, { data: notify }] = await Promise.all([
+  const [{ data: me }, { data: certificates }, { data: notify }] = await Promise.all([
     api<{ data: Me }>('/auth/me'),
+    api<{ data: MyCertificate[] }>('/me/certificates'),
     api<{ data: NotificationSettings }>('/me/notifications/settings'),
   ]);
   return (
@@ -20,7 +22,7 @@ export default async function SettingsPage() {
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Cài đặt</h1>
-          <p className="muted mt-1">Hồ sơ của bạn và cách Learning Hub hiển thị.</p>
+          <p className="muted mt-1">Hồ sơ, chứng nhận và cách Learning Hub hiển thị.</p>
         </div>
         <Link
           href={`/u/${me.githubLogin}`}
@@ -39,6 +41,28 @@ export default async function SettingsPage() {
           bao giờ hiện trên hồ sơ.
         </p>
         <ProfileForm displayName={me.displayName} bio={me.bio} />
+      </section>
+
+      <section aria-labelledby="certificates-heading" className="surface rounded-2xl p-5 sm:p-6">
+        <h2 id="certificates-heading" className="text-lg font-semibold">
+          Chứng nhận
+        </h2>
+        <p className="muted mt-1 text-sm">
+          Hoàn thành mọi bài học và bài tập của một lộ trình để nhận chứng nhận có link xác minh. Ẩn
+          khỏi hồ sơ thì thành viên khác không thấy trên hồ sơ của bạn, nhưng link bạn đã gửi vẫn mở
+          được.
+        </p>
+        {certificates.length === 0 ? (
+          <p className="muted mt-3 text-sm italic">Bạn chưa có chứng nhận nào.</p>
+        ) : (
+          <ul className="mt-2 divide-y divide-[var(--border)]">
+            {certificates.map((c) => (
+              <li key={c.code}>
+                <CertificateVisibility certificate={c} />
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section aria-labelledby="theme-heading" className="surface rounded-2xl p-5 sm:p-6">

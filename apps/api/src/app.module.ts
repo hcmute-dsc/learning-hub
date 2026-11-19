@@ -10,6 +10,7 @@ import { loadEnv } from './infrastructure/config/env';
 import { InfrastructureModule } from './infrastructure/infrastructure.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
+import { CertificatesModule } from './modules/certificates/certificates.module';
 import { ContentModule } from './modules/content/content.module';
 import { LearningModule } from './modules/learning/learning.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
@@ -52,6 +53,7 @@ const env = loadEnv();
     SubmissionsModule,
     LearningModule,
     ReviewsModule,
+    CertificatesModule,
     AuditModule,
     OverviewModule,
     NotificationsModule,
