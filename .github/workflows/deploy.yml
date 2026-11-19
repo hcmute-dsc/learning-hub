@@ -64,7 +64,7 @@ jobs:
     needs: images
     if: vars.DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     environment:
       name: production
       url: https://learn.hcmute-dsc.io.vn
@@ -86,11 +86,32 @@ jobs:
           printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
           # Pinned host key: the job refuses to talk to a server that is not our VPS.
           printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
-          printf 'Host vps\n  HostName %s\n  User %s\n  Port %s\n  IdentityFile ~/.ssh/deploy_key\n  IdentitiesOnly yes\n' \
+          # Short connect timeout and a few attempts: the runner -> VPS connection sometimes
+          # times out once (learning-hub#63). Keep-alives catch a connection that hangs.
+          printf 'Host vps\n  HostName %s\n  User %s\n  Port %s\n  IdentityFile ~/.ssh/deploy_key\n  IdentitiesOnly yes\n  ConnectTimeout 20\n  ConnectionAttempts 3\n  ServerAliveInterval 15\n  ServerAliveCountMax 4\n' \
             '${{ secrets.VPS_HOST }}' '${{ secrets.VPS_USER }}' '${{ secrets.VPS_PORT || 22 }}' > ~/.ssh/config
 
+      - name: Wait for SSH
+        # Up to 6 rounds of 3 connection attempts, 15 s apart (about 7 minutes at worst).
+        # Only the connection is retried; the restart below runs once.
+        run: |
+          for i in $(seq 1 6); do
+            ssh vps true && exit 0
+            echo "::warning::SSH to the VPS failed (round $i of 6), retrying in 15 s"
+            sleep 15
+          done
+          echo "::error::Cannot reach the VPS over SSH"
+          exit 1
+
       - name: Copy compose file and backup scripts
-        run: scp deploy/docker-compose.prod.yml deploy/backup.sh deploy/offsite-export.sh deploy/offsite-serve.sh vps:/opt/learning-hub/
+        # Copying the same files again is harmless, so this step may retry.
+        run: |
+          for i in 1 2 3; do
+            scp deploy/docker-compose.prod.yml deploy/backup.sh deploy/offsite-export.sh deploy/offsite-serve.sh vps:/opt/learning-hub/ && exit 0
+            echo "::warning::scp failed (try $i of 3), retrying in 15 s"
+            sleep 15
+          done
+          exit 1
 
       - name: Pull images and restart
         env:
