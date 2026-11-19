@@ -25,6 +25,8 @@ model User {
   bio         String?
   /// system | light | dark — color scheme picked in /settings
   theme       String    @default("system")
+  /// false hides badges and the streak on the dashboard and the profile (F12)
+  showAchievements Boolean @default(true) @map("show_achievements")
   /// pending | active | suspended
   status      String    @default("pending")
   lastLoginAt DateTime? @map("last_login_at") @db.Timestamptz
@@ -47,6 +49,7 @@ model User {
   addedApprovedEmails ApprovedEmail[]
   syncedVersions    ContentVersion[]    @relation("SyncedBy")
   publishedVersions ContentVersion[]    @relation("PublishedBy")
+  badges            UserBadge[]
 
   @@index([githubLogin])
   @@map("users")
@@ -292,6 +295,20 @@ model LessonProgress {
   @@id([userId, lessonId])
   @@index([userId, status])
   @@map("lesson_progress")
+}
+
+/// Badges a member earned (F12). The list of badges and their rules live in code
+/// (packages/shared achievements.ts, learning/badges.ts); the key makes awarding idempotent.
+model UserBadge {
+  userId    String   @map("user_id") @db.Uuid
+  /// a BadgeCode such as first_lesson; never renamed
+  badge     String
+  awardedAt DateTime @default(now()) @map("awarded_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, badge])
+  @@map("user_badges")
 }
 
 model Submission {

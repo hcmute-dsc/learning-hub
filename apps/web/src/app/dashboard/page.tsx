@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import type { Me, TrackProgress } from '@hub/shared';
+import type { Achievements, Me, TrackProgress } from '@hub/shared';
+import { AchievementsCard } from '@/components/achievements/AchievementsCard';
 import { MyTracks } from '@/components/dashboard/MyTracks';
 import { StartCards, type StartCard } from '@/components/dashboard/StartCards';
 import { WelcomeHeader } from '@/components/dashboard/WelcomeHeader';
@@ -14,9 +15,11 @@ const MENTORING_URL = 'https://mentoring.hcmute-dsc.io.vn';
 
 /** Member home, laid out like Exercism's dashboard: start cards left, my tracks right. */
 export default async function DashboardPage() {
-  const [{ data: me }, { data: enrollments }] = await Promise.all([
+  const [{ data: me }, { data: enrollments }, { data: achievements }] = await Promise.all([
     api<{ data: Me }>('/auth/me'),
     api<{ data: TrackProgress[] }>('/me/enrollments'),
+    // null when the member hid badges and streak in /settings (F12)
+    api<{ data: Achievements | null }>('/me/achievements'),
   ]);
 
   return (
@@ -24,7 +27,10 @@ export default async function DashboardPage() {
       <WelcomeHeader name={me.displayName} message={encouragement(enrollments)} />
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <StartCards cards={startCards(enrollments)} />
-        <MyTracks enrollments={enrollments} />
+        <div className="space-y-8">
+          {achievements && <AchievementsCard achievements={achievements} />}
+          <MyTracks enrollments={enrollments} />
+        </div>
       </div>
     </div>
   );

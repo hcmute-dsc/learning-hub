@@ -1,6 +1,7 @@
 import type { ExerciseState, LessonStatus } from '@hub/shared';
 import type { OutlineItem } from '../catalog/catalog.reader';
 import {
+  completedModules,
   enrollmentStatus,
   isAllDone,
   neighbours,
@@ -122,5 +123,36 @@ describe('neighbours', () => {
     expect(neighbours(items, 'l1').previous).toBeNull();
     expect(neighbours(items, 'e2').next).toBeNull();
     expect(neighbours(items, 'missing')).toEqual({ previous: null, next: null });
+  });
+});
+
+describe('completedModules', () => {
+  const inModule = (item: OutlineItem, moduleSlug: string): OutlineItem => ({
+    ...item,
+    moduleSlug,
+  });
+  const outline = [
+    inModule(lesson('a1'), 'a'),
+    inModule(exercise('a2'), 'a'),
+    inModule(lesson('b1'), 'b'),
+  ];
+
+  it('counts a module only when every lesson and exercise in it is done', () => {
+    expect(completedModules(outline, statuses({ a1: 'completed' }))).toBe(0);
+    expect(completedModules(outline, statuses({ a1: 'completed' }, { a2: 'completed' }))).toBe(1);
+    expect(
+      completedModules(
+        outline,
+        statuses({ a1: 'completed', b1: 'completed' }, { a2: 'completed' }),
+      ),
+    ).toBe(2);
+  });
+
+  it('does not count an exercise waiting for review', () => {
+    expect(completedModules(outline, statuses({ a1: 'completed' }, { a2: 'in_review' }))).toBe(0);
+  });
+
+  it('is zero for an empty outline', () => {
+    expect(completedModules([], statuses())).toBe(0);
   });
 });

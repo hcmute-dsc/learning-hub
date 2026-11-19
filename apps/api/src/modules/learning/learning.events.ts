@@ -6,6 +6,8 @@ export const LearningEvents = {
   LessonCompleted: 'learning.lesson_completed',
   /** every item of a track is done; stored once, so certificates and stats can use it */
   TrackCompleted: 'learning.track_completed',
+  /** a member earned a badge (F12); emitted once per member and badge */
+  BadgeAwarded: 'learning.badge_awarded',
 } as const;
 
 export interface EnrolledEvent {
@@ -25,4 +27,11 @@ export interface TrackCompletedEvent {
   userId: string;
   trackId: string;
   completedAt: string;
+}
+
+export interface BadgeAwardedEvent {
+  userId: string;
+  /** a BadgeCode from packages/shared achievements.ts */
+  badge: string;
+  awardedAt: string;
 }
