@@ -48,6 +48,11 @@ export interface ExerciseNode {
    * repo. Null when there is none. Members only get it once they complete the exercise.
    */
   solutionMd: string | null;
+  /**
+   * `mentor-notes.md` (§3.10): what to look at when reviewing, common mistakes. Null when the
+   * exercise has none. Only mentors and admins get it from the API; the repo itself is public.
+   */
+  mentorNotesMd: string | null;
   position: number;
   sourcePath: string;
   hash: string;
