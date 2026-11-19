@@ -14,45 +14,47 @@ datasource db {
 // ---------------------------------------------------------------- identity
 
 model User {
-  id          String    @id @db.Uuid
-  githubId    BigInt    @unique @map("github_id")
-  githubLogin String    @map("github_login")
-  displayName String    @map("display_name")
+  id               String    @id @db.Uuid
+  githubId         BigInt    @unique @map("github_id")
+  githubLogin      String    @map("github_login")
+  displayName      String    @map("display_name")
   /// stored lower-cased by the app (unique when present — partial index in SQL migration)
-  email       String?
-  avatarUrl   String?   @map("avatar_url")
+  email            String?
+  avatarUrl        String?   @map("avatar_url")
   /// short text on the member profile, max 280 chars (CHECK in SQL migration)
-  bio         String?
+  bio              String?
   /// system | light | dark — color scheme picked in /settings
-  theme       String    @default("system")
+  theme            String    @default("system")
   /// false hides badges and the streak on the dashboard and the profile (F12)
-  showAchievements Boolean @default(true) @map("show_achievements")
+  showAchievements Boolean   @default(true) @map("show_achievements")
   /// pending | active | suspended
-  status      String    @default("pending")
-  lastLoginAt DateTime? @map("last_login_at") @db.Timestamptz
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz
-  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz
+  status           String    @default("pending")
+  lastLoginAt      DateTime? @map("last_login_at") @db.Timestamptz
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt        DateTime? @map("deleted_at") @db.Timestamptz
 
-  roles             UserRole[]          @relation("UserRoles")
-  grantedRoles      UserRole[]          @relation("RoleGrantedBy")
-  sessions          Session[]
-  enrollments       Enrollment[]
-  lessonProgress    LessonProgress[]
-  submissions       Submission[]
-  hintUnlocks       HintUnlock[]
-  reviews           Review[]
-  reviewComments    ReviewComment[]
-  menteeAssignments MentorAssignment[]  @relation("Mentee")
-  mentorAssignments MentorAssignment[]  @relation("Mentor")
-  decidedAssignments MentorAssignment[] @relation("AssignmentDecidedBy")
-  auditLogs         AuditLog[]
-  addedApprovedEmails ApprovedEmail[]
-  syncedVersions    ContentVersion[]    @relation("SyncedBy")
-  publishedVersions ContentVersion[]    @relation("PublishedBy")
-  badges            UserBadge[]
-  certificates      Certificate[]       @relation("CertificateOwner")
-  revokedCertificates Certificate[]     @relation("CertificateRevokedBy")
+  roles                  UserRole[]              @relation("UserRoles")
+  grantedRoles           UserRole[]              @relation("RoleGrantedBy")
+  sessions               Session[]
+  enrollments            Enrollment[]
+  lessonProgress         LessonProgress[]
+  submissions            Submission[]
+  hintUnlocks            HintUnlock[]
+  reviews                Review[]
+  reviewComments         ReviewComment[]
+  menteeAssignments      MentorAssignment[]      @relation("Mentee")
+  mentorAssignments      MentorAssignment[]      @relation("Mentor")
+  decidedAssignments     MentorAssignment[]      @relation("AssignmentDecidedBy")
+  auditLogs              AuditLog[]
+  addedApprovedEmails    ApprovedEmail[]
+  syncedVersions         ContentVersion[]        @relation("SyncedBy")
+  publishedVersions      ContentVersion[]        @relation("PublishedBy")
+  badges                 UserBadge[]
+  notifications          Notification[]
+  notificationPreference NotificationPreference?
+  certificates           Certificate[]           @relation("CertificateOwner")
+  revokedCertificates    Certificate[]           @relation("CertificateRevokedBy")
 
   @@index([githubLogin])
   @@map("users")
@@ -73,8 +75,8 @@ model UserRole {
   grantedBy String?  @map("granted_by") @db.Uuid
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
 
-  user      User  @relation("UserRoles", fields: [userId], references: [id], onDelete: Cascade)
-  role      Role  @relation(fields: [roleId], references: [id])
+  user          User  @relation("UserRoles", fields: [userId], references: [id], onDelete: Cascade)
+  role          Role  @relation(fields: [roleId], references: [id])
   grantedByUser User? @relation("RoleGrantedBy", fields: [grantedBy], references: [id])
 
   @@id([userId, roleId])
@@ -115,26 +117,26 @@ model ApprovedEmail {
 // ---------------------------------------------------------------- content (synced from Git)
 
 model ContentVersion {
-  id          String    @id @db.Uuid
-  sourceRepo  String    @map("source_repo")
-  commitSha   String    @map("commit_sha") @db.Char(40)
+  id           String    @id @db.Uuid
+  sourceRepo   String    @map("source_repo")
+  commitSha    String    @map("commit_sha") @db.Char(40)
   /// draft | published | superseded | rejected
-  status      String    @default("draft")
-  summary     Json      @default("{}")
+  status       String    @default("draft")
+  summary      Json      @default("{}")
   /// registry only (ADR-10): { "<track slug>": { "repo": "owner/name", "commitSha": "…" } }
-  trackSources Json?    @map("track_sources")
-  syncedBy    String?   @map("synced_by") @db.Uuid
-  publishedBy String?   @map("published_by") @db.Uuid
-  publishedAt DateTime? @map("published_at") @db.Timestamptz
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  trackSources Json?     @map("track_sources")
+  syncedBy     String?   @map("synced_by") @db.Uuid
+  publishedBy  String?   @map("published_by") @db.Uuid
+  publishedAt  DateTime? @map("published_at") @db.Timestamptz
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
-  syncedByUser    User? @relation("SyncedBy", fields: [syncedBy], references: [id])
-  publishedByUser User? @relation("PublishedBy", fields: [publishedBy], references: [id])
-  tracks      Track[]
-  modules     Module[]
-  lessons     Lesson[]
-  exercises   Exercise[]
-  submissions Submission[]
+  syncedByUser    User?        @relation("SyncedBy", fields: [syncedBy], references: [id])
+  publishedByUser User?        @relation("PublishedBy", fields: [publishedBy], references: [id])
+  tracks          Track[]
+  modules         Module[]
+  lessons         Lesson[]
+  exercises       Exercise[]
+  submissions     Submission[]
 
   @@unique([sourceRepo, commitSha])
   @@map("content_versions")
@@ -529,4 +531,40 @@ model OutboxEvent {
 
   @@index([status, nextAttemptAt])
   @@map("outbox_events")
+}
+
+// ---------------------------------------------------------------- notifications (P2, F13)
+
+/// One row per recipient for the in-app bell. Written by the outbox worker, never by a request.
+model Notification {
+  id            String    @id @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  /// review_completed | review_requested | track_published (CHECK in SQL migration)
+  type          String
+  /// { title, body?, link } — text is built when the row is written, so the bell needs no joins
+  payload       Json
+  /// the outbox event that produced it; with userId it makes a retried fan-out a no-op
+  sourceEventId BigInt?   @map("source_event_id")
+  readAt        DateTime? @map("read_at") @db.Timestamptz
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceEventId, userId])
+  @@index([userId, readAt, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+/// Email digest choice per member. No row = digest off (the default).
+model NotificationPreference {
+  userId           String    @id @map("user_id") @db.Uuid
+  emailDigest      Boolean   @default(false) @map("email_digest")
+  /// random secret in the digest's unsubscribe link; works without signing in
+  unsubscribeToken String    @unique @map("unsubscribe_token")
+  lastDigestAt     DateTime? @map("last_digest_at") @db.Timestamptz
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
 }

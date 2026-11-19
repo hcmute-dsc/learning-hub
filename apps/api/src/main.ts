@@ -7,6 +7,7 @@ import cookieParser from 'cookie-parser';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 import { ENV, type Env } from './infrastructure/config/env';
+import { OutboxWorker } from './modules/notifications/outbox/outbox.worker';
 
 // Prisma returns BigInt for github_id; JSON has no BigInt.
 (BigInt.prototype as unknown as { toJSON: () => string }).toJSON = function () {
@@ -36,6 +37,8 @@ async function bootstrap(): Promise<void> {
   }
 
   await app.listen(env.API_PORT);
+  // Here, not in the module: the content:sync CLI boots the same AppModule and must not poll.
+  app.get(OutboxWorker).start();
 }
 
 void bootstrap();

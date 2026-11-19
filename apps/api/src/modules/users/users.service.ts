@@ -350,6 +350,35 @@ export class UsersService {
     });
     return new Map(users.map((u) => [u.id, u]));
   }
+
+  /**
+   * Ids of approved, not-deleted accounts, optionally only those with one of these roles.
+   * Used by notifications to pick recipients (learning-hub#49); ids only, no personal data.
+   */
+  async activeIds(roles?: Role[]): Promise<string[]> {
+    const users = await this.prisma.user.findMany({
+      where: {
+        status: 'active',
+        deletedAt: null,
+        ...(roles ? { roles: { some: { roleId: { in: roles.map((r) => ROLE_IDS[r]) } } } } : {}),
+      },
+      select: { id: true },
+    });
+    return users.map((u) => u.id);
+  }
+
+  /**
+   * Where to send the email digest for this account, or null when it should get none
+   * (no email from GitHub, not approved, suspended or deleted). Notifications only.
+   */
+  async digestContact(userId: string): Promise<{ email: string; displayName: string } | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, displayName: true, status: true, deletedAt: true },
+    });
+    if (!user || !user.email || user.status !== 'active' || user.deletedAt) return null;
+    return { email: user.email, displayName: user.displayName };
+  }
 }
 
 type UserWithRoles = {

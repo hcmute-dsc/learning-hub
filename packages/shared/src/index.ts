@@ -124,4 +124,5 @@ export * from './admin';
 export * from './profile';
 export * from './review';
 export * from './achievements';
+export * from './notifications';
 export * from './certificate';

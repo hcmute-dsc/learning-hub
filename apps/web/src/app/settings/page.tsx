@@ -1,19 +1,21 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import type { Me, MyCertificate } from '@hub/shared';
-import { AchievementsToggle } from '@/components/settings/AchievementsToggle';
+import type { Me, MyCertificate, NotificationSettings } from '@hub/shared';
 import { CertificateVisibility } from '@/components/certificate/CertificateVisibility';
+import { AchievementsToggle } from '@/components/settings/AchievementsToggle';
+import { EmailDigestToggle } from '@/components/settings/EmailDigestToggle';
 import { ProfileForm } from '@/components/settings/ProfileForm';
 import { ThemePicker } from '@/components/settings/ThemePicker';
 import { api } from '@/lib/api';
 
 export const metadata: Metadata = { title: 'Cài đặt' };
 
-/** Personal settings: what other members see on the profile, and the color scheme. */
+/** Personal settings: what other members see on the profile, the color scheme, the email digest. */
 export default async function SettingsPage() {
-  const [{ data: me }, { data: certificates }] = await Promise.all([
+  const [{ data: me }, { data: certificates }, { data: notify }] = await Promise.all([
     api<{ data: Me }>('/auth/me'),
     api<{ data: MyCertificate[] }>('/me/certificates'),
+    api<{ data: NotificationSettings }>('/me/notifications/settings'),
   ]);
   return (
     <div className="motion-fade-up mx-auto max-w-2xl space-y-6">
@@ -86,9 +88,10 @@ export default async function SettingsPage() {
           Thông báo
         </h2>
         <p className="muted mt-1 text-sm">
-          Learning Hub chưa gửi thông báo nào. Thông báo khi mentor nhận xét bài sẽ có ở bản sau, và
-          bạn sẽ chọn nhận hay không ở đây.
+          Chuông 🔔 trên thanh trên cùng báo khi mentor review bài của bạn, khi có bài chờ review
+          (mentor) và khi có lộ trình mới. Email là tuỳ chọn, mặc định tắt.
         </p>
+        <EmailDigestToggle settings={notify} />
       </section>
     </div>
   );
