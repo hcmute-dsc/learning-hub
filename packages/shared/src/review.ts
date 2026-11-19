@@ -174,6 +174,12 @@ export interface ReviewPage {
     title: string;
     statementMd: string;
     rubric: { criterion: string; weight: number }[];
+    /**
+     * mentor-notes.md from the content repo (CONTENT-SPECIFICATION §3.10); null when the
+     * exercise has none. Only this mentor endpoint sends it, never the member's ExerciseView.
+     * Markdown: the web MUST sanitize when rendering (SECURITY §3).
+     */
+    mentorNotesMd: string | null;
   };
   track: { slug: string; title: string };
   /** the member's earlier attempts of this exercise, newest first */

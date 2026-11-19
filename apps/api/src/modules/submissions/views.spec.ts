@@ -13,6 +13,7 @@ function exercise(over: Partial<ExerciseContext>): ExerciseContext {
     spec: {},
     hints: [],
     solutionMd: null,
+    mentorNotesMd: null,
     requiresReview: false,
     contentVersionId: 'cv1',
     track: { id: 't1', slug: 'git', title: 'Git', starterRepo: 'hcmute-dsc/git-starter' },
@@ -143,6 +144,15 @@ describe('toExerciseView: hints and solution (PRD F11)', () => {
     expect(view.hints.next).toEqual({ position: 2, cost: 2, ready: false });
     expect(JSON.stringify(view)).not.toMatch(/HINT-TWO/);
     expect(view.solution).toEqual({ unlocked: true, bodyMd: 'SECRET-SOLUTION' });
+  });
+
+  it('never sends mentor notes to the member, even with everything unlocked (#43)', () => {
+    const view = toExerciseView(
+      { ...withExtras, mentorNotesMd: 'MENTOR-ONLY-NOTES' },
+      { ...member, attempts: 5, openedHints: new Set([1, 2]), solutionUnlocked: true },
+    );
+    expect(JSON.stringify(view)).not.toMatch(/MENTOR-ONLY-NOTES/);
+    expect(view).not.toHaveProperty('mentorNotesMd');
   });
 
   it('has no solution block when the exercise has no solution', () => {

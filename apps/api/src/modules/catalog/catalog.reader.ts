@@ -67,6 +67,8 @@ export interface ExerciseContext {
   hints: StoredHint[];
   /** reference solution (§3.8); never send it before the member may see it */
   solutionMd: string | null;
+  /** mentor-notes.md (§3.10); only the mentor review page may send it */
+  mentorNotesMd: string | null;
   contentVersionId: string;
   track: { id: string; slug: string; title: string; starterRepo: string | null };
   module: { slug: string; title: string };

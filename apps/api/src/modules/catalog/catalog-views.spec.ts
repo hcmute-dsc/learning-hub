@@ -178,6 +178,7 @@ describe('toExerciseContext', () => {
       spec: { passScore: 0.5 },
       hints: [],
       solutionMd: null,
+      mentorNotesMd: null,
       requiresReview: false,
       contentVersionId: 'cv1',
       module: moduleRow,
@@ -186,6 +187,13 @@ describe('toExerciseContext', () => {
       ...over,
     };
   }
+
+  it('carries the mentor notes for the review page', () => {
+    expect(toExerciseContext(exercise()).mentorNotesMd).toBeNull();
+    expect(toExerciseContext(exercise({ mentorNotesMd: 'Xem tiêu đề PR' })).mentorNotesMd).toBe(
+      'Xem tiêu đề PR',
+    );
+  });
 
   it('links its lesson while the lesson is active', () => {
     expect(toExerciseContext(exercise()).lesson).toEqual({ id: 'l1', title: 'Ngày 1' });

@@ -131,6 +131,7 @@ export class CatalogWriter {
             spec: e.spec as Prisma.InputJsonValue,
             hints: e.hints as unknown as Prisma.InputJsonValue,
             solutionMd: e.solutionMd,
+            mentorNotesMd: e.mentorNotesMd,
             requiresReview: e.requiresReview,
             position: e.position,
             status: 'active',
