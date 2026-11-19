@@ -8,12 +8,16 @@ import type { ContentSource } from '../../modules/content/ports/content-source';
  * Development/test adapter: reads a local folder (e.g. content-example).
  * A folder has no commits, so the "sha" is sha1 over sorted paths + contents.
  * Publishing a version fails if the folder changed after it was synced.
+ * `top` is the folder that is read: `tracks` for content, `exercises` for checker-example.
  */
 export class LocalDirContentSource implements ContentSource {
   readonly sourceRepo: string;
   private readonly root: string;
 
-  constructor(dir: string) {
+  constructor(
+    dir: string,
+    private readonly top = 'tracks',
+  ) {
     this.root = resolve(dir);
     this.sourceRepo = `local:${this.root.replace(/\\/g, '/')}`;
   }
@@ -21,7 +25,7 @@ export class LocalDirContentSource implements ContentSource {
   private snapshot(): { sha: string; files: Map<string, string> } {
     let files: Map<string, string>;
     try {
-      files = readDirectory(this.root);
+      files = readDirectory(this.root, this.top);
     } catch {
       throw new DomainError('UPSTREAM_ERROR', 503, `Content folder not readable: ${this.root}`);
     }

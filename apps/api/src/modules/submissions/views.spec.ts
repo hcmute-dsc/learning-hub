@@ -11,6 +11,8 @@ function exercise(over: Partial<ExerciseContext>): ExerciseContext {
     difficulty: 'easy',
     statementMd: '# Quiz',
     spec: {},
+    hints: [],
+    solutionMd: null,
     requiresReview: false,
     contentVersionId: 'cv1',
     track: { id: 't1', slug: 'git', title: 'Git', starterRepo: 'hcmute-dsc/git-starter' },
@@ -21,7 +23,13 @@ function exercise(over: Partial<ExerciseContext>): ExerciseContext {
   };
 }
 
-const member = { state: 'not_started' as const, lockedBy: [], attempts: 0 };
+const member = {
+  state: 'not_started' as const,
+  lockedBy: [],
+  attempts: 0,
+  openedHints: new Set<number>(),
+  solutionUnlocked: false,
+};
 
 describe('toExerciseView', () => {
   it('never sends quiz answers or explanations', () => {
@@ -99,6 +107,51 @@ describe('toExerciseView', () => {
       lockedBy,
     );
     expect(toExerciseView(base, { ...member, state: 'completed', lockedBy }).lockedBy).toEqual([]);
+  });
+});
+
+describe('toExerciseView: hints and solution (PRD F11)', () => {
+  const withExtras = exercise({
+    type: 'self_check',
+    spec: { checklist: ['x'] },
+    hints: [
+      { position: 1, cost: 0, bodyMd: 'HINT-ONE' },
+      { position: 2, cost: 2, bodyMd: 'HINT-TWO' },
+    ],
+    solutionMd: 'SECRET-SOLUTION',
+  });
+
+  it('sends neither unopened hints nor a locked solution', () => {
+    const view = toExerciseView(withExtras, member);
+    expect(view.hints).toEqual({
+      total: 2,
+      opened: [],
+      next: { position: 1, cost: 0, ready: true },
+    });
+    expect(view.solution).toEqual({ unlocked: false, bodyMd: null });
+    expect(JSON.stringify(view)).not.toMatch(/HINT-ONE|HINT-TWO|SECRET-SOLUTION/);
+  });
+
+  it('sends opened hints and an unlocked solution', () => {
+    const view = toExerciseView(withExtras, {
+      ...member,
+      attempts: 1,
+      openedHints: new Set([1]),
+      solutionUnlocked: true,
+    });
+    expect(view.hints.opened).toEqual([{ position: 1, bodyMd: 'HINT-ONE' }]);
+    expect(view.hints.next).toEqual({ position: 2, cost: 2, ready: false });
+    expect(JSON.stringify(view)).not.toMatch(/HINT-TWO/);
+    expect(view.solution).toEqual({ unlocked: true, bodyMd: 'SECRET-SOLUTION' });
+  });
+
+  it('has no solution block when the exercise has no solution', () => {
+    const plain = toExerciseView(
+      exercise({ type: 'self_check', spec: { checklist: ['x'] } }),
+      member,
+    );
+    expect(plain.solution).toBeNull();
+    expect(plain.hints).toEqual({ total: 0, opened: [], next: null });
   });
 });
 

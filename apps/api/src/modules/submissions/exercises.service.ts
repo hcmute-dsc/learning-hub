@@ -1,11 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import type { ExerciseView, QuizAttemptInput, QuizResult, SubmissionView } from '@hub/shared';
+import type { AuthUser } from '../../common/auth.decorators';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { CatalogReader } from '../catalog/catalog.reader';
 import { ExerciseStateService } from './exercise-state.service';
 import { quizSpec } from './exercise-spec';
 import { toExerciseView } from './exercise-view';
 import { gradeQuiz } from './grading';
+import { canSeeSolution } from './hints';
+import { HintsService } from './hints.service';
 import { SubmissionWriter } from './submission-writer';
 import {
   SUBMISSION_ROW_SELECT,
@@ -27,18 +30,27 @@ export class ExercisesService {
     private readonly catalog: CatalogReader,
     private readonly states: ExerciseStateService,
     private readonly writer: SubmissionWriter,
+    private readonly hints: HintsService,
   ) {}
 
-  async view(userId: string, exerciseId: string): Promise<ExerciseView> {
+  async view(user: Pick<AuthUser, 'id' | 'roles'>, exerciseId: string): Promise<ExerciseView> {
+    const userId = user.id;
     const exercise = await this.catalog.exercise(exerciseId);
-    const [details, attempts] = await Promise.all([
+    const [details, attempts, openedHints] = await Promise.all([
       this.states.detailsFor(userId, [exercise.id]),
       this.prisma.submission.count({ where: { userId, exerciseId: exercise.id } }),
+      this.hints.openedPositions(userId, exercise.id),
     ]);
     const { state, lockedBy: lockedIds } = details.get(exercise.id)!;
     // Titles come from the catalog; which ones lock it comes from the one rule.
     const lockedBy = exercise.prerequisites.filter((p) => lockedIds.includes(p.id));
-    return toExerciseView(exercise, { state, lockedBy, attempts });
+    return toExerciseView(exercise, {
+      state,
+      lockedBy,
+      attempts,
+      openedHints,
+      solutionUnlocked: canSeeSolution(user, state),
+    });
   }
 
   /** Graded on the server; correct answers are revealed only in this response. */

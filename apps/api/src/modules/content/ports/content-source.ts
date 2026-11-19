@@ -43,12 +43,16 @@ export const CONTENT_SOURCE = Symbol('CONTENT_SOURCE');
 
 const PARSED_FILE = /^tracks\/.+\.(ya?ml|md)$/;
 
-/** Read only what the parser needs (yaml + md under tracks/), a few files at a time. */
+/**
+ * Read only what the parser needs, a few files at a time: yaml + md under tracks/ by
+ * default, or the files `wanted` matches (solutions in the checker repo).
+ */
 export async function loadFileMap(
-  source: ContentSource,
+  source: Pick<ContentSource, 'listFiles' | 'readFile'>,
   sha: string,
+  wanted: RegExp = PARSED_FILE,
 ): Promise<Map<string, string>> {
-  const paths = (await source.listFiles(sha)).filter((p) => PARSED_FILE.test(p)).sort();
+  const paths = (await source.listFiles(sha)).filter((p) => wanted.test(p)).sort();
   const files = new Map<string, string>();
   const queue = [...paths];
   const worker = async () => {

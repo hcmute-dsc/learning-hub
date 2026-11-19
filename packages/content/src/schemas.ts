@@ -73,6 +73,15 @@ export const lessonFrontMatterSchema = z
   .strict();
 export type LessonFrontMatter = z.infer<typeof lessonFrontMatterSchema>;
 
+/**
+ * Optional front matter of `hints/NN.md` (CONTENT-SPECIFICATION §3.7). `cost` is soft: the
+ * number of attempts a member needs before this hint can be opened. It never lowers a score.
+ */
+export const hintFrontMatterSchema = z
+  .object({ cost: z.number().int().min(0).max(100).default(0) })
+  .strict();
+export type HintFrontMatter = z.infer<typeof hintFrontMatterSchema>;
+
 // ---- exercise spec, one shape per type ----
 
 const quizQuestion = z.discriminatedUnion('type', [
