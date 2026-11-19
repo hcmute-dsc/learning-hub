@@ -76,6 +76,8 @@ export interface TrackProgress {
   /** 0–100, (lessons.done + exercises.done) / (lessons.total + exercises.total) */
   percent: number;
   next: NextItem | null;
+  /** the track has a "Cài đặt" page (docs/setup.md): the dashboard points new members to it */
+  hasSetup: boolean;
 }
 
 /**
@@ -91,6 +93,22 @@ export interface TrackItemsProgress {
   exercises: Record<string, ExerciseState>;
   /** "Tiếp tục" target, same rule as TrackProgress.next */
   next: NextItem | null;
+}
+
+// ------------------------------------------------------------------ E4: track pages
+
+/** Optional track-level pages (CONTENT-SPECIFICATION §3.1b): `docs/<page>.md` of the track. */
+export const TRACK_DOC_PAGES = ['setup', 'resources'] as const;
+export type TrackDocPage = (typeof TRACK_DOC_PAGES)[number];
+
+/** GET /api/v1/tracks/:slug/docs/:page → { data: TrackDocView } (404 when the track has none) */
+export interface TrackDocView {
+  page: TrackDocPage;
+  /** Markdown from the content repo. The web MUST sanitize when rendering (SECURITY §3). */
+  bodyMd: string;
+  track: { slug: string; title: string };
+  /** Source for "Sửa trên GitHub" links and relative images */
+  source: { repo: string; commitSha: string; path: string };
 }
 
 // ------------------------------------------------------------------ E4: lessons

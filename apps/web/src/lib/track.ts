@@ -1,6 +1,7 @@
 import 'server-only';
-import type { TrackItemsProgress, TrackLevel } from '@hub/shared';
+import type { TrackDocPage, TrackDocView, TrackItemsProgress, TrackLevel } from '@hub/shared';
 import type { ModuleOutlineData } from '@/components/learn/ModuleOutline';
+import type { TrackDocFlags } from '@/components/track/track-docs';
 import { api, apiOrNotFound } from './api';
 
 /** GET /tracks/:slug (catalog module; the type is not in @hub/shared yet). */
@@ -12,6 +13,8 @@ export interface TrackDetail {
   estHours: number | null;
   tags: string[];
   starterRepo: string | null;
+  /** which optional pages the track has ("Cài đặt", "Tài liệu thêm") */
+  docs: TrackDocFlags;
   source: { repo: string; commitSha: string; path: string };
   modules: ModuleOutlineData[];
 }
@@ -25,4 +28,13 @@ export async function loadTrack(slug: string): Promise<TrackDetail> {
 export async function loadTrackProgress(slug: string): Promise<TrackItemsProgress> {
   return (await api<{ data: TrackItemsProgress }>(`/tracks/${encodeURIComponent(slug)}/progress`))
     .data;
+}
+
+/** "Cài đặt" or "Tài liệu thêm" of a track (404 page when the track has no such page). */
+export async function loadTrackDoc(slug: string, page: TrackDocPage): Promise<TrackDocView> {
+  return (
+    await apiOrNotFound<{ data: TrackDocView }>(
+      `/tracks/${encodeURIComponent(slug)}/docs/${encodeURIComponent(page)}`,
+    )
+  ).data;
 }

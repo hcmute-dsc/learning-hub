@@ -5,7 +5,9 @@ import {
   toLessonContext,
   toOutlineItems,
   toTrackDetail,
+  toTrackDoc,
   toTrackSummary,
+  trackDocFlags,
   toStoredHints,
   type ExerciseRow,
   type LessonRow,
@@ -34,6 +36,8 @@ function trackRow(over: Partial<TrackDetailRow> = {}): TrackDetailRow {
     estHours: 60,
     tags: ['sql'],
     starterRepo: null,
+    setupMd: null,
+    resourcesMd: null,
     sourcePath: 'tracks/sql-30-days',
     contentVersion: { sourceRepo: REPO, commitSha: 'ea5de5c' },
     modules: [
@@ -94,6 +98,51 @@ describe('toTrackDetail', () => {
     expect(detail.modules).toHaveLength(1);
     expect(detail.modules[0].lessons.map((l) => l.id)).toEqual(['l1']);
     expect(detail.modules[0].exercises.map((e) => e.id)).toEqual(['e1']);
+  });
+});
+
+describe('track pages (learning-hub#44)', () => {
+  const withDocs = (over: Partial<TrackDetailRow> = {}) =>
+    trackRow({
+      sourcePath: 'tracks/sql-30-days/track.yaml',
+      setupMd: 'Cài PostgreSQL 16.',
+      resourcesMd: null,
+      ...over,
+    });
+
+  it('tells the track page which pages exist, without their text', () => {
+    expect(toTrackDetail(withDocs(), null).docs).toEqual({ setup: true, resources: false });
+    expect(toTrackDetail(trackRow(), null).docs).toEqual({ setup: false, resources: false });
+  });
+
+  it('treats an empty text as no page', () => {
+    expect(trackDocFlags({ setupMd: '', resourcesMd: 'x' })).toEqual({
+      setup: false,
+      resources: true,
+    });
+  });
+
+  it("returns the page with docs/<page>.md next to track.yaml in the track's repo", () => {
+    expect(toTrackDoc(withDocs(), 'setup', registryVersion)).toEqual({
+      page: 'setup',
+      bodyMd: 'Cài PostgreSQL 16.',
+      track: { slug: 'sql-30-days', title: 'SQL 30 ngày' },
+      source: { repo: SQL_REPO, commitSha: 'c0ffee1', path: 'tracks/sql-30-days/docs/setup.md' },
+    });
+  });
+
+  it("uses the track's own version before the first publish", () => {
+    const doc = toTrackDoc(withDocs({ resourcesMd: '- link' }), 'resources', null);
+    expect(doc?.source).toEqual({
+      repo: REPO,
+      commitSha: 'ea5de5c',
+      path: 'tracks/sql-30-days/docs/resources.md',
+    });
+  });
+
+  it('returns null when the track has no such page', () => {
+    expect(toTrackDoc(withDocs(), 'resources', null)).toBeNull();
+    expect(toTrackDoc(withDocs({ setupMd: '' }), 'setup', null)).toBeNull();
   });
 });
 

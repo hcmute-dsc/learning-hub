@@ -2,7 +2,16 @@ import { parse as parseYaml, YAMLParseError } from 'yaml';
 import type { ZodError } from 'zod';
 import { findCrossFileProblems } from './checks';
 import { contentHash } from './hash';
-import { dirOf, HINT_FILE, layout, LAYOUT_PATTERNS, MAX_HINTS, PUBLIC_SOLUTION } from './layout';
+import {
+  dirOf,
+  HINT_FILE,
+  layout,
+  LAYOUT_PATTERNS,
+  MAX_HINTS,
+  PUBLIC_SOLUTION,
+  TRACK_DOC_PAGES,
+  type TrackDocPage,
+} from './layout';
 import { checkMarkdown, splitFrontMatter } from './markdown';
 import {
   exerciseFileSchema,
@@ -81,6 +90,8 @@ function parseTrack(ctx: Context, trackPath: string): TrackNode | null {
   if (!data) return null;
 
   const { modules: moduleNames, ...trackFields } = data;
+  const trackDir = dirOf(trackPath);
+  const docs = parseTrackDocs(ctx, trackDir);
   const track: TrackNode = {
     uid: data.uid,
     slug: data.slug,
@@ -96,17 +107,61 @@ function parseTrack(ctx: Context, trackPath: string): TrackNode | null {
     maintainers: data.maintainers,
     license: data.license,
     starterRepo: data.starterRepo ?? null,
+    setupMd: docs.setup,
+    resourcesMd: docs.resources,
     sourcePath: trackPath,
-    hash: contentHash(trackFields), // the module list is hashed in each module
+    // The module list is hashed in each module. Absent pages are left out, so tracks
+    // written before docs/ existed keep their hash and are not reported as changed.
+    hash: contentHash({
+      ...trackFields,
+      ...(docs.setup !== null && { setupMd: docs.setup }),
+      ...(docs.resources !== null && { resourcesMd: docs.resources }),
+    }),
     modules: [],
   };
 
   // Position = order in track.yaml `modules:` (1-based), not the folder name.
   moduleNames.forEach((name, index) => {
-    const module = parseModule(ctx, layout.moduleDir(dirOf(trackPath), name), index + 1);
+    const module = parseModule(ctx, layout.moduleDir(trackDir, name), index + 1);
     if (module) track.modules.push(module);
   });
   return track;
+}
+
+/**
+ * `docs/setup.md` and `docs/resources.md` (§3.1b): optional, plain Markdown without front
+ * matter (the page title is fixed by the site). Any other Markdown file in `docs/` is an
+ * issue, so a typo like `docs/install.md` does not silently disappear.
+ */
+function parseTrackDocs(ctx: Context, trackDir: string): Record<TrackDocPage, string | null> {
+  const dir = layout.trackDocsDir(trackDir);
+  const known = new Set<string>(TRACK_DOC_PAGES.map((page) => layout.trackDocFile(trackDir, page)));
+  for (const path of ctx.files.keys()) {
+    if (path.startsWith(dir) && path.endsWith('.md') && !known.has(path)) {
+      ctx.issues.push({
+        path,
+        message: `only ${TRACK_DOC_PAGES.map((p) => `docs/${p}.md`).join(' and ')} are published from docs/`,
+      });
+    }
+  }
+
+  const docs: Record<TrackDocPage, string | null> = { setup: null, resources: null };
+  for (const page of TRACK_DOC_PAGES) {
+    const path = layout.trackDocFile(trackDir, page);
+    const text = ctx.files.get(path);
+    if (text === undefined) continue;
+    if (splitFrontMatter(text).data !== null) {
+      ctx.issues.push({ path, message: 'front matter is not used here; start with the text' });
+      continue;
+    }
+    if (!text.trim()) {
+      ctx.issues.push({ path, message: 'page is empty; delete the file or write the page' });
+      continue;
+    }
+    checkMarkdown(path, text, ctx.issues);
+    docs[page] = text.trim();
+  }
+  return docs;
 }
 
 function parseModule(ctx: Context, moduleDir: string, position: number): ModuleNode | null {

@@ -10,6 +10,7 @@ const outline: TrackOutline = {
   id: 't-1',
   slug: 'sql',
   title: 'SQL',
+  hasSetup: false,
   items: [{ kind: 'lesson', id: 'l-1', title: 'L1', moduleSlug: 'm' }],
 };
 

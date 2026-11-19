@@ -86,6 +86,10 @@ export interface TrackNode {
   license: string;
   /** owner/repo of the track's starter template, when it has `code` exercises */
   starterRepo: string | null;
+  /** `docs/setup.md`: install the tools, check your work locally (§3.1b). Null when absent. */
+  setupMd: string | null;
+  /** `docs/resources.md`: extra reading for the whole track (§3.1b). Null when absent. */
+  resourcesMd: string | null;
   sourcePath: string;
   hash: string;
   modules: ModuleNode[];

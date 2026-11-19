@@ -34,6 +34,17 @@ function isBetterToContinue(a: TrackProgress, b: TrackProgress): boolean {
   return a.enrolledAt > b.enrolledAt; // ISO dates compare correctly as strings
 }
 
+/**
+ * Tracks whose "Cài đặt" page the member should open first (learning-hub#44): active, the
+ * track has docs/setup.md, and nothing is done yet, which is the case right after enrolling.
+ * Once the member finishes a first item the reminder goes away. Newest enrollment first.
+ */
+export function setupReminders(enrollments: TrackProgress[]): TrackProgress[] {
+  return enrollments
+    .filter((t) => t.status === 'active' && t.hasSetup && countItems(t).done === 0)
+    .sort((a, b) => b.enrolledAt.localeCompare(a.enrolledAt));
+}
+
 /** One friendly line under the welcome title, based on how far the member is. */
 export function encouragement(enrollments: TrackProgress[]): string {
   if (enrollments.length === 0) {

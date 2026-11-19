@@ -1,9 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import type { Paginated, TrackListQuery, TrackSummary } from '@hub/shared';
+import type {
+  Paginated,
+  TrackDocPage,
+  TrackDocView,
+  TrackListQuery,
+  TrackSummary,
+} from '@hub/shared';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { DomainError } from '../../common/errors';
-import { toTrackDetail, toTrackSummary } from './catalog-views';
+import { toTrackDetail, toTrackDoc, toTrackSummary } from './catalog-views';
 
 /** Read side of published content (BACKEND-DESIGN §2 catalog). Writes come from `content`. */
 @Injectable()
@@ -91,5 +97,29 @@ export class CatalogService {
       select: { commitSha: true, sourceRepo: true, trackSources: true },
     });
     return toTrackDetail(track, published);
+  }
+
+  /** "Cài đặt" or "Tài liệu thêm" of an active track; 404 when the track has no such page. */
+  async getTrackDoc(slug: string, page: TrackDocPage): Promise<TrackDocView> {
+    const track = await this.prisma.track.findUnique({
+      where: { slug },
+      select: {
+        slug: true,
+        title: true,
+        status: true,
+        setupMd: true,
+        resourcesMd: true,
+        sourcePath: true,
+        contentVersion: { select: { commitSha: true, sourceRepo: true, trackSources: true } },
+      },
+    });
+    if (!track || track.status !== 'active') throw DomainError.notFound('Track');
+    const published = await this.prisma.contentVersion.findFirst({
+      where: { status: 'published' },
+      select: { commitSha: true, sourceRepo: true, trackSources: true },
+    });
+    const doc = toTrackDoc(track, page, published);
+    if (!doc) throw DomainError.notFound('Track page');
+    return doc;
   }
 }

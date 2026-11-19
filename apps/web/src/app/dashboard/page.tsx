@@ -4,8 +4,9 @@ import { AchievementsCard } from '@/components/achievements/AchievementsCard';
 import { MyTracks } from '@/components/dashboard/MyTracks';
 import { StartCards, type StartCard } from '@/components/dashboard/StartCards';
 import { WelcomeHeader } from '@/components/dashboard/WelcomeHeader';
-import { encouragement, pickContinueTrack } from '@/components/dashboard/dashboard';
+import { encouragement, pickContinueTrack, setupReminders } from '@/components/dashboard/dashboard';
 import { itemHref } from '@/components/learn/links';
+import { trackDocHref } from '@/components/track/track-docs';
 import { api } from '@/lib/api';
 import { CLUB_LINKS } from '@/lib/club';
 
@@ -37,7 +38,14 @@ export default async function DashboardPage() {
 }
 
 function startCards(enrollments: TrackProgress[]): StartCard[] {
-  const cards: StartCard[] = [];
+  // Just enrolled in a track that needs tools installed (Docker, SQL…): set up first.
+  const cards: StartCard[] = setupReminders(enrollments).map((track) => ({
+    emoji: '🧰',
+    title: `Cài đặt cho ${track.title}`,
+    description: 'Cài công cụ và tự kiểm tra máy của bạn trước bài đầu tiên.',
+    href: trackDocHref(track.slug, 'setup'),
+    cta: 'Mở trang Cài đặt',
+  }));
   const current = pickContinueTrack(enrollments);
   if (current?.next) {
     cards.push({
