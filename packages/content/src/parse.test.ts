@@ -1,7 +1,9 @@
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { parse as parseYaml } from 'yaml';
 import {
   contentHash,
+  trackFileSchema,
   exerciseIndex,
   MAX_MARKDOWN_BYTES,
   parseContent,
@@ -713,5 +715,71 @@ describe('mentor notes', () => {
     const exercise = firstPr(without);
     const { hash, mentorNotesMd: _n, hints: _h, solutionMd: _s, ...rest } = exercise;
     expect(hash).toBe(contentHash(rest));
+  });
+});
+
+// ------------------------------------------------------------------ track pages (§3.1b, learning-hub#44)
+
+describe('track docs', () => {
+  const SETUP = `${SQL}/docs/setup.md`;
+  const RESOURCES = `${SQL}/docs/resources.md`;
+  const sqlTrack = (result: ParseResult) =>
+    result.tree.tracks.find((t) => t.slug === 'sql-sample')!;
+  const gitTrack = (result: ParseResult) =>
+    result.tree.tracks.find((t) => t.slug === 'git-github-basics')!;
+
+  it('reads docs/setup.md and docs/resources.md, trimmed', () => {
+    const track = sqlTrack(parseContent(example));
+    expect(track.setupMd).toMatch(/^Làm các bước này/);
+    expect(track.setupMd).toContain('SELECT version();');
+    expect(track.resourcesMd).toContain('SQLBolt');
+  });
+
+  it('gives tracks without docs/ null pages', () => {
+    const track = gitTrack(parseContent(example));
+    expect(track.setupMd).toBeNull();
+    expect(track.resourcesMd).toBeNull();
+  });
+
+  it('is optional: removing both pages is still valid', () => {
+    const result = parseWith((files) => {
+      files.delete(SETUP);
+      files.delete(RESOURCES);
+    });
+    expect(result.issues).toEqual([]);
+    expect(sqlTrack(result).setupMd).toBeNull();
+  });
+
+  it('rejects other Markdown files in docs/, empty pages and front matter', () => {
+    const result = parseWith((files) => {
+      files.set(`${SQL}/docs/install.md`, 'Typo in the name.');
+      files.set(SETUP, '  \n');
+      files.set(RESOURCES, '---\ntitle: Tài liệu\n---\nText.');
+    });
+    expectIssue(result, `${SQL}/docs/install.md`, 'only docs/setup.md and docs/resources.md');
+    expectIssue(result, SETUP, 'page is empty');
+    expectIssue(result, RESOURCES, 'front matter');
+    expect(sqlTrack(result).setupMd).toBeNull();
+  });
+
+  it('applies the markdown rules to track pages', () => {
+    const result = parseWith((files) => files.set(SETUP, '<img src=x onerror=alert(1)>'));
+    expectIssue(result, SETUP, 'raw HTML/script');
+  });
+
+  it('changes the track hash when a page changes, not the module hashes', () => {
+    const before = sqlTrack(parseContent(example));
+    const after = sqlTrack(parseWith((files) => edit(files, SETUP, '15 phút', '20 phút')));
+    expect(after.hash).not.toBe(before.hash);
+    expect(after.modules[0].hash).toBe(before.modules[0].hash);
+  });
+
+  it('keeps the hash of a track without docs unchanged', () => {
+    // Tracks written before docs/ existed must not all show up as "updated".
+    const git = gitTrack(parseContent(example));
+    const { modules: _m, ...fields } = trackFileSchema.parse(
+      parseYaml(example.get(`${GIT}/track.yaml`)!),
+    );
+    expect(git.hash).toBe(contentHash(fields));
   });
 });

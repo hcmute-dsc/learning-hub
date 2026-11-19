@@ -3,6 +3,8 @@
  * place that knows the folder layout: change it here if the layout ever changes.
  *
  *   tracks/<track>/track.yaml
+ *   tracks/<track>/docs/setup.md          (optional) how to install the tools for this track
+ *   tracks/<track>/docs/resources.md      (optional) extra reading for this track
  *   tracks/<track>/modules/<module>/module.yaml
  *   tracks/<track>/modules/<module>/lessons/<lesson>.md
  *   tracks/<track>/modules/<module>/exercises/<exercise>/exercise.yaml
@@ -18,6 +20,8 @@
 
 export const layout = {
   trackFile: (trackDir: string) => `${trackDir}/track.yaml`,
+  trackDocsDir: (trackDir: string) => `${trackDir}/docs/`,
+  trackDocFile: (trackDir: string, page: TrackDocPage) => `${trackDir}/docs/${page}.md`,
   moduleDir: (trackDir: string, name: string) => `${trackDir}/modules/${name}`,
   moduleFile: (moduleDir: string) => `${moduleDir}/module.yaml`,
   lessonFile: (moduleDir: string, name: string) => `${moduleDir}/lessons/${name}.md`,
@@ -31,6 +35,13 @@ export const layout = {
   solutionFile: (trackSlug: string, exerciseSlug: string) =>
     `exercises/${trackSlug}/${exerciseSlug}/solution.md`,
 };
+
+/**
+ * Optional track-level pages (CONTENT-SPECIFICATION §3.1b, learning-hub#44): "Cài đặt"
+ * (install the tools, check your work locally) and "Tài liệu thêm" (extra reading).
+ */
+export const TRACK_DOC_PAGES = ['setup', 'resources'] as const;
+export type TrackDocPage = (typeof TRACK_DOC_PAGES)[number];
 
 /** `hints/01.md` … `hints/99.md`: the number is the order members open them in. */
 export const HINT_FILE = /^(\d{2})\.md$/;

@@ -1,0 +1,3 @@
+- [Tài liệu PostgreSQL 16](https://www.postgresql.org/docs/16/): tra cứu cú pháp chính thức.
+- [SQLBolt](https://sqlbolt.com/): bài tập SQL ngắn, làm ngay trên trình duyệt.
+- [Use The Index, Luke](https://use-the-index-luke.com/): hiểu index để viết truy vấn nhanh.
