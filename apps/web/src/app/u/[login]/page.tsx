@@ -3,6 +3,8 @@ import Link from 'next/link';
 import type { CSSProperties } from 'react';
 import type { MemberProfile } from '@hub/shared';
 import { EnrollmentCard } from '@/components/learn/EnrollmentCard';
+import { BadgeGrid } from '@/components/achievements/BadgeGrid';
+import { badgeCards } from '@/components/achievements/achievements';
 import { ActivityGrid } from '@/components/profile/ActivityGrid';
 import { ROLE_LABEL, formatMonth, visibleRoles } from '@/components/profile/profile';
 import { Avatar } from '@/components/ui/Avatar';
@@ -27,24 +29,30 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 export default async function ProfilePage({ params }: Params) {
   const { login } = await params;
   const profile = await loadProfile(login);
-  const { stats } = profile;
+  const { stats, achievements } = profile;
 
+  // The streak tile is left out when the member hid achievements (F12, /settings).
   const tiles = [
-    {
-      icon: '🔥',
-      value: stats.currentStreak,
-      label: 'Chuỗi ngày học',
-      hint: `Dài nhất ${stats.longestStreak} ngày`,
-    },
+    ...(achievements
+      ? [
+          {
+            icon: '🔥',
+            value: achievements.streak.current,
+            label: 'Chuỗi ngày học',
+            hint: `Dài nhất ${achievements.streak.longest} ngày`,
+          },
+        ]
+      : [{ icon: '📅', value: stats.activeDays, label: 'Ngày có học' }]),
     { icon: '📖', value: stats.lessonsCompleted, label: 'Bài học đã xong' },
     { icon: '🛠️', value: stats.exercisesCompleted, label: 'Bài tập hoàn thành' },
     {
       icon: '🏁',
       value: stats.tracksCompleted,
       label: 'Lộ trình hoàn thành',
-      hint: `${stats.activeDays} ngày có học`,
+      hint: achievements ? `${stats.activeDays} ngày có học` : undefined,
     },
   ];
+  const badges = achievements ? badgeCards(achievements.badges, false) : [];
 
   return (
     <div className="space-y-8">
@@ -113,6 +121,26 @@ export default async function ProfilePage({ params }: Params) {
           ))}
         </ul>
       </section>
+
+      {achievements && (
+        <section
+          aria-labelledby="badges-heading"
+          className="surface motion-fade-up rounded-2xl p-5 sm:p-6"
+        >
+          <h2 id="badges-heading" className="mb-4 text-lg font-semibold">
+            Huy hiệu ({badges.length})
+          </h2>
+          {badges.length === 0 ? (
+            <p className="muted text-sm">
+              {profile.isMe
+                ? 'Hoàn thành bài học đầu tiên để nhận huy hiệu đầu tiên.'
+                : 'Thành viên này chưa có huy hiệu nào.'}
+            </p>
+          ) : (
+            <BadgeGrid cards={badges} />
+          )}
+        </section>
+      )}
 
       <section
         aria-labelledby="activity-heading"

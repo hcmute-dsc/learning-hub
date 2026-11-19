@@ -31,6 +31,17 @@ export const envSchema = z.object({
   CONTENT_BRANCH: z.string().default('main'),
   /** Optional: raises GitHub rate limits / reads a private repo. Read-only scope. */
   CONTENT_GITHUB_TOKEN: z.string().optional(),
+  // Reference solutions (CONTENT-SPECIFICATION §3.8): the PRIVATE checker repo, never the content repo
+  /** none = no solutions, local = a folder (dev, checker-example), github = the checker repo */
+  SOLUTIONS_SOURCE: z.enum(['none', 'local', 'github']).default('none'),
+  SOLUTIONS_LOCAL_DIR: z.string().default('../../checker-example'),
+  SOLUTIONS_REPO: z
+    .string()
+    .regex(/^[\w.-]+\/[\w.-]+$/)
+    .default('hcmute-dsc/learning-hub-checker'),
+  SOLUTIONS_BRANCH: z.string().default('main'),
+  /** Read-only token that can read the private checker repo. Falls back to CONTENT_GITHUB_TOKEN. */
+  SOLUTIONS_GITHUB_TOKEN: z.string().optional(),
   /** Target time for a mentor review, shown in the queue (E7; per semester, BACKEND-DESIGN). */
   REVIEW_TARGET_HOURS: z.coerce.number().int().min(1).max(720).default(72),
   /** Discord channel webhook for club notifications (E9). Empty = notifications off. */

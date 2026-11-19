@@ -84,6 +84,21 @@ export function summarize(items: OutlineItem[], statuses: ItemStatuses): Progres
 }
 
 /**
+ * Number of modules (chặng) in the outline where every lesson and exercise is done
+ * (badge first_module, F12). A module with no items is never counted.
+ */
+export function completedModules(items: OutlineItem[], statuses: ItemStatuses): number {
+  const allDone = new Map<string, boolean>();
+  for (const item of items) {
+    const doneSoFar = allDone.get(item.moduleSlug) ?? true;
+    allDone.set(item.moduleSlug, doneSoFar && isItemDone(item, statuses));
+  }
+  let count = 0;
+  for (const done of allDone.values()) if (done) count++;
+  return count;
+}
+
+/**
  * Status shown for an enrollment. Completing a track is a milestone: once stored as
  * completed it stays completed even if new lessons are published later.
  */

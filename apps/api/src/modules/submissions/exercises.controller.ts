@@ -13,11 +13,13 @@ import { z } from 'zod';
 import { AuthUser, CurrentUser } from '../../common/auth.decorators';
 import { ZodPipe } from '../../common/zod';
 import { ExercisesService } from './exercises.service';
+import { HintsService } from './hints.service';
 import { SubmissionsService } from './submissions.service';
 import { parseIdempotencyKey } from './submit-rules';
 
 /** Malformed ids are a 422 like every other validation error (BACKEND-DESIGN §3.4). */
 const idPipe = new ZodPipe(z.string().uuid());
+const hintPositionPipe = new ZodPipe(z.coerce.number().int().min(1).max(99));
 
 /** SECURITY §4: submitting is limited to 10 requests per minute. */
 const SUBMIT_LIMIT = { default: { limit: 10, ttl: 60_000 } };
@@ -29,11 +31,29 @@ export class ExercisesController {
   constructor(
     private readonly exercises: ExercisesService,
     private readonly submissions: SubmissionsService,
+    private readonly hints: HintsService,
   ) {}
 
   @Get(':id')
   view(@CurrentUser() user: AuthUser, @Param('id', idPipe) id: string) {
-    return this.exercises.view(user.id, id).then((data) => ({ data }));
+    return this.exercises.view(user, id).then((data) => ({ data }));
+  }
+
+  /**
+   * Open one hint (PRD F11): 201 the first time, 200 when it was already open. Hints open
+   * in order and only after `cost` attempts (rules in hints.ts).
+   */
+  @Post(':id/hints/:position')
+  @Throttle(SUBMIT_LIMIT)
+  async openHint(
+    @CurrentUser() user: AuthUser,
+    @Param('id', idPipe) id: string,
+    @Param('position', hintPositionPipe) position: number,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { created, hint } = await this.hints.open(user, id, position);
+    res.status(created ? 201 : 200);
+    return { data: hint };
   }
 
   @Post(':id/quiz-attempts')

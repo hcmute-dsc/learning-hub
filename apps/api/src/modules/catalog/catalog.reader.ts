@@ -54,12 +54,23 @@ export interface ExerciseContext {
   /** validated by @hub/content at publish time; shape depends on `type` */
   spec: Record<string, unknown>;
   requiresReview: boolean;
+  /** every hint, opened or not: the submissions module decides what a member sees */
+  hints: StoredHint[];
+  /** reference solution (§3.8); never send it before the member may see it */
+  solutionMd: string | null;
   contentVersionId: string;
   track: { id: string; slug: string; title: string; starterRepo: string | null };
   module: { slug: string; title: string };
   lesson: { id: string; title: string } | null;
   /** prerequisite exercises (must be completed first) */
   prerequisites: { id: string; title: string }[];
+}
+
+/** One entry of `exercises.hints`, written by CatalogWriter from `hints/NN.md`. */
+export interface StoredHint {
+  position: number;
+  cost: number;
+  bodyMd: string;
 }
 
 @Injectable()

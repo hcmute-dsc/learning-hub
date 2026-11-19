@@ -7,6 +7,12 @@
  *   tracks/<track>/modules/<module>/lessons/<lesson>.md
  *   tracks/<track>/modules/<module>/exercises/<exercise>/exercise.yaml
  *   tracks/<track>/modules/<module>/exercises/<exercise>/statement.md
+ *   tracks/<track>/modules/<module>/exercises/<exercise>/hints/NN.md
+ *
+ * Reference solutions are NOT in the content repo (it is public). They live in the
+ * private checker repo (§3.8):
+ *
+ *   exercises/<track>/<exercise>/solution.md
  */
 
 export const layout = {
@@ -17,13 +23,27 @@ export const layout = {
   exerciseDir: (moduleDir: string, name: string) => `${moduleDir}/exercises/${name}`,
   exerciseFile: (exerciseDir: string) => `${exerciseDir}/exercise.yaml`,
   statementFile: (exerciseDir: string) => `${exerciseDir}/statement.md`,
+  hintsDir: (exerciseDir: string) => `${exerciseDir}/hints/`,
+  /** In the checker repo, not the content repo. */
+  solutionFile: (trackSlug: string, exerciseSlug: string) =>
+    `exercises/${trackSlug}/${exerciseSlug}/solution.md`,
 };
+
+/** `hints/01.md` … `hints/99.md`: the number is the order members open them in. */
+export const HINT_FILE = /^(\d{2})\.md$/;
+export const MAX_HINTS = 10;
+
+/** A solution in the public content repo would be readable by everyone (§3.8). */
+export const PUBLIC_SOLUTION =
+  /^tracks\/[^/]+\/modules\/[^/]+\/exercises\/[^/]+\/solutions?(\.md|\/)/i;
 
 export const LAYOUT_PATTERNS = {
   track: /^tracks\/[^/]+\/track\.yaml$/,
   module: /^tracks\/[^/]+\/modules\/[^/]+\/module\.yaml$/,
   lesson: /^tracks\/[^/]+\/modules\/[^/]+\/lessons\/[^/]+\.md$/,
   exercise: /^tracks\/[^/]+\/modules\/[^/]+\/exercises\/[^/]+\/exercise\.yaml$/,
+  /** checker repo */
+  solution: /^exercises\/[^/]+\/[^/]+\/solution\.md$/,
 };
 
 /** Parent folder of a path: `a/b/c.yaml` → `a/b` */

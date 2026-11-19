@@ -15,8 +15,9 @@
 export * from './types';
 export * from './schemas';
 export { parseContent } from './parse';
-export type { FileMap } from './parse';
+export type { FileMap, ParseOptions } from './parse';
 export { exerciseIndex } from './checks';
+export { layout, LAYOUT_PATTERNS } from './layout';
 export { contentHash } from './hash';
 export { MAX_MARKDOWN_BYTES, splitFrontMatter } from './markdown';
 export { readDirectory } from './read-directory';

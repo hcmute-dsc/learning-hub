@@ -127,9 +127,22 @@ export class UsersService {
     return this.getMe(userId);
   }
 
-  async updateSettings(userId: string, input: { theme: Theme }) {
-    await this.prisma.user.update({ where: { id: userId }, data: { theme: input.theme } });
+  /** Personal settings (/settings). Fields left out keep their value. */
+  async updateSettings(userId: string, input: { theme?: Theme; showAchievements?: boolean }) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { theme: input.theme, showAchievements: input.showAchievements },
+    });
     return this.getMe(userId);
+  }
+
+  /** false when the member hid badges and streak in /settings (F12). Missing user → false. */
+  async showsAchievements(userId: string): Promise<boolean> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { showAchievements: true },
+    });
+    return user?.showAchievements ?? false;
   }
 
   /**
@@ -375,6 +388,7 @@ type UserWithRoles = {
   avatarUrl: string | null;
   bio: string | null;
   theme: string;
+  showAchievements: boolean;
   status: string;
   roles: { role: { code: string } }[];
 };
@@ -389,5 +403,6 @@ function toMe(user: UserWithRoles): Me {
     roles: user.roles.map((r) => r.role.code as Role),
     bio: user.bio,
     theme: user.theme as Theme,
+    showAchievements: user.showAchievements,
   };
 }

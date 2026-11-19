@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { parseContent, type ContentIssue, type ContentTree } from '@hub/content';
 import type { ContentVersionStatus, ContentVersionSummary, ContentVersionView } from '@hub/shared';
@@ -22,6 +22,7 @@ import {
   toTrackSources,
   type ContentSource,
 } from './ports/content-source';
+import { loadSolutions, SOLUTION_SOURCE, type SolutionSource } from './ports/solution-source';
 
 const SHA = /^[0-9a-f]{40}$/;
 const MAX_STORED_ISSUES = 200;
@@ -83,16 +84,29 @@ export class ContentService {
     private readonly events: EventEmitter2,
     private readonly users: UsersService,
     @Inject(CONTENT_SOURCE) private readonly source: ContentSource,
+    @Optional() @Inject(SOLUTION_SOURCE) private readonly solutionSource: SolutionSource | null,
   ) {}
 
+  /** Content at `sha`, plus reference solutions from the private checker repo (§3.8). */
+  private async readTree(sha: string) {
+    const [files, solutions] = await Promise.all([
+      loadFileMap(this.source, sha),
+      loadSolutions(this.solutionSource ?? null),
+    ]);
+    return {
+      ...parseContent(files, { solutions: solutions.files }),
+      solutionsFrom: solutions.from,
+    };
+  }
+
   private async readAndPlan(sha: string, tx: Prisma.TransactionClient = this.prisma) {
-    const { tree, issues } = parseContent(await loadFileMap(this.source, sha));
+    const { tree, issues, solutionsFrom } = await this.readTree(sha);
     let plan: ChangePlan | null = null;
     if (!issues.length) {
       plan = planChanges(tree, await this.writer.snapshot(tx));
       issues.push(...plan.conflicts);
     }
-    return { tree, issues, plan };
+    return { tree, issues, plan, solutionsFrom };
   }
 
   /** Idempotent per (source repo, commit). Returns the version; `rejected` when invalid. */
@@ -109,7 +123,7 @@ export class ContentService {
     });
     if (existing) return { version: view(existing), created: false };
 
-    const { tree, issues, plan } = await this.readAndPlan(sha);
+    const { tree, issues, plan, solutionsFrom } = await this.readAndPlan(sha);
     const status = issues.length ? 'rejected' : 'draft';
     const trackSources = await this.source.trackSources?.(sha);
     const version = await this.prisma.contentVersion.create({
@@ -125,6 +139,7 @@ export class ContentService {
           diff: plan?.diff ?? null,
           issueCount: issues.length,
           issues: issues.slice(0, MAX_STORED_ISSUES),
+          solutionsFrom,
         } as unknown as Prisma.InputJsonValue,
       },
     });
@@ -154,7 +169,7 @@ export class ContentService {
     }
 
     // Read outside the transaction (network), then plan + apply inside it.
-    const { tree, issues } = parseContent(await loadFileMap(this.source, version.commitSha));
+    const { tree, issues, solutionsFrom } = await this.readTree(version.commitSha);
     if (issues.length) throw toValidationError('Content at this commit is no longer valid', issues);
 
     const { published, plan, previousCommitSha, previousTrackSources } =
@@ -184,6 +199,7 @@ export class ContentService {
                 ...(version.summary as object),
                 counts: counts(tree),
                 diff: plan.diff,
+                solutionsFrom,
                 appliedAt: now.toISOString(),
               } as unknown as Prisma.InputJsonValue,
             },

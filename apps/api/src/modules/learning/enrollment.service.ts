@@ -6,7 +6,14 @@ import { Clock } from '../../infrastructure/clock';
 import { CatalogReader, type TrackOutline } from '../catalog/catalog.reader';
 import { EnrollmentRepository, type EnrollmentRow } from './enrollment.repository';
 import { LearningEvents, type EnrolledEvent, type TrackCompletedEvent } from './learning.events';
-import { enrollmentStatus, isAllDone, shouldMarkCompleted, summarize } from './progress';
+import {
+  completedModules,
+  enrollmentStatus,
+  isAllDone,
+  shouldMarkCompleted,
+  summarize,
+  type ItemStatuses,
+} from './progress';
 import { ProgressService } from './progress.service';
 
 /** Enrolling in tracks and the member's track list with progress (BACKEND-DESIGN §2 learning). */
@@ -28,7 +35,8 @@ export class EnrollmentService {
   ): Promise<{ created: boolean; progress: TrackProgress }> {
     const outline = await this.catalog.trackOutline({ slug });
     const { row, created } = await this.enrollIn(userId, outline.id, cohort);
-    return { created, progress: await this.toTrackProgress(userId, row, outline) };
+    const statuses = await this.progress.statusesFor(userId, outline);
+    return { created, progress: await this.toTrackProgress(userId, row, outline, statuses) };
   }
 
   /** Saving lesson progress enrolls the member automatically (learning.ts contract). */
@@ -38,13 +46,25 @@ export class EnrollmentService {
 
   /** GET /me/enrollments: active and completed enrollments with their progress. */
   async listMine(userId: string): Promise<TrackProgress[]> {
+    return (await this.overview(userId)).tracks;
+  }
+
+  /**
+   * The member's tracks with progress, plus how many modules (chặng) they finished in
+   * them (badges, F12). One pass, so item statuses are loaded once per track.
+   */
+  async overview(userId: string): Promise<{ tracks: TrackProgress[]; modulesCompleted: number }> {
     const rows = await this.enrollments.listVisible(userId);
-    const result: TrackProgress[] = [];
+    const tracks: TrackProgress[] = [];
+    let modulesCompleted = 0;
     for (const row of rows) {
       const outline = await this.outlineOrNull(row.trackId);
-      if (outline) result.push(await this.toTrackProgress(userId, row, outline));
+      if (!outline) continue;
+      const statuses = await this.progress.statusesFor(userId, outline);
+      tracks.push(await this.toTrackProgress(userId, row, outline, statuses));
+      modulesCompleted += completedModules(outline.items, statuses);
     }
-    return result;
+    return { tracks, modulesCompleted };
   }
 
   /**
@@ -94,8 +114,9 @@ export class EnrollmentService {
     userId: string,
     row: EnrollmentRow,
     outline: TrackOutline,
+    statuses: ItemStatuses,
   ): Promise<TrackProgress> {
-    const summary = summarize(outline.items, await this.progress.statusesFor(userId, outline));
+    const summary = summarize(outline.items, statuses);
     const allDone = isAllDone(summary.lessons, summary.exercises);
     const stored = await this.recordCompletion(userId, row, allDone);
     return {
@@ -122,6 +143,8 @@ export class EnrollmentService {
   ): Promise<EnrollmentRow> {
     if (!shouldMarkCompleted(row.status, allDone)) return row;
     const stored = await this.enrollments.markCompleted(row.id, this.clock.now());
+    // Someone else completed it a moment ago and already announced it.
+    if (!stored) return (await this.enrollments.find(userId, row.trackId)) ?? row;
     const event: TrackCompletedEvent = {
       enrollmentId: stored.id,
       userId,

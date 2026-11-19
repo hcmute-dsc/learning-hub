@@ -7,6 +7,7 @@ import {
   selfCheckSpec,
   type QuizQuestionSpec,
 } from './exercise-spec';
+import { toHintsView, toSolutionView } from './hints';
 
 /**
  * Build the member-facing exercise (contract: ExerciseView in @hub/shared).
@@ -63,7 +64,14 @@ function typeDetails(
 
 export function toExerciseView(
   exercise: ExerciseContext,
-  member: { state: ExerciseState; lockedBy: ItemRef[]; attempts: number },
+  member: {
+    state: ExerciseState;
+    lockedBy: ItemRef[];
+    attempts: number;
+    openedHints: ReadonlySet<number>;
+    /** from canSeeSolution (hints.ts) */
+    solutionUnlocked: boolean;
+  },
 ): ExerciseView {
   return {
     id: exercise.id,
@@ -80,6 +88,12 @@ export function toExerciseView(
     module: exercise.module,
     lesson: exercise.lesson,
     attempts: member.attempts,
+    hints: toHintsView(exercise.hints, {
+      opened: member.openedHints,
+      attempts: member.attempts,
+      state: member.state,
+    }),
+    solution: toSolutionView(exercise.solutionMd, member.solutionUnlocked),
     ...typeDetails(exercise),
   };
 }

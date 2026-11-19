@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import type { Me, NotificationSettings } from '@hub/shared';
+import { AchievementsToggle } from '@/components/settings/AchievementsToggle';
 import { EmailDigestToggle } from '@/components/settings/EmailDigestToggle';
 import { ProfileForm } from '@/components/settings/ProfileForm';
 import { ThemePicker } from '@/components/settings/ThemePicker';
@@ -46,6 +47,16 @@ export default async function SettingsPage() {
         </h2>
         <p className="muted mt-1 text-sm">Lưu theo tài khoản, nên dùng được trên mọi thiết bị.</p>
         <ThemePicker theme={me.theme} />
+      </section>
+
+      <section aria-labelledby="achievements-heading" className="surface rounded-2xl p-5 sm:p-6">
+        <h2 id="achievements-heading" className="text-lg font-semibold">
+          Huy hiệu và chuỗi ngày học
+        </h2>
+        <p className="muted mt-1 text-sm">
+          Một chút động lực nhẹ nhàng, không điểm số, không xếp hạng.
+        </p>
+        <AchievementsToggle show={me.showAchievements} />
       </section>
 
       <section aria-labelledby="notify-heading" className="surface rounded-2xl p-5 sm:p-6">

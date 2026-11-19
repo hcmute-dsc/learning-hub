@@ -25,6 +25,8 @@ model User {
   bio         String?
   /// system | light | dark — color scheme picked in /settings
   theme       String    @default("system")
+  /// false hides badges and the streak on the dashboard and the profile (F12)
+  showAchievements Boolean @default(true) @map("show_achievements")
   /// pending | active | suspended
   status      String    @default("pending")
   lastLoginAt DateTime? @map("last_login_at") @db.Timestamptz
@@ -38,6 +40,7 @@ model User {
   enrollments       Enrollment[]
   lessonProgress    LessonProgress[]
   submissions       Submission[]
+  hintUnlocks       HintUnlock[]
   reviews           Review[]
   reviewComments    ReviewComment[]
   menteeAssignments MentorAssignment[]  @relation("Mentee")
@@ -47,6 +50,7 @@ model User {
   addedApprovedEmails ApprovedEmail[]
   syncedVersions    ContentVersion[]    @relation("SyncedBy")
   publishedVersions ContentVersion[]    @relation("PublishedBy")
+  badges            UserBadge[]
   notifications     Notification[]
   notificationPreference NotificationPreference?
 
@@ -227,6 +231,10 @@ model Exercise {
   difficulty       String
   statementMd      String   @map("statement_md")
   spec             Json     @default("{}")
+  /// [{ position, cost, bodyMd }] from hints/NN.md (CONTENT-SPECIFICATION §3.7). Members only get opened ones.
+  hints            Json     @default("[]")
+  /// Reference solution from the private checker repo (§3.8). Members only get it once they complete the exercise.
+  solutionMd       String?  @map("solution_md")
   requiresReview   Boolean  @default(false) @map("requires_review")
   position         Int
   status           String   @default("active")
@@ -242,6 +250,7 @@ model Exercise {
   prerequisites  ExercisePrerequisite[] @relation("Dependent")
   requiredBy     ExercisePrerequisite[] @relation("Required")
   submissions    Submission[]
+  hintUnlocks    HintUnlock[]
 
   @@unique([moduleId, slug])
   @@index([moduleId, position])
@@ -296,6 +305,20 @@ model LessonProgress {
   @@map("lesson_progress")
 }
 
+/// Badges a member earned (F12). The list of badges and their rules live in code
+/// (packages/shared achievements.ts, learning/badges.ts); the key makes awarding idempotent.
+model UserBadge {
+  userId    String   @map("user_id") @db.Uuid
+  /// a BadgeCode such as first_lesson; never renamed
+  badge     String
+  awardedAt DateTime @default(now()) @map("awarded_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, badge])
+  @@map("user_badges")
+}
+
 model Submission {
   id               String   @id @db.Uuid
   userId           String   @map("user_id") @db.Uuid
@@ -325,6 +348,22 @@ model Submission {
   @@index([userId, submittedAt(sort: Desc)])
   @@index([repoFullName, headSha])
   @@map("submissions")
+}
+
+/// Who opened which hint (PRD F11). Counted in statistics; it never lowers a score.
+model HintUnlock {
+  userId     String   @map("user_id") @db.Uuid
+  exerciseId String   @map("exercise_id") @db.Uuid
+  /// 1-based, the NN of hints/NN.md
+  position   Int
+  openedAt   DateTime @default(now()) @map("opened_at") @db.Timestamptz
+
+  user     User     @relation(fields: [userId], references: [id])
+  exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+
+  @@id([userId, exerciseId, position])
+  @@index([exerciseId])
+  @@map("hint_unlocks")
 }
 
 model TestRun {

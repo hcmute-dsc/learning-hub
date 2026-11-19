@@ -559,3 +559,105 @@ describe('parseContent error cases', () => {
     expectIssue(r, INSTALL_GIT, 'statement.md is missing');
   });
 });
+
+// ------------------------------------------------------------------ hints and solutions (§3.7, §3.8)
+
+describe('hints', () => {
+  const HINTS = `${SQL_MOD}/exercises/select-where-basic/hints`;
+  const selectWhere = (result: ParseResult) =>
+    exerciseIndex(result.tree).get('sql-sample/foundations/select-where-basic')!;
+
+  it('reads hints/NN.md in order, with an optional cost', () => {
+    const result = parseContent(example);
+    expect(result.issues).toEqual([]);
+    const hints = selectWhere(result).hints;
+    expect(hints.map((h) => [h.position, h.cost])).toEqual([
+      [1, 0],
+      [2, 1],
+    ]);
+    expect(hints[1].bodyMd).toContain('WHERE');
+    expect(hints[1].bodyMd).not.toContain('cost:');
+  });
+
+  it('gives exercises without hints an empty list', () => {
+    const result = parseContent(example);
+    expect(
+      exerciseIndex(result.tree).get('git-github-basics/first-steps/install-git')!.hints,
+    ).toEqual([]);
+  });
+
+  it('rejects a gap in the numbering', () => {
+    const result = parseWith((files) => {
+      files.set(`${HINTS}/04.md`, 'Too far.');
+    });
+    expectIssue(result, `${HINTS}/04.md`, 'without gaps (expected 03.md)');
+  });
+
+  it('rejects a badly named file, an empty hint and an unknown front matter field', () => {
+    const result = parseWith((files) => {
+      files.set(`${HINTS}/third.md`, 'Name.');
+      files.set(`${HINTS}/03.md`, '---\ncost: 1\n---\n\n');
+      files.set(`${HINTS}/04.md`, '---\npoints: 3\n---\nText.');
+    });
+    expectIssue(result, `${HINTS}/third.md`, 'NN.md');
+    expectIssue(result, `${HINTS}/03.md`, 'hint is empty');
+    expectIssue(result, `${HINTS}/04.md`, 'points');
+  });
+
+  it('applies the markdown rules to hints', () => {
+    const result = parseWith((files) => files.set(`${HINTS}/03.md`, '<script>alert(1)</script>'));
+    expectIssue(result, `${HINTS}/03.md`, 'raw HTML/script');
+  });
+
+  it('changes the exercise hash when a hint changes', () => {
+    const before = selectWhere(parseContent(example)).hash;
+    const after = selectWhere(
+      parseWith((files) => edit(files, `${HINTS}/01.md`, 'customers', 'orders')),
+    ).hash;
+    expect(after).not.toBe(before);
+  });
+});
+
+describe('solutions', () => {
+  const SOLUTION = 'exercises/sql-sample/select-where-basic/solution.md';
+  const selectWhere = (result: ParseResult) =>
+    exerciseIndex(result.tree).get('sql-sample/foundations/select-where-basic')!;
+
+  it('rejects a solution in the public content repo', () => {
+    const path = `${SQL_MOD}/exercises/select-where-basic/solution.md`;
+    const result = parseWith((files) => files.set(path, 'SELECT 1;'));
+    expectIssue(result, path, 'private checker repo');
+  });
+
+  it('is null without the checker files, as in the content repo CLI', () => {
+    expect(selectWhere(parseContent(example)).solutionMd).toBeNull();
+  });
+
+  it('attaches exercises/<track>/<exercise>/solution.md from the checker repo', () => {
+    const solutions = new Map([
+      [SOLUTION, '\nSELECT full_name FROM customers;\n'],
+      ['exercises/sql-sample/retired-exercise/solution.md', 'ignored'],
+      ['exercises/sql-sample/select-where-basic/tests/expected.md', 'ignored'],
+    ]);
+    const result = parseContent(example, { solutions });
+    expect(result.issues).toEqual([]);
+    expect(selectWhere(result).solutionMd).toBe('SELECT full_name FROM customers;');
+    expect(selectWhere(result).hash).not.toBe(selectWhere(parseContent(example)).hash);
+  });
+
+  it('applies the markdown rules to solutions', () => {
+    const result = parseContent(example, {
+      solutions: new Map([[SOLUTION, '<iframe src="x"></iframe>']]),
+    });
+    expectIssue(result, SOLUTION, 'raw HTML/script');
+  });
+
+  it('keeps the hash of an exercise without hints or solution unchanged', () => {
+    // Exercises written before hints existed must not all show up as "updated".
+    const quiz = exerciseIndex(parseContent(example).tree).get(
+      'git-github-basics/first-steps/git-basics-quiz',
+    )!;
+    const { hash, hints: _h, solutionMd: _s, ...rest } = quiz;
+    expect(hash).toBe(contentHash(rest));
+  });
+});
