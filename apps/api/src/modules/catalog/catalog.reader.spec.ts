@@ -79,6 +79,18 @@ describe('CatalogReader', () => {
     });
     const outline = await reader.trackOutline({ id: 't1' });
     expect(outline.items.map((i) => i.id)).toEqual(['l1', 'e1']);
+    expect(outline.hasSetup).toBe(false);
+  });
+
+  it('tells whether the track has a "Cài đặt" page (learning-hub#44)', async () => {
+    const { reader } = fakePrisma({
+      id: 't1',
+      slug: 'docker',
+      title: 'Docker',
+      setupMd: 'Cài Docker Desktop.',
+      modules: [],
+    });
+    await expect(reader.trackOutline({ id: 't1' })).resolves.toMatchObject({ hasSetup: true });
   });
 
   it('ignores archived prerequisites when building the prerequisite map', async () => {

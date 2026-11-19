@@ -1,4 +1,11 @@
-import type { ExerciseType, TrackLevel, TrackSummary } from '@hub/shared';
+import { layout } from '@hub/content';
+import type {
+  ExerciseType,
+  TrackDocPage,
+  TrackDocView,
+  TrackLevel,
+  TrackSummary,
+} from '@hub/shared';
 import type { ExerciseContext, LessonContext, OutlineItem, StoredHint } from './catalog.reader';
 
 /**
@@ -64,9 +71,18 @@ export function toTrackSummary(t: TrackSummaryRow): TrackSummary {
   };
 }
 
-export interface TrackDetailRow extends TrackRow {
-  starterRepo: string | null;
+/** The optional track pages of a track row (CONTENT-SPECIFICATION §3.1b). */
+export interface TrackDocsRow {
+  slug: string;
+  title: string;
+  setupMd: string | null;
+  resourcesMd: string | null;
   sourcePath: string;
+  contentVersion: Source;
+}
+
+export interface TrackDetailRow extends TrackRow, TrackDocsRow {
+  starterRepo: string | null;
   /** the version that last wrote this track row */
   contentVersion: Source;
   modules: {
@@ -97,6 +113,8 @@ export function toTrackDetail(track: TrackDetailRow, published: Source | null) {
     estHours: track.estHours,
     tags: track.tags,
     starterRepo: track.starterRepo,
+    /** which optional pages exist; the text itself comes from GET /tracks/:slug/docs/:page */
+    docs: trackDocFlags(track),
     source: { ...source, path: track.sourcePath },
     modules: track.modules.map((m) => ({
       id: m.id,
@@ -106,6 +124,38 @@ export function toTrackDetail(track: TrackDetailRow, published: Source | null) {
       lessons: m.lessons,
       exercises: m.exercises,
     })),
+  };
+}
+
+/** Which optional pages a track has. An empty text counts as none. */
+export function trackDocFlags(track: {
+  setupMd: string | null;
+  resourcesMd: string | null;
+}): Record<TrackDocPage, boolean> {
+  return { setup: Boolean(track.setupMd), resources: Boolean(track.resourcesMd) };
+}
+
+/**
+ * One track page ("Cài đặt" or "Tài liệu thêm"), or null when the track has none. The source
+ * is the published version, like `toTrackDetail`; the path is `docs/<page>.md` next to
+ * track.yaml, so relative images and the edit link resolve in the track's repo.
+ */
+export function toTrackDoc(
+  track: TrackDocsRow,
+  page: TrackDocPage,
+  published: Source | null,
+): TrackDocView | null {
+  const bodyMd = page === 'setup' ? track.setupMd : track.resourcesMd;
+  if (!bodyMd) return null;
+  const trackDir = track.sourcePath.slice(0, track.sourcePath.lastIndexOf('/'));
+  return {
+    page,
+    bodyMd,
+    track: { slug: track.slug, title: track.title },
+    source: {
+      ...sourceFor(published ?? track.contentVersion, track.slug),
+      path: layout.trackDocFile(trackDir, page),
+    },
   };
 }
 

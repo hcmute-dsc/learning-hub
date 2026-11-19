@@ -67,6 +67,8 @@ export class CatalogWriter {
           position: t.position,
           tags: t.tags,
           starterRepo: t.starterRepo,
+          setupMd: t.setupMd,
+          resourcesMd: t.resourcesMd,
           status: t.status,
           sourcePath: t.sourcePath,
           contentHash: t.hash,

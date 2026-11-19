@@ -8,6 +8,7 @@ import {
   toExerciseContext,
   toLessonContext,
   toOutlineItems,
+  trackDocFlags,
 } from './catalog-views';
 
 /**
@@ -28,6 +29,8 @@ export interface TrackOutline {
   id: string;
   slug: string;
   title: string;
+  /** the track has a "Cài đặt" page (docs/setup.md) */
+  hasSetup: boolean;
   items: OutlineItem[];
 }
 
@@ -113,7 +116,8 @@ export class CatalogReader {
     });
     if (!track) throw DomainError.notFound('Track');
     const items = toOutlineItems(track);
-    return { id: track.id, slug: track.slug, title: track.title, items };
+    const hasSetup = trackDocFlags(track).setup;
+    return { id: track.id, slug: track.slug, title: track.title, hasSetup, items };
   }
 
   async lesson(id: string): Promise<LessonContext> {

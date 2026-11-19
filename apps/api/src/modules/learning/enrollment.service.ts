@@ -127,6 +127,7 @@ export class EnrollmentService {
       cohort: stored.cohort,
       enrolledAt: stored.enrolledAt.toISOString(),
       ...summary,
+      hasSetup: outline.hasSetup,
     };
   }
 

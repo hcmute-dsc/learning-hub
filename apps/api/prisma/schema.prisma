@@ -155,6 +155,10 @@ model Track {
   tags             String[] @default([])
   /// owner/repo of the track's starter template (one per track, has a folder per code exercise)
   starterRepo      String?  @map("starter_repo")
+  /// docs/setup.md of the track ("Cài đặt" page), null when the track has none
+  setupMd          String?  @map("setup_md")
+  /// docs/resources.md of the track ("Tài liệu thêm" page), null when the track has none
+  resourcesMd      String?  @map("resources_md")
   /// active | archived
   status           String   @default("active")
   contentVersionId String   @map("content_version_id") @db.Uuid
