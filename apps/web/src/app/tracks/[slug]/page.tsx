@@ -5,6 +5,8 @@ import { countDone } from '@/components/learn/track-progress';
 import { ProgressPanel } from '@/components/track/ProgressPanel';
 import { StatCards } from '@/components/track/StatCards';
 import { TrackHeader } from '@/components/track/TrackHeader';
+import { TrackTabs } from '@/components/track/TrackTabs';
+import { trackTabs } from '@/components/track/track-docs';
 import { countByKind, listTrackItems } from '@/components/track/track-items';
 import { loadTrack, loadTrackProgress } from '@/lib/track';
 
@@ -47,6 +49,8 @@ export default async function TrackPage({ params }: Params) {
           />
         }
       />
+
+      <TrackTabs tabs={trackTabs(track.slug, track.docs, 'overview')} />
 
       <ProgressPanel items={items} percent={overall.percent} enrolled={progress.enrolled} />
 

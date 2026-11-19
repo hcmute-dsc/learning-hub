@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { TrackProgress } from '@hub/shared';
-import { countItems, encouragement, pickContinueTrack } from './dashboard';
+import { countItems, encouragement, pickContinueTrack, setupReminders } from './dashboard';
 
 function track(over: Partial<TrackProgress>): TrackProgress {
   return {
@@ -14,6 +14,7 @@ function track(over: Partial<TrackProgress>): TrackProgress {
     exercises: { done: 0, total: 2 },
     percent: 0,
     next: { kind: 'lesson', id: 'l1', title: 'Bài 1' },
+    hasSetup: false,
     ...over,
   };
 }
@@ -66,5 +67,25 @@ describe('encouragement', () => {
 
   it('nudges a member who has not finished anything yet', () => {
     expect(encouragement([track({})])).toMatch(/Bắt đầu thôi/);
+  });
+});
+
+describe('setupReminders (learning-hub#44)', () => {
+  it('reminds about tracks with a setup page where nothing is done yet', () => {
+    const fresh = track({ slug: 'docker', hasSetup: true });
+    expect(setupReminders([fresh]).map((t) => t.slug)).toEqual(['docker']);
+  });
+
+  it('stops once the member finished a first item, or the track has no setup page', () => {
+    const started = track({ slug: 'a', hasSetup: true, lessons: { done: 1, total: 4 } });
+    const noSetup = track({ slug: 'b', hasSetup: false });
+    const done = track({ slug: 'c', hasSetup: true, status: 'completed', next: null });
+    expect(setupReminders([started, noSetup, done])).toEqual([]);
+  });
+
+  it('lists the newest enrollment first', () => {
+    const older = track({ slug: 'sql', hasSetup: true, enrolledAt: '2026-01-01T00:00:00.000Z' });
+    const newer = track({ slug: 'docker', hasSetup: true, enrolledAt: '2026-02-01T00:00:00.000Z' });
+    expect(setupReminders([older, newer]).map((t) => t.slug)).toEqual(['docker', 'sql']);
   });
 });
