@@ -12,7 +12,7 @@ export type NewCertificate = Omit<
 export type InsertResult =
   { kind: 'issued'; row: CertificateRow } | { kind: 'owner_taken' } | { kind: 'code_taken' };
 
-/** The only code that reads or writes the `certificates` table (DATABASE §3.16d). */
+/** The only code that reads or writes the `certificates` table (DATABASE §3.16e). */
 @Injectable()
 export class CertificatesRepository {
   constructor(private readonly prisma: PrismaService) {}
