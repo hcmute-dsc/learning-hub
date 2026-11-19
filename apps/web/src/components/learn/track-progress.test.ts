@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countDone } from './track-progress';
+import { countDone, openModuleIndex } from './track-progress';
 
 const modules = [
   { lessons: [{ id: 'l1' }, { id: 'l2' }], exercises: [{ id: 'x1' }] },
@@ -22,5 +22,33 @@ describe('countDone', () => {
       total: 0,
       percent: 0,
     });
+  });
+});
+
+describe('openModuleIndex', () => {
+  const none = { lessons: {}, exercises: {} };
+
+  it('opens the first module before enrolling', () => {
+    expect(openModuleIndex(modules, none, false)).toBe(0);
+  });
+
+  it('opens the first module that is not finished', () => {
+    expect(openModuleIndex(modules, none, true)).toBe(0);
+    const firstDone = {
+      lessons: { l1: 'completed', l2: 'completed' },
+      exercises: { x1: 'completed' },
+    } as const;
+    expect(openModuleIndex(modules, firstDone, true)).toBe(1);
+  });
+
+  it('skips empty modules and opens none when everything is finished', () => {
+    const withEmpty = [{ lessons: [], exercises: [] }, ...(modules as never[])] as never;
+    expect(openModuleIndex(withEmpty, none, true)).toBe(1);
+    const allDone = {
+      lessons: { l1: 'completed', l2: 'completed', l3: 'completed' },
+      exercises: { x1: 'completed' },
+    } as const;
+    expect(openModuleIndex(modules, allDone, true)).toBeNull();
+    expect(openModuleIndex([], none, false)).toBeNull();
   });
 });

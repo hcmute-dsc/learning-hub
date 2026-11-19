@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import { EnrollButton } from '@/components/learn/EnrollButton';
 import { ModuleOutline } from '@/components/learn/ModuleOutline';
-import { countDone } from '@/components/learn/track-progress';
+import { OpenModuleFromHash } from '@/components/learn/OpenModuleFromHash';
+import { countDone, openModuleIndex } from '@/components/learn/track-progress';
 import { ProgressPanel } from '@/components/track/ProgressPanel';
 import { StatCards } from '@/components/track/StatCards';
 import { TrackHeader } from '@/components/track/TrackHeader';
@@ -29,6 +30,7 @@ export default async function TrackPage({ params }: Params) {
   const items = listTrackItems(track.modules, progress);
   const byKind = countByKind(items);
   const overall = countDone(track.modules, progress);
+  const openIndex = openModuleIndex(track.modules, progress, progress.enrolled);
 
   return (
     <article className="space-y-6 sm:space-y-8">
@@ -71,18 +73,22 @@ export default async function TrackPage({ params }: Params) {
         {track.modules.length === 0 ? (
           <p className="muted mt-3">Lộ trình này chưa có chương nào.</p>
         ) : (
-          <ol className="mt-4 space-y-4">
-            {track.modules.map((m, i) => (
-              <li key={m.id}>
-                <ModuleOutline
-                  module={m}
-                  index={i}
-                  progress={progress}
-                  enrolled={progress.enrolled}
-                />
-              </li>
-            ))}
-          </ol>
+          <>
+            <OpenModuleFromHash />
+            <ol className="mt-4 space-y-4">
+              {track.modules.map((m, i) => (
+                <li key={m.id}>
+                  <ModuleOutline
+                    module={m}
+                    index={i}
+                    progress={progress}
+                    enrolled={progress.enrolled}
+                    defaultOpen={i === openIndex}
+                  />
+                </li>
+              ))}
+            </ol>
+          </>
         )}
       </section>
 
