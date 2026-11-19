@@ -1,10 +1,12 @@
 import { formatMonth } from '@/components/profile/profile';
+import { BadgeMedal, badgeStyle } from './BadgeMedal';
 import type { BadgeCard } from './achievements';
 
 /**
  * Badges as one row each, for the narrow dashboard column (learning-hub#56): a grid of
- * tiles there squeezed the text into many short lines. Earned rows say when; locked
- * rows are greyed out and say how to earn them. The wide profile page uses BadgeGrid.
+ * tiles there squeezed the text into many short lines. Same medal and tint as the
+ * profile's BadgeGrid (learning-hub#74). Earned rows say when; locked rows are greyed
+ * out and say how to earn them.
  */
 export function BadgeList({ cards }: { cards: BadgeCard[] }) {
   return (
@@ -14,16 +16,12 @@ export function BadgeList({ cards }: { cards: BadgeCard[] }) {
         return (
           <li
             key={card.code}
-            className={`flex items-center gap-3 rounded-xl border px-3 py-2 ${
-              earned ? 'border-brand-500 bg-brand-50' : 'border-dashed border-[var(--border)]'
-            }`}
+            data-locked={earned ? undefined : ''}
+            data-layout="row"
+            className="badge-tile flex items-center gap-3 rounded-xl px-3 py-2"
+            style={badgeStyle(card.code)}
           >
-            <span
-              aria-hidden
-              className={`w-8 shrink-0 text-center text-xl ${earned ? '' : 'opacity-40 grayscale'}`}
-            >
-              {card.icon}
-            </span>
+            <BadgeMedal card={card} size="sm" />
             <div className="min-w-0">
               <p className={`text-sm font-semibold ${earned ? '' : 'muted'}`}>
                 {card.title}
