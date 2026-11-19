@@ -22,19 +22,24 @@ export interface ModuleOutlineData {
 
 /**
  * One module of a track as a card: number, title, its own progress, then its lessons
- * and exercises in reading order (INFORMATION-ARCHITECTURE §5).
+ * and exercises in reading order (INFORMATION-ARCHITECTURE §5). The card folds
+ * (learning-hub#61): a native <details>, so it works without JavaScript and with the
+ * keyboard; the header with the progress bar stays visible when folded.
  */
 export function ModuleOutline({
   module,
   index,
   progress,
   enrolled,
+  defaultOpen,
 }: {
   module: ModuleOutlineData;
   index: number;
   progress: Pick<TrackItemsProgress, 'lessons' | 'exercises'>;
   /** Before enrolling every lesson is "not started"; showing that on each row is only noise. */
   enrolled: boolean;
+  /** Open on first render; see openModuleIndex. */
+  defaultOpen: boolean;
 }) {
   const anchor = moduleAnchor(module.slug);
   const count = countDone([module], progress);
@@ -43,12 +48,12 @@ export function ModuleOutline({
   return (
     // The id is a stable anchor: lesson and exercise breadcrumbs link to /tracks/x#module-y.
     // scroll-mt keeps the module title below the sticky site header after the jump.
-    <section
+    <details
       id={anchor}
-      aria-labelledby={`${anchor}-title`}
-      className="surface scroll-mt-20 rounded-2xl p-4 sm:p-6"
+      open={defaultOpen}
+      className="surface group scroll-mt-20 rounded-2xl p-4 sm:p-6"
     >
-      <div className="flex items-start gap-4">
+      <summary className="flex cursor-pointer list-none items-start gap-4 rounded-xl [&::-webkit-details-marker]:hidden">
         <span
           aria-hidden
           className={`grid h-10 w-10 shrink-0 place-items-center rounded-full font-mono font-bold ${
@@ -81,7 +86,13 @@ export function ModuleOutline({
             </div>
           )}
         </div>
-      </div>
+        <span
+          aria-hidden
+          className="muted mt-2 shrink-0 text-sm transition-transform group-open:rotate-180"
+        >
+          ▾
+        </span>
+      </summary>
 
       {count.total > 0 && (
         <ul className="mt-4 space-y-2">
@@ -119,6 +130,6 @@ export function ModuleOutline({
           })}
         </ul>
       )}
-    </section>
+    </details>
   );
 }
