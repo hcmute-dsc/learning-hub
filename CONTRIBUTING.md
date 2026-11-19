@@ -115,6 +115,15 @@ Never push directly to `main`. A production hotfix still goes through a PR. If t
   - **how it was verified** (tests; production after deploy).
 - Incidents on production are also logged in [DEPLOYMENT §7](https://github.com/hcmute-dsc/learning-hub-docs/blob/main/docs/ops/DEPLOYMENT.md).
 
+### Good first issues
+
+The [/contribute](https://learn.hcmute-dsc.io.vn/contribute) page sends new contributors to the open issues labelled [`good first issue`](https://github.com/hcmute-dsc/learning-hub/issues?q=is%3Aissue%20is%3Aopen%20label%3A%22good%20first%20issue%22). An empty list is a dead end for them (learning-hub#69), so:
+
+- Keep **at least 3** open. Check it at every sprint meeting ([WORKFLOW §3](https://github.com/hcmute-dsc/learning-hub-docs/blob/main/docs/ops/WORKFLOW.md)).
+- A small, self-contained fix you notice while doing something else (a CI step, a warning, a missing test) can become one instead of a quick fix of your own.
+- Write it for someone new to the repo: the context, the files to touch, what "done" looks like and what they need to know. Leave it **unassigned**, Status = Ready. Examples: #70, #71, #72.
+- The newcomer comments to take it; assign them then.
+
 ### Code review
 
 The reviewer checks, in this order:
