@@ -6,6 +6,7 @@ import { AchievementListener } from './achievement.listener';
 import { AchievementService } from './achievement.service';
 import { AchievementsController } from './achievements.controller';
 import { BadgeRepository } from './badge.repository';
+import { CompletedTracksReader } from './completed-tracks.reader';
 import { CompletionListener } from './completion.listener';
 import { EnrollmentRepository } from './enrollment.repository';
 import { EnrollmentService } from './enrollment.service';
@@ -22,8 +23,9 @@ import { ProgressService } from './progress.service';
  * E4: enrollments, lesson pages, lesson progress, track progress, "continue" item.
  * F12: badges and the learning streak (achievement.service.ts).
  * Also the member profile (/members/:login), which adds user facts from users.
- * Depends on catalog (content), submissions (exercise states) and users. Only reviews uses
- * it, for the lesson-progress dates behind "inactive mentees" (LessonProgressRepository).
+ * Depends on catalog (content), submissions (exercise states) and users. Used by reviews,
+ * for the lesson-progress dates behind "inactive mentees" (LessonProgressRepository), and
+ * by certificates, which read completed tracks (CompletedTracksReader). Learning imports neither.
  */
 @Module({
   imports: [CatalogModule, SubmissionsModule, UsersModule],
@@ -45,7 +47,8 @@ import { ProgressService } from './progress.service';
     BadgeRepository,
     AchievementService,
     AchievementListener,
+    CompletedTracksReader,
   ],
-  exports: [LessonProgressRepository],
+  exports: [LessonProgressRepository, CompletedTracksReader],
 })
 export class LearningModule {}

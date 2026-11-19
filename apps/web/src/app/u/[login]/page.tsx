@@ -1,14 +1,15 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import type { CSSProperties } from 'react';
-import type { MemberProfile } from '@hub/shared';
+import type { CertificateView, MemberProfile } from '@hub/shared';
+import { CertificateList } from '@/components/certificate/CertificateList';
 import { EnrollmentCard } from '@/components/learn/EnrollmentCard';
 import { BadgeGrid } from '@/components/achievements/BadgeGrid';
 import { badgeCards } from '@/components/achievements/achievements';
 import { ActivityGrid } from '@/components/profile/ActivityGrid';
 import { ROLE_LABEL, formatMonth, visibleRoles } from '@/components/profile/profile';
 import { Avatar } from '@/components/ui/Avatar';
-import { apiOrNotFound } from '@/lib/api';
+import { api, apiOrNotFound } from '@/lib/api';
 
 type Params = { params: Promise<{ login: string }> };
 
@@ -29,6 +30,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 export default async function ProfilePage({ params }: Params) {
   const { login } = await params;
   const profile = await loadProfile(login);
+  // Certificates the member did not hide (PRD F19); loaded after the profile, which 404s first.
+  const { data: certificates } = await api<{ data: CertificateView[] }>(
+    `/members/${encodeURIComponent(profile.githubLogin)}/certificates`,
+  );
   const { stats, achievements } = profile;
 
   // The streak tile is left out when the member hid achievements (F12, /settings).
@@ -151,6 +156,24 @@ export default async function ProfilePage({ params }: Params) {
         </h2>
         <ActivityGrid days={profile.activity} />
       </section>
+
+      {certificates.length > 0 && (
+        <section aria-labelledby="certificates-heading">
+          <h2 id="certificates-heading" className="text-lg font-semibold">
+            Chứng nhận ({certificates.length})
+          </h2>
+          <CertificateList certificates={certificates} />
+          {profile.isMe && (
+            <p className="muted mt-2 text-sm">
+              Ẩn chứng nhận khỏi hồ sơ trong{' '}
+              <Link href="/settings" className="text-brand-600 hover:underline">
+                Cài đặt
+              </Link>
+              .
+            </p>
+          )}
+        </section>
+      )}
 
       <section aria-labelledby="tracks-heading">
         <h2 id="tracks-heading" className="text-lg font-semibold">

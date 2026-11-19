@@ -9,6 +9,7 @@ describe('adminTabsFor', () => {
       '/admin',
       '/admin/members',
       '/admin/content',
+      '/admin/certificates',
       '/admin/audit',
     ]);
   });

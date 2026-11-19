@@ -60,6 +60,15 @@ describe('describeAudit', () => {
     expect(text).toBe('Kết luận: Cần sửa');
   });
 
+  it('shows the track and the reason of a revoked certificate', () => {
+    expect(actionLabel('certificate.revoke')).toBe('Thu hồi chứng nhận');
+    const text = describeAudit({
+      action: 'certificate.revoke',
+      metadata: { trackSlug: 'sql-30-days', reason: 'nộp bài của người khác', userId: 'u1' },
+    });
+    expect(text).toBe('Lộ trình sql-30-days: nộp bài của người khác');
+  });
+
   it('prints unknown metadata as JSON, and nothing when empty', () => {
     expect(describeAudit({ action: 'x.y', metadata: { a: 1 } })).toBe('{"a":1}');
     expect(describeAudit({ action: 'user.reactivate', metadata: {} })).toBe('');

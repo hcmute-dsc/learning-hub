@@ -51,6 +51,8 @@ model User {
   syncedVersions    ContentVersion[]    @relation("SyncedBy")
   publishedVersions ContentVersion[]    @relation("PublishedBy")
   badges            UserBadge[]
+  certificates      Certificate[]       @relation("CertificateOwner")
+  revokedCertificates Certificate[]     @relation("CertificateRevokedBy")
 
   @@index([githubLogin])
   @@map("users")
@@ -163,6 +165,7 @@ model Track {
   modules           Module[]
   enrollments       Enrollment[]
   mentorAssignments MentorAssignment[]
+  certificates      Certificate[]
 
   @@index([status, position])
   @@map("tracks")
@@ -315,6 +318,37 @@ model UserBadge {
 
   @@id([userId, badge])
   @@map("user_badges")
+}
+
+/// Track completion certificate (PRD F19, learning-hub#47). Issued once per (user, track)
+/// when the enrollment is first stored as completed. Name, track and content commit are
+/// copied in, so the certificate keeps saying what was true on the day it was issued.
+model Certificate {
+  id            String    @id @db.Uuid
+  /// 24 chars of base32 (CHECK in SQL migration), the unguessable part of /certificates/:code
+  code          String    @unique
+  userId        String    @map("user_id") @db.Uuid
+  trackId       String    @map("track_id") @db.Uuid
+  recipientName String    @map("recipient_name")
+  trackSlug     String    @map("track_slug")
+  trackTitle    String    @map("track_title")
+  contentRepo   String    @map("content_repo")
+  commitSha     String    @map("commit_sha") @db.Char(40)
+  completedAt   DateTime  @map("completed_at") @db.Timestamptz
+  issuedAt      DateTime  @default(now()) @map("issued_at") @db.Timestamptz
+  /// hidden from the member's profile; the public link keeps working
+  hidden        Boolean   @default(false)
+  revokedAt     DateTime? @map("revoked_at") @db.Timestamptz
+  revokedBy     String?   @map("revoked_by") @db.Uuid
+  revokeReason  String?   @map("revoke_reason")
+
+  user          User  @relation("CertificateOwner", fields: [userId], references: [id])
+  track         Track @relation(fields: [trackId], references: [id], onDelete: Restrict)
+  revokedByUser User? @relation("CertificateRevokedBy", fields: [revokedBy], references: [id])
+
+  @@unique([userId, trackId])
+  @@index([issuedAt(sort: Desc)])
+  @@map("certificates")
 }
 
 model Submission {
