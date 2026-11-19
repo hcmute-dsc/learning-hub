@@ -112,6 +112,7 @@ export class ReviewsService {
         title: exercise.title,
         statementMd: exercise.statementMd,
         rubric,
+        mentorNotesMd: exercise.mentorNotesMd,
       },
       track: { slug: exercise.track.slug, title: exercise.track.title },
       earlierAttempts: earlierAttempts.map((a) =>

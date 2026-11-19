@@ -223,6 +223,7 @@ function parseExercise(
     tags: data.tags,
     hints: parseHints(ctx, exerciseDir),
     solutionMd: null, // filled from the checker repo by attachSolutions
+    mentorNotesMd: parseMentorNotes(ctx, exerciseDir),
     position,
     sourcePath: exercisePath,
   };
@@ -230,16 +231,37 @@ function parseExercise(
 }
 
 /**
- * Hash of an exercise. Empty hints and a missing solution are left out, so exercises
- * written before hints existed keep their hash and are not reported as changed.
+ * Hash of an exercise. Empty hints, a missing solution and missing mentor notes are left
+ * out, so exercises written before these existed keep their hash and are not reported as changed.
  */
 function exerciseHash(exercise: Omit<ExerciseNode, 'hash'> & { hash?: string }): string {
-  const { hash: _hash, hints, solutionMd, ...rest } = exercise;
+  const { hash: _hash, hints, solutionMd, mentorNotesMd, ...rest } = exercise;
   return contentHash({
     ...rest,
     ...(hints.length > 0 && { hints }),
     ...(solutionMd !== null && { solutionMd }),
+    ...(mentorNotesMd !== null && { mentorNotesMd }),
   });
+}
+
+/**
+ * Optional `mentor-notes.md` (§3.10): plain Markdown, no front matter. The content repo is
+ * public, so these notes are too; the API only hides them from the member UI.
+ */
+function parseMentorNotes(ctx: Context, exerciseDir: string): string | null {
+  const path = layout.mentorNotesFile(exerciseDir);
+  const text = ctx.files.get(path);
+  if (text === undefined) return null;
+  if (splitFrontMatter(text).data !== null) {
+    ctx.issues.push({ path, message: 'mentor-notes.md takes no front matter' });
+    return null;
+  }
+  if (!text.trim()) {
+    ctx.issues.push({ path, message: 'mentor-notes.md is empty; delete it or write the notes' });
+    return null;
+  }
+  checkMarkdown(path, text, ctx.issues);
+  return text.trim();
 }
 
 /** `hints/01.md`, `hints/02.md`… (§3.7). Numbered from 01 without gaps; front matter optional. */

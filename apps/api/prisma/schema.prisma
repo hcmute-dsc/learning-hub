@@ -238,6 +238,8 @@ model Exercise {
   hints            Json     @default("[]")
   /// Reference solution from the private checker repo (§3.8). Members only get it once they complete the exercise.
   solutionMd       String?  @map("solution_md")
+  /// mentor-notes.md (CONTENT-SPECIFICATION §3.10). Only the mentor review page returns it.
+  mentorNotesMd    String?  @map("mentor_notes_md")
   requiresReview   Boolean  @default(false) @map("requires_review")
   position         Int
   status           String   @default("active")

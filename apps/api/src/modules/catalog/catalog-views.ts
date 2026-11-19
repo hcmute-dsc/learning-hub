@@ -192,6 +192,7 @@ export interface ExerciseRow {
   spec: unknown;
   hints: unknown;
   solutionMd: string | null;
+  mentorNotesMd: string | null;
   requiresReview: boolean;
   contentVersionId: string;
   module: ModuleWithTrack;
@@ -211,6 +212,7 @@ export function toExerciseContext(exercise: ExerciseRow): ExerciseContext {
     spec: exercise.spec as Record<string, unknown>,
     hints: toStoredHints(exercise.hints),
     solutionMd: exercise.solutionMd,
+    mentorNotesMd: exercise.mentorNotesMd,
     requiresReview: exercise.requiresReview,
     contentVersionId: exercise.contentVersionId,
     track: {

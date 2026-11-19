@@ -657,7 +657,61 @@ describe('solutions', () => {
     const quiz = exerciseIndex(parseContent(example).tree).get(
       'git-github-basics/first-steps/git-basics-quiz',
     )!;
-    const { hash, hints: _h, solutionMd: _s, ...rest } = quiz;
+    const { hash, hints: _h, solutionMd: _s, mentorNotesMd: _n, ...rest } = quiz;
+    expect(hash).toBe(contentHash(rest));
+  });
+});
+
+// ------------------------------------------------------------------ mentor notes (§3.10)
+
+describe('mentor notes', () => {
+  const NOTES = `${GIT_MOD}/exercises/first-pull-request/mentor-notes.md`;
+  const firstPr = (result: ParseResult) =>
+    exerciseIndex(result.tree).get('git-github-basics/first-steps/first-pull-request')!;
+
+  it('reads mentor-notes.md, trimmed', () => {
+    const result = parseContent(example);
+    expect(result.issues).toEqual([]);
+    const notes = firstPr(result).mentorNotesMd;
+    expect(notes).toMatch(/^## Khi review/);
+    expect(notes).toBe(notes!.trim());
+  });
+
+  it('is null for exercises without the file', () => {
+    const result = parseContent(example);
+    expect(
+      exerciseIndex(result.tree).get('git-github-basics/first-steps/install-git')!.mentorNotesMd,
+    ).toBeNull();
+  });
+
+  it('rejects an empty file and front matter', () => {
+    expectIssue(
+      parseWith((files) => files.set(NOTES, '  \n')),
+      NOTES,
+      'mentor-notes.md is empty',
+    );
+    expectIssue(
+      parseWith((files) => files.set(NOTES, '---\naudience: mentor\n---\nText.')),
+      NOTES,
+      'no front matter',
+    );
+  });
+
+  it('applies the markdown rules to mentor notes', () => {
+    const result = parseWith((files) => files.set(NOTES, '<script>alert(1)</script>'));
+    expectIssue(result, NOTES, 'raw HTML/script');
+  });
+
+  it('changes the exercise hash when the notes change', () => {
+    const before = firstPr(parseContent(example)).hash;
+    const after = firstPr(parseWith((files) => edit(files, NOTES, 'ABOUT.md', 'INFO.md'))).hash;
+    expect(after).not.toBe(before);
+  });
+
+  it('keeps the hash of an exercise without notes as it was before notes existed', () => {
+    const without = parseWith((files) => files.delete(NOTES));
+    const exercise = firstPr(without);
+    const { hash, mentorNotesMd: _n, hints: _h, solutionMd: _s, ...rest } = exercise;
     expect(hash).toBe(contentHash(rest));
   });
 });

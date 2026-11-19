@@ -8,6 +8,7 @@
  *   tracks/<track>/modules/<module>/exercises/<exercise>/exercise.yaml
  *   tracks/<track>/modules/<module>/exercises/<exercise>/statement.md
  *   tracks/<track>/modules/<module>/exercises/<exercise>/hints/NN.md
+ *   tracks/<track>/modules/<module>/exercises/<exercise>/mentor-notes.md   (optional, mentors only)
  *
  * Reference solutions are NOT in the content repo (it is public). They live in the
  * private checker repo (§3.8):
@@ -24,6 +25,8 @@ export const layout = {
   exerciseFile: (exerciseDir: string) => `${exerciseDir}/exercise.yaml`,
   statementFile: (exerciseDir: string) => `${exerciseDir}/statement.md`,
   hintsDir: (exerciseDir: string) => `${exerciseDir}/hints/`,
+  /** Shown to mentors and admins on the review page only. Public in the repo (§3.10). */
+  mentorNotesFile: (exerciseDir: string) => `${exerciseDir}/mentor-notes.md`,
   /** In the checker repo, not the content repo. */
   solutionFile: (trackSlug: string, exerciseSlug: string) =>
     `exercises/${trackSlug}/${exerciseSlug}/solution.md`,
