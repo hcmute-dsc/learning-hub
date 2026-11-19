@@ -3,6 +3,7 @@
 import type { CSSProperties } from 'react';
 import type { QuizQuestionView, QuizResult } from '@hub/shared';
 import { CheckIcon } from './CheckIcon';
+import { InlineText } from './InlineText';
 import {
   describeCorrectAnswer,
   isChosen,
@@ -73,7 +74,9 @@ export function QuizQuestion({
         <QuestionNumber number={number} feedback={feedback} />
         <span className="min-w-0 pt-0.5 font-medium">
           <span className="sr-only">Câu {number}. </span>
-          <span className="whitespace-pre-wrap">{question.prompt}</span>
+          <span className="whitespace-pre-wrap">
+            <InlineText text={question.prompt} />
+          </span>
           {question.type === 'multiple' && (
             <span className="muted mt-0.5 block text-sm font-normal">Chọn tất cả đáp án đúng</span>
           )}
@@ -176,7 +179,7 @@ function OptionRow({
       <Indicator kind={kind} checked={checked} state={state} />
       <span className="muted mt-px font-mono text-sm">{letter}.</span>
       <span className="min-w-0 flex-1">
-        {text}
+        <InlineText text={text} />
         {note && (
           <span className="mt-0.5 block text-xs font-semibold tracking-wide uppercase">{note}</span>
         )}
@@ -275,10 +278,14 @@ function QuestionFeedback({
       </p>
       <p className="mt-1">
         <span className="muted">Đáp án đúng:</span>{' '}
-        {describeCorrectAnswer(question, feedback.correctAnswer)}
+        <InlineText text={describeCorrectAnswer(question, feedback.correctAnswer)} />
       </p>
-      {/* Plain text on purpose: the Markdown renderer would add ~70 kB to this client bundle. */}
-      {feedback.explanation && <p className="mt-2 whitespace-pre-wrap">{feedback.explanation}</p>}
+      {/* Inline code only: the Markdown renderer would add ~70 kB to this client bundle. */}
+      {feedback.explanation && (
+        <p className="mt-2 whitespace-pre-wrap">
+          <InlineText text={feedback.explanation} />
+        </p>
+      )}
     </div>
   );
 }

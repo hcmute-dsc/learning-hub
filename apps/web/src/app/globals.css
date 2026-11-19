@@ -176,7 +176,9 @@ main:has(> .page-wide) {
   padding-left: 1em;
   color: var(--muted);
 }
-.markdown code {
+/* `.inline-code`: `code` in quiz text, which is not rendered as Markdown (InlineText.tsx). */
+.markdown code,
+.inline-code {
   font-family: var(--font-mono);
   font-size: 0.9em;
   background: var(--code-bg);

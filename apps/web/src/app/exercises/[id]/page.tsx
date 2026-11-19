@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import type { ExerciseView, SubmissionView } from '@hub/shared';
 import { AttemptHistory } from '@/components/exercise/AttemptHistory';
 import { ExerciseActions } from '@/components/exercise/ExerciseActions';
@@ -29,6 +29,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
  * outline on the left (as on the lesson page), then the statement and the "Làm bài"
  * panel side by side on extra-wide screens, the panel staying in view while the
  * statement scrolls. Smaller screens stack them, statement first.
+ *
+ * A quiz is the exception: its questions are the content and its statement is a line
+ * or two, so it gets one centered column (learning-hub#65) instead of a narrow panel
+ * with its own scroll bar beside an almost empty statement.
  */
 export default async function ExercisePage({ params }: Params) {
   const { id } = await params;
@@ -45,6 +49,29 @@ export default async function ExercisePage({ params }: Params) {
     loadTrackProgress(exercise.track.slug),
   ]);
   const sidebar = <TrackSidebar track={track} progress={progress} currentId={exercise.id} />;
+
+  const statement = (
+    <section aria-labelledby="statement-title" className="surface rounded-2xl p-5 sm:p-7">
+      <PanelTitle id="statement-title" icon="📄">
+        Đề bài
+      </PanelTitle>
+      {/* The API sends no source path for statements yet, so relative links stay as written. */}
+      <Markdown source={exercise.statementMd} />
+    </section>
+  );
+  const actions = (
+    <section aria-labelledby="actions-title" className="surface rounded-2xl p-5">
+      {/* Accent bar as an element: `.surface` sets the whole border, so a
+          border-t utility would lose to it. */}
+      <div aria-hidden className="-mx-5 -mt-5 mb-5 h-1 rounded-t-2xl bg-brand-500" />
+      <PanelTitle id="actions-title" icon="✍️">
+        Làm bài
+      </PanelTitle>
+      <ExerciseActions exercise={exercise} />
+    </section>
+  );
+  const hints = <HintsPanel exercise={exercise} />;
+  const history = <AttemptHistory submissions={submissions} />;
 
   return (
     // Wide page (see `.page-wide` in globals.css). The track outline gets its own column
@@ -69,37 +96,16 @@ export default async function ExercisePage({ params }: Params) {
           <div className="mt-3">{sidebar}</div>
         </details>
 
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start">
-          {/* Statement, then hints and the reference solution (PRD F11) under it. */}
-          <div className="motion-fade-up min-w-0 space-y-6" style={{ '--i': 1 } as CSSProperties}>
-            <section aria-labelledby="statement-title" className="surface rounded-2xl p-5 sm:p-7">
-              <PanelTitle id="statement-title" icon="📄">
-                Đề bài
-              </PanelTitle>
-              {/* The API sends no source path for statements yet, so relative links stay as written. */}
-              <Markdown source={exercise.statementMd} />
-            </section>
-            <HintsPanel exercise={exercise} />
-          </div>
-
-          {/* Sticky on xl with its own scroll, so "Nộp bài" stays reachable beside a long
-              statement. The small padding keeps focus outlines from being clipped. */}
-          <div
-            className="motion-fade-up space-y-6 xl:sticky xl:top-20 xl:-m-1 xl:max-h-[calc(100vh-6rem)] xl:overflow-y-auto xl:overscroll-contain xl:p-1"
-            style={{ '--i': 2 } as CSSProperties}
-          >
-            <section aria-labelledby="actions-title" className="surface rounded-2xl p-5">
-              {/* Accent bar as an element: `.surface` sets the whole border, so a
-                  border-t utility would lose to it. */}
-              <div aria-hidden className="-mx-5 -mt-5 mb-5 h-1 rounded-t-2xl bg-brand-500" />
-              <PanelTitle id="actions-title" icon="✍️">
-                Làm bài
-              </PanelTitle>
-              <ExerciseActions exercise={exercise} />
-            </section>
-            <AttemptHistory submissions={submissions} />
-          </div>
-        </div>
+        {exercise.type === 'quiz' ? (
+          <QuizLayout statement={statement} hints={hints} actions={actions} history={history} />
+        ) : (
+          <SideBySideLayout
+            statement={statement}
+            hints={hints}
+            actions={actions}
+            history={history}
+          />
+        )}
       </article>
     </div>
   );
@@ -111,5 +117,56 @@ function PanelTitle({ id, icon, children }: { id: string; icon: string; children
       <span aria-hidden>{icon}</span>
       {children}
     </h2>
+  );
+}
+
+type LayoutParts = {
+  statement: ReactNode;
+  /** Renders nothing when the exercise has no hints and no solution */
+  hints: ReactNode;
+  actions: ReactNode;
+  history: ReactNode;
+};
+
+/** Code, project and self-check: statement on the left, "Làm bài" panel on the right. */
+function SideBySideLayout({ statement, hints, actions, history }: LayoutParts) {
+  return (
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start">
+      {/* Statement, then hints and the reference solution (PRD F11) under it. */}
+      <div className="motion-fade-up min-w-0 space-y-6" style={{ '--i': 1 } as CSSProperties}>
+        {statement}
+        {hints}
+      </div>
+
+      {/* Sticky on xl with its own scroll, so "Nộp bài" stays reachable beside a long
+          statement. The small padding keeps focus outlines from being clipped. */}
+      <div
+        className="motion-fade-up space-y-6 xl:sticky xl:top-20 xl:-m-1 xl:max-h-[calc(100vh-6rem)] xl:overflow-y-auto xl:overscroll-contain xl:p-1"
+        style={{ '--i': 2 } as CSSProperties}
+      >
+        {actions}
+        {history}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Quiz: one column of reading width, statement then questions. No inner scroll box, so
+ * the page scrolls and the "Nộp bài" bar (sticky in QuizForm) stays at the bottom of
+ * the screen.
+ */
+function QuizLayout({ statement, hints, actions, history }: LayoutParts) {
+  return (
+    <div className="mx-auto w-full max-w-3xl space-y-6">
+      <div className="motion-fade-up space-y-6" style={{ '--i': 1 } as CSSProperties}>
+        {statement}
+        {hints}
+      </div>
+      <div className="motion-fade-up space-y-6" style={{ '--i': 2 } as CSSProperties}>
+        {actions}
+        {history}
+      </div>
+    </div>
   );
 }
