@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { Achievements } from '@hub/shared';
-import { BadgeGrid } from './BadgeGrid';
+import { BadgeList } from './BadgeList';
 import { badgeCards, streakMessage } from './achievements';
 
 /**
@@ -9,6 +9,8 @@ import { badgeCards, streakMessage } from './achievements';
  */
 export function AchievementsCard({ achievements }: { achievements: Achievements }) {
   const { streak } = achievements;
+  const cards = badgeCards(achievements.badges, true);
+  const earned = cards.filter((card) => card.awardedAt !== null).length;
   return (
     <section aria-labelledby="achievements-heading" className="surface rounded-2xl p-5">
       <div className="flex items-baseline justify-between gap-3">
@@ -30,9 +32,14 @@ export function AchievementsCard({ achievements }: { achievements: Achievements 
           <p className="muted text-xs">{streakMessage(streak)}</p>
         </div>
       </div>
-      <h3 className="sr-only">Huy hiệu</h3>
-      <div className="mt-4">
-        <BadgeGrid cards={badgeCards(achievements.badges, true)} />
+      <div className="mt-5 flex items-baseline justify-between">
+        <h3 className="font-semibold">Huy hiệu</h3>
+        <p className="muted text-xs tabular-nums">
+          Đã đạt {earned}/{cards.length}
+        </p>
+      </div>
+      <div className="mt-2">
+        <BadgeList cards={cards} />
       </div>
     </section>
   );
