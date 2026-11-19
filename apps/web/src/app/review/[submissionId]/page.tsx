@@ -67,6 +67,19 @@ export default async function ReviewSubmissionPage({ params }: Params) {
             </div>
           </details>
 
+          {exercise.mentorNotesMd && (
+            <details open className="surface rounded-2xl p-5">
+              <summary className="cursor-pointer font-semibold">Ghi chú cho mentor</summary>
+              <p className="muted mt-1 text-xs">
+                Từ <code>mentor-notes.md</code> của bài tập. Thành viên không thấy ghi chú này trên
+                hub.
+              </p>
+              <div className="mt-4">
+                <Markdown source={exercise.mentorNotesMd} />
+              </div>
+            </details>
+          )}
+
           {page.earlierAttempts.length > 0 && (
             <section aria-labelledby="earlier-title" className="surface rounded-2xl p-5">
               <h2 id="earlier-title" className="font-semibold">
