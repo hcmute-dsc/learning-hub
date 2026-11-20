@@ -30,7 +30,7 @@ const WAYS: CardItem[] = [
     icon: '💻',
     title: 'Đóng góp code',
     description:
-      'Learning Hub là mã nguồn mở của CLB (NestJS + Next.js). Đọc hướng dẫn, rồi chọn một issue "good first issue".',
+      'Learning Hub là mã nguồn mở của CLB (NestJS + Next.js). Chọn một issue "good first issue": việc nhỏ, có hướng dẫn từng bước. Bình luận trong issue để nhận việc, rồi đọc CONTRIBUTING.md trước khi mở pull request.',
     link: { href: CONTRIBUTE_LINKS.goodFirstIssues, label: 'Việc cho người mới' },
   },
   {
