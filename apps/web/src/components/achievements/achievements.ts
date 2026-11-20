@@ -10,6 +10,32 @@ export interface BadgeCard {
   awardedAt: string | null;
 }
 
+/** The two colours of a badge's medal gradient, light top to deep bottom. */
+export interface BadgeTone {
+  from: string;
+  to: string;
+}
+
+/**
+ * One colour per badge, so the medals are easy to tell apart at a glance. The colour is
+ * decoration only: every badge also has its title and date in text. A new badge without
+ * an entry here gets the club orange; add it here to give it its own colour.
+ */
+export const BADGE_TONES: Record<string, BadgeTone> = {
+  first_lesson: { from: '#7dd3fc', to: '#2563eb' }, // sky → blue
+  first_exercise: { from: '#fde68a', to: '#d97706' }, // gold
+  first_module: { from: '#6ee7b7', to: '#059669' }, // emerald
+  first_track: { from: '#c4b5fd', to: '#7c3aed' }, // violet
+  exercises_10: { from: '#fda4af', to: '#e11d48' }, // rose
+  streak_7: { from: '#fdba74', to: '#dc2626' }, // fire
+};
+
+const DEFAULT_TONE: BadgeTone = { from: '#f9a27f', to: '#f0622d' };
+
+export function badgeTone(code: string): BadgeTone {
+  return BADGE_TONES[code] ?? DEFAULT_TONE;
+}
+
 /**
  * Badges to draw, in the order of BADGES. With `includeLocked` (the member's own
  * dashboard) badges not earned yet are listed too, so the member sees what comes next;
