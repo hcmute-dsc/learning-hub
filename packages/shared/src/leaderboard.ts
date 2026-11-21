@@ -13,18 +13,27 @@ export const LEADERBOARD_TOP = 10;
 /** A term id: "2026-1" = HK1 2026–2027, "2026-2" = HK2 2026–2027, "2026-3" = summer 2027. */
 export const TERM_ID_PATTERN = /^\d{4}-[123]$/;
 
-export interface LeaderboardTerm {
-  /** e.g. "2026-1" (see TERM_ID_PATTERN) */
+/** An ISO week id in Vietnam time: "2026-W47" (Monday → Monday, learning-hub#88). */
+export const WEEK_ID_PATTERN = /^\d{4}-W\d{2}$/;
+
+/** The board covers one term (default) or one week, never all time (ADR-08). */
+export const LEADERBOARD_PERIODS = ['term', 'week'] as const;
+export type LeaderboardPeriod = (typeof LEADERBOARD_PERIODS)[number];
+
+/** The term or week a board covers. */
+export interface LeaderboardRange {
+  period: LeaderboardPeriod;
+  /** "2026-1" (TERM_ID_PATTERN) or "2026-W47" (WEEK_ID_PATTERN) */
   id: string;
-  /** e.g. "Học kỳ 1, 2026–2027" */
+  /** e.g. "Học kỳ 1, 2026–2027" or "Tuần 47 (16/11 – 22/11/2026)" */
   label: string;
-  /** first moment of the term, ISO */
+  /** first moment, ISO */
   startsAt: string;
-  /** first moment after the term, ISO (exclusive) */
+  /** first moment after it, ISO (exclusive) */
   endsAt: string;
-  /** the term before, for the "previous term" link; null for none */
+  /** the term/week before; null for none */
   previousId: string | null;
-  /** the term after, or null when this is the current term (no future boards) */
+  /** the term/week after, or null when this is the current one (no future boards) */
   nextId: string | null;
 }
 
@@ -38,14 +47,20 @@ export interface LeaderboardRow {
   completed: number;
 }
 
-/** GET /api/v1/leaderboard?term=<id> → { data: Leaderboard } */
+/**
+ * GET /api/v1/leaderboard → { data: Leaderboard }
+ * Query (all optional): `period` = term | week; `term` = term id (period term);
+ * `week` = week id (period week); `track` = track slug (count only that track's exercises).
+ */
 export interface Leaderboard {
-  term: LeaderboardTerm;
+  range: LeaderboardRange;
+  /** the track filter, or null for every track */
+  track: { slug: string; title: string } | null;
   /** the viewer's own `leaderboardOptIn` */
   optedIn: boolean;
   /** top LEADERBOARD_TOP rows, best first */
   top: LeaderboardRow[];
-  /** the viewer's row when opted in and scoring in the term, else null */
+  /** the viewer's row when opted in and scoring in the period, else null */
   me: LeaderboardRow | null;
   /** score of one completed exercise by kind, so the page can explain it */
   weights: { graded: number; selfCheck: number };

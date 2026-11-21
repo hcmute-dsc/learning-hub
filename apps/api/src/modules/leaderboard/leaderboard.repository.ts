@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import type { MemberCounts } from './ranking';
 
@@ -25,8 +26,12 @@ export class LeaderboardRepository {
    * `passed` when the exercise needs no review. The completion moment is the approving
    * review's time when there is one, else the submission's last update (when it passed).
    * Redoing an exercise in a later term does not count again.
+   * `trackId` (learning-hub#88) keeps only that track's exercises.
    */
-  async countsBetween(from: Date, to: Date): Promise<MemberCounts[]> {
+  async countsBetween(from: Date, to: Date, trackId?: string): Promise<MemberCounts[]> {
+    const trackFilter = trackId
+      ? Prisma.sql`AND e.module_id IN (SELECT m.id FROM modules m WHERE m.track_id = ${trackId}::uuid)`
+      : Prisma.empty;
     const rows = await this.prisma.$queryRaw<CountRow[]>`
       WITH firsts AS (
         SELECT s.user_id, s.exercise_id, e.type,
@@ -42,6 +47,7 @@ export class LeaderboardRepository {
            AND u.status = 'active'
            AND u.deleted_at IS NULL
            AND (s.status = 'approved' OR (s.status = 'passed' AND NOT e.requires_review))
+           ${trackFilter}
          GROUP BY s.user_id, s.exercise_id, e.type)
       SELECT u.id, u.github_login, u.display_name, u.avatar_url,
              COUNT(*) FILTER (WHERE f.type <> 'self_check') AS graded,
@@ -60,6 +66,14 @@ export class LeaderboardRepository {
       graded: Number(r.graded),
       selfCheck: Number(r.self_check),
     }));
+  }
+
+  /** An active (not archived) track by slug, for the track filter; null when there is none. */
+  async trackBySlug(slug: string): Promise<{ id: string; slug: string; title: string } | null> {
+    return this.prisma.track.findFirst({
+      where: { slug, status: 'active' },
+      select: { id: true, slug: true, title: true },
+    });
   }
 
   /** The member's own opt-in (false for an unknown id). */
