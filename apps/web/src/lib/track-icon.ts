@@ -15,6 +15,7 @@ const LABEL_BY_TAG: Record<string, string> = {
   html: 'HTML',
   css: 'CSS',
   java: 'Java',
+  discord: 'DA', // Discord Automation
 };
 
 export function trackIconLabel(track: { title: string; tags?: string[] }): string {
