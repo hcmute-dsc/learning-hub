@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Leaderboard, LeaderboardRow } from '@hub/shared';
-import { avatarSmall, shareCardData } from './share-card';
+import { avatarSmall, cardName, shareCardData } from './share-card';
 
 const row = (id: string, rank: number): LeaderboardRow => ({
   rank,
@@ -66,5 +66,15 @@ describe('share card data', () => {
       'https://avatars.githubusercontent.com/u/1?v=4&s=96',
     );
     expect(avatarSmall('https://example.org/a.png', 96)).toBe('https://example.org/a.png');
+  });
+
+  it('keeps the whole name, however long (learning-hub#92)', () => {
+    // was cut to "Nguyễn Huỳnh Minh…" on the wide image
+    expect(cardName('Nguyễn Huỳnh Minh Tiến')).toBe('Nguyễn Huỳnh Minh Tiến');
+    const long = 'Tôn Nữ Hoàng Thị Ngọc Bích Phương Thảo Nguyên';
+    expect(cardName(long)).toBe(long);
+    expect(cardName('  An   Bình ')).toBe('An Bình');
+    // only data longer than the profile limit (60) is ever shortened
+    expect(cardName('x'.repeat(80))).toHaveLength(60);
   });
 });

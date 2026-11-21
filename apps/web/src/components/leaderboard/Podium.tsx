@@ -43,7 +43,7 @@ export function Podium({ rows, meId }: { rows: LeaderboardRow[]; meId: string | 
               </span>
               <Link
                 href={`/u/${row.user.githubLogin}`}
-                className="mt-2 line-clamp-2 max-w-full text-center text-sm font-semibold break-words hover:underline sm:text-base"
+                className="mt-2 max-w-full text-center text-sm font-semibold break-words hover:underline sm:text-base"
               >
                 {row.user.displayName}
               </Link>

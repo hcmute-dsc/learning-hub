@@ -27,12 +27,12 @@ export function RankList({
           <MemberAvatar src={row.user.avatarUrl} name={row.user.displayName} size={36} />
           <Link
             href={`/u/${row.user.githubLogin}`}
-            className="min-w-0 flex-1 truncate font-medium hover:underline"
+            className="min-w-0 flex-1 font-medium break-words hover:underline"
           >
             {row.user.displayName}
           </Link>
           <span className="muted hidden text-sm tabular-nums sm:inline">{row.completed} bài</span>
-          <span className="w-20 shrink-0 text-right font-semibold tabular-nums">
+          <span className="shrink-0 text-right font-semibold whitespace-nowrap tabular-nums">
             {row.score} điểm
           </span>
         </li>
