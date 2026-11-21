@@ -15,12 +15,14 @@ export function EnrollmentCard({ track }: { track: TrackProgress }) {
   return (
     <Link
       href={`/tracks/${track.slug}`}
-      className="group flex items-center gap-3 p-4 transition-colors hover:bg-[var(--code-bg)]"
+      className="group/card flex items-center gap-3 p-4 transition-colors hover:bg-[var(--code-bg)]"
     >
       {/* TrackProgress has no tags, so the label comes from the title. */}
       <HexIcon label={trackIconLabel({ title: track.title })} size={48} />
       <span className="min-w-0 flex-1">
-        <span className="block truncate font-semibold group-hover:underline">{track.title}</span>
+        <span className="block truncate font-semibold group-hover/card:underline">
+          {track.title}
+        </span>
         <span className="mt-1.5 block">
           <ProgressBar percent={track.percent} label={`Tiến độ lộ trình ${track.title}`} />
         </span>
@@ -32,7 +34,7 @@ export function EnrollmentCard({ track }: { track: TrackProgress }) {
       </span>
       <span
         aria-hidden
-        className="muted text-xl transition-transform group-hover:translate-x-1 group-hover:text-brand-600"
+        className="muted text-xl transition-transform group-hover/card:translate-x-1 group-hover/card:text-brand-600"
       >
         ›
       </span>

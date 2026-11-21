@@ -54,7 +54,7 @@ export function HintsPanel({ exercise }: { exercise: ExerciseView }) {
       {solution && (
         <div className={hints.total > 0 ? 'mt-6 border-t border-[var(--border)] pt-5' : 'mt-3'}>
           {solution.bodyMd !== null ? (
-            <details className="group">
+            <details>
               <summary className="cursor-pointer font-semibold">
                 <span aria-hidden>✅ </span>
                 Xem lời giải tham khảo

@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import type { ItemTone } from './track-items';
-import { ROW_CLASS, ROW_TITLE_CLASS } from './item-row-classes';
 import { TONE_DOT_CLASS, ToneIcon } from './tone';
 
 /**
@@ -29,7 +28,11 @@ export function ItemRow({
 }) {
   return (
     <li>
-      <Link prefetch={false} href={href} className={ROW_CLASS}>
+      <Link
+        prefetch={false}
+        href={href}
+        className="lift group/row flex items-center gap-3 rounded-xl border border-[var(--border)] px-3 py-2.5 sm:px-4"
+      >
         <span
           aria-hidden
           className={`grid h-6 w-6 shrink-0 place-items-center border-2 ${
@@ -40,7 +43,7 @@ export function ItemRow({
         </span>
 
         <span className="min-w-0 flex-1">
-          <span className={ROW_TITLE_CLASS}>
+          <span className="block font-medium leading-snug group-hover/row:text-brand-600">
             <span className="sr-only">{kind === 'lesson' ? 'Bài học' : 'Bài tập'}: </span>
             {title}
           </span>
