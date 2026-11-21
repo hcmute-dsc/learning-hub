@@ -128,10 +128,17 @@ export class UsersService {
   }
 
   /** Personal settings (/settings). Fields left out keep their value. */
-  async updateSettings(userId: string, input: { theme?: Theme; showAchievements?: boolean }) {
+  async updateSettings(
+    userId: string,
+    input: { theme?: Theme; showAchievements?: boolean; leaderboardOptIn?: boolean },
+  ) {
     await this.prisma.user.update({
       where: { id: userId },
-      data: { theme: input.theme, showAchievements: input.showAchievements },
+      data: {
+        theme: input.theme,
+        showAchievements: input.showAchievements,
+        leaderboardOptIn: input.leaderboardOptIn,
+      },
     });
     return this.getMe(userId);
   }
@@ -389,6 +396,7 @@ type UserWithRoles = {
   bio: string | null;
   theme: string;
   showAchievements: boolean;
+  leaderboardOptIn: boolean;
   status: string;
   roles: { role: { code: string } }[];
 };
@@ -404,5 +412,6 @@ function toMe(user: UserWithRoles): Me {
     bio: user.bio,
     theme: user.theme as Theme,
     showAchievements: user.showAchievements,
+    leaderboardOptIn: user.leaderboardOptIn,
   };
 }

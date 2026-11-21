@@ -44,6 +44,12 @@ export const envSchema = z.object({
   SOLUTIONS_GITHUB_TOKEN: z.string().optional(),
   /** Target time for a mentor review, shown in the queue (E7; per semester, BACKEND-DESIGN). */
   REVIEW_TARGET_HOURS: z.coerce.number().int().min(1).max(720).default(72),
+  /**
+   * Leaderboard score of one completed exercise (E14, ADR-08): graded = passed
+   * automatically or approved by a mentor; self_check counts less. Set per term.
+   */
+  LEADERBOARD_WEIGHT_GRADED: z.coerce.number().int().min(1).max(100).default(3),
+  LEADERBOARD_WEIGHT_SELF_CHECK: z.coerce.number().int().min(0).max(100).default(1),
   /** Discord channel webhook for club notifications (E9). Empty = notifications off. */
   DISCORD_WEBHOOK_URL: z
     .string()

@@ -36,6 +36,7 @@ checker-example/               stand-in for the private checker repo: reference 
 | `audit`         | writes `audit_logs` from domain events; `AuditReader` serves the admin "Nhật ký" page (names via `UsersService.refsByIds`)                                     | `audit.listener.ts`, `audit.reader.ts`         |
 | `overview`      | admin `/admin` overview: asks `users`, `content`, `submissions` and `audit` for counts only (no names or emails)                                               | `overview.ts`, `overview.service.ts`           |
 | `notifications` | Discord messages and server-error alerts; the in-app bell and the email digest: domain events → `outbox_events` → `OutboxWorker` → `notifications` rows / SMTP | `inbox.listener.ts`, `outbox/outbox.worker.ts` |
+| `leaderboard`   | opt-in term leaderboard (ADR-08): counts completed exercises on the fly (`ranking.ts`, `term.ts`), stores nothing; imports no business module                  | `ranking.ts`, `leaderboard.repository.ts`      |
 
 ## Rules that keep the code maintainable
 

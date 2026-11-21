@@ -12,6 +12,13 @@ describe('settingsUpdateSchema', () => {
     );
   });
 
+  it('accepts the leaderboard opt-in alone (E14)', () => {
+    expect(settingsUpdateSchema.parse({ leaderboardOptIn: true })).toEqual({
+      leaderboardOptIn: true,
+    });
+    expect(settingsUpdateSchema.safeParse({ leaderboardOptIn: 'yes' }).success).toBe(false);
+  });
+
   it('rejects an empty body, unknown fields and wrong types', () => {
     expect(settingsUpdateSchema.safeParse({}).success).toBe(false);
     expect(settingsUpdateSchema.safeParse({ leaderboard: true }).success).toBe(false);

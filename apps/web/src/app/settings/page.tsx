@@ -4,6 +4,7 @@ import type { Me, MyCertificate, NotificationSettings } from '@hub/shared';
 import { CertificateVisibility } from '@/components/certificate/CertificateVisibility';
 import { AchievementsToggle } from '@/components/settings/AchievementsToggle';
 import { EmailDigestToggle } from '@/components/settings/EmailDigestToggle';
+import { LeaderboardToggle } from '@/components/settings/LeaderboardToggle';
 import { ProfileForm } from '@/components/settings/ProfileForm';
 import { ThemePicker } from '@/components/settings/ThemePicker';
 import { api } from '@/lib/api';
@@ -77,10 +78,21 @@ export default async function SettingsPage() {
         <h2 id="achievements-heading" className="text-lg font-semibold">
           Huy hiệu và chuỗi ngày học
         </h2>
-        <p className="muted mt-1 text-sm">
-          Một chút động lực nhẹ nhàng, không điểm số, không xếp hạng.
-        </p>
+        <p className="muted mt-1 text-sm">Một chút động lực nhẹ nhàng, không điểm số.</p>
         <AchievementsToggle show={me.showAchievements} />
+      </section>
+
+      <section aria-labelledby="leaderboard-heading" className="surface rounded-2xl p-5 sm:p-6">
+        <h2 id="leaderboard-heading" className="text-lg font-semibold">
+          Bảng xếp hạng
+        </h2>
+        <p className="muted mt-1 text-sm">
+          <Link href="/leaderboard" className="text-brand-600 hover:underline">
+            Bảng xếp hạng học kỳ
+          </Link>{' '}
+          chỉ hiện người tự bật, mặc định tắt. Không tính tốc độ, sang kỳ mới bắt đầu lại.
+        </p>
+        <LeaderboardToggle optedIn={me.leaderboardOptIn} />
       </section>
 
       <section aria-labelledby="notify-heading" className="surface rounded-2xl p-5 sm:p-6">

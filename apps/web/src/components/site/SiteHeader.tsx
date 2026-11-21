@@ -11,6 +11,7 @@ import { NavLink } from './NavLink';
 const NAV = [
   { href: '/dashboard', label: 'Bảng điều khiển', phone: false },
   { href: '/tracks', label: 'Lộ trình', phone: true },
+  { href: '/leaderboard', label: 'Xếp hạng', phone: false },
 ];
 
 /** Mentor review queue (E7): mentors and admins; the page and API check roles again. */
