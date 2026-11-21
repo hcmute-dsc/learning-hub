@@ -27,6 +27,8 @@ model User {
   theme            String    @default("system")
   /// false hides badges and the streak on the dashboard and the profile (F12)
   showAchievements Boolean   @default(true) @map("show_achievements")
+  /// true shows the member on the term leaderboard (E14, ADR-08). Off by default.
+  leaderboardOptIn Boolean   @default(false) @map("leaderboard_opt_in")
   /// pending | active | suspended
   status           String    @default("pending")
   lastLoginAt      DateTime? @map("last_login_at") @db.Timestamptz

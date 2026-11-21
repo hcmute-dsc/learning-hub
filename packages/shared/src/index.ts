@@ -116,6 +116,8 @@ export const meSchema = z.object({
   theme: z.enum(['system', 'light', 'dark']),
   /** false hides badges and the streak everywhere (F12, /settings) */
   showAchievements: z.boolean(),
+  /** true shows the member on the term leaderboard (E14, ADR-08); off by default */
+  leaderboardOptIn: z.boolean(),
 });
 export type Me = z.infer<typeof meSchema>;
 
@@ -126,3 +128,4 @@ export * from './review';
 export * from './achievements';
 export * from './notifications';
 export * from './certificate';
+export * from './leaderboard';

@@ -32,11 +32,16 @@ export type ProfileUpdateInput = z.input<typeof profileUpdateSchema>;
 /**
  * PUT /api/v1/me/settings → { data: Me }. Send only what changed; at least one field.
  * showAchievements: false hides badges and the streak on the dashboard and the profile (F12).
+ * leaderboardOptIn: true shows the member on the term leaderboard (E14); false removes them at once.
  */
 export const settingsUpdateSchema = z
-  .object({ theme: z.enum(THEMES).optional(), showAchievements: z.boolean().optional() })
+  .object({
+    theme: z.enum(THEMES).optional(),
+    showAchievements: z.boolean().optional(),
+    leaderboardOptIn: z.boolean().optional(),
+  })
   .strict()
-  .refine((input) => input.theme !== undefined || input.showAchievements !== undefined, {
+  .refine((input) => Object.values(input).some((v) => v !== undefined), {
     message: 'Nothing to update',
   });
 export type SettingsUpdateInput = z.infer<typeof settingsUpdateSchema>;
