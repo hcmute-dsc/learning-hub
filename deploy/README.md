@@ -445,6 +445,18 @@ Lưu, rồi **Actions → Deploy → Run workflow** để API đọc lại `.env
 | "đã được một thành viên khác kết nối"          | tài khoản Discord đó đang gắn với tài khoản khác; người kia huỷ kết nối trước                              |
 | Thứ Hai không có bài                           | tuần trước không ai bật bảng xếp hạng có bài hoàn thành, hoặc `DISCORD_WEBHOOK_URL` trống; xem bảng ở trên |
 
+**Đăng ngay và cập nhật bài (admin, learning-hub#83).** **Quản trị → Bảng xếp hạng** cho biết bài của tuần trước đã đăng chưa và bảng tính lại lúc này. Không cần cấu hình thêm gì ngoài `DISCORD_WEBHOOK_URL`.
+
+- **Đăng ngay**: đăng bài của tuần trước luôn, không chờ thứ Hai (có hỏi xác nhận vì bài sẽ tag thành viên). Dùng chung khoá `leaderboard-week:<YYYY-Www>` với job, nên tuần đó chỉ có 1 bài: bấm lại thì bị từ chối, job sáng thứ Hai cũng bỏ qua.
+- **Cập nhật**: tính lại bảng (ví dụ mentor duyệt bài muộn) rồi **sửa chính tin cũ** trên Discord (`PATCH` webhook message, Discord ghi "(đã chỉnh sửa)"). Sửa tin không tag lại ai.
+- API lưu id tin Discord của từng tuần trong bảng `leaderboard_week_posts` (đăng bằng `?wait=true`). Ai đó xoá tin trên Discord thì "Cập nhật" báo "Bài trên Discord đã bị xoá" và trang hiện lại nút **Đăng ngay**.
+- Discord lỗi lúc bấm Đăng ngay: bài vào hàng đợi `outbox_events` và tự thử lại; trang hiện "Đang chờ đăng".
+- Mỗi lần đăng tay và cập nhật được ghi vào **Nhật ký** ("Đăng bảng xếp hạng tuần", "Cập nhật bảng xếp hạng tuần"). Chỉ admin dùng được.
+
+```bash
+docker compose -f docker-compose.prod.yml exec -T db psql -U hub -d learning_hub -c   "select week_id, discord_message_id, posted_at, updated_at from leaderboard_week_posts order by week_id desc limit 5"
+```
+
 ---
 
 ## Việc thường ngày

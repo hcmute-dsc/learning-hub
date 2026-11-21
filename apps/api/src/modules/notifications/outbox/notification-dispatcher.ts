@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { DomainError } from '../../../common/errors';
 import { CatalogReader } from '../../catalog/catalog.reader';
 import { UsersService } from '../../users/users.service';
@@ -10,6 +10,7 @@ import {
 } from '../inbox/inbox-messages';
 import { InboxService } from '../inbox/inbox.service';
 import { CLUB_POSTER, type ClubPoster } from '../ports/notification-channel';
+import { WeeklyLeaderboardService } from '../weekly-leaderboard/weekly-leaderboard.service';
 import type { WeeklyPost } from '../weekly-leaderboard/weekly-post';
 import {
   OutboxTypes,
@@ -26,12 +27,15 @@ import {
  */
 @Injectable()
 export class NotificationDispatcher {
+  private readonly logger = new Logger(NotificationDispatcher.name);
+
   constructor(
     private readonly catalog: CatalogReader,
     private readonly users: UsersService,
     private readonly inbox: InboxService,
     private readonly digest: DigestService,
     @Inject(CLUB_POSTER) private readonly poster: ClubPoster,
+    private readonly weeklyLeaderboard: WeeklyLeaderboardService,
   ) {}
 
   async dispatch(eventId: bigint, type: string, payload: unknown): Promise<void> {
@@ -86,10 +90,15 @@ export class NotificationDispatcher {
       case OutboxTypes.LeaderboardWeek: {
         // Built when it was queued (WeeklyLeaderboardService); throws to retry.
         const p = payload as WeeklyPost;
-        await this.poster.post({
+        const { messageId } = await this.poster.post({
           content: p.content,
           embeds: p.embeds,
           mentionUserIds: p.mentionUserIds,
+        });
+        // Kept so an admin can edit the post later (learning-hub#83). The post is already
+        // on Discord: a failure here must not make the outbox retry and post it twice.
+        await this.weeklyLeaderboard.recordPosted(p.weekId, messageId).catch((err: unknown) => {
+          this.logger.error({ err, week: p.weekId }, 'Weekly post sent, message id not saved');
         });
         return;
       }

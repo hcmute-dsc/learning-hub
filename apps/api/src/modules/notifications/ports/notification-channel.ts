@@ -36,12 +36,26 @@ export interface ClubPost {
 export interface ClubPoster {
   /** false when no club webhook is configured */
   readonly enabled: boolean;
-  post(message: ClubPost): Promise<void>;
+  /** Post; returns the Discord message id (null when Discord gave none). Throws on failure. */
+  post(message: ClubPost): Promise<{ messageId: string | null }>;
+  /** Edit a message posted earlier (learning-hub#83). Throws ClubPostGoneError on 404. */
+  edit(messageId: string, message: ClubPost): Promise<void>;
+}
+
+/** The message to edit no longer exists on Discord (deleted by a moderator). */
+export class ClubPostGoneError extends Error {
+  constructor() {
+    super('The Discord message was deleted');
+    this.name = 'ClubPostGoneError';
+  }
 }
 
 export const CLUB_POSTER = Symbol('CLUB_POSTER');
 
 export class NoopPoster implements ClubPoster {
   readonly enabled = false;
-  async post(): Promise<void> {}
+  async post(): Promise<{ messageId: string | null }> {
+    return { messageId: null };
+  }
+  async edit(): Promise<void> {}
 }
