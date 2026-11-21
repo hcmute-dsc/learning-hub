@@ -60,6 +60,21 @@ export function dueWeek(now: Date): Week | null {
   return { id: isoWeekId(startsAt), startsAt, endsAt };
 }
 
+/**
+ * The full week (Monday 00:00 → Monday 00:00, Vietnam time) before the week that
+ * contains `now`: what an admin posts or updates by hand (learning-hub#83). On Monday
+ * from 09:00 it is the same week as dueWeek(now), so the job and the button share a key.
+ */
+export function previousWeek(now: Date): Week {
+  const local = new Date(now.getTime() + VIETNAM_OFFSET_MS);
+  const weekday = (local.getUTCDay() + 6) % 7;
+  const mondayLocal =
+    Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate()) - weekday * DAY_MS;
+  const endsAt = new Date(mondayLocal - VIETNAM_OFFSET_MS);
+  const startsAt = new Date(endsAt.getTime() - 7 * DAY_MS);
+  return { id: isoWeekId(startsAt), startsAt, endsAt };
+}
+
 /** Outbox idempotency key: one post per week, whatever reruns. */
 export function weekKey(week: Pick<Week, 'id'>): string {
   return `leaderboard-week:${week.id}`;

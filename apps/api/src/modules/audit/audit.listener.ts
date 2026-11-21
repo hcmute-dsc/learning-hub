@@ -6,6 +6,10 @@ import {
   type CertificateRevokedEvent,
 } from '../certificates/certificates.events';
 import { ContentEvents, type ContentVersionEvent } from '../content/content.events';
+import {
+  LeaderboardPostEvents,
+  type LeaderboardPostEvent,
+} from '../notifications/weekly-leaderboard/weekly-leaderboard.events';
 import { ReviewEvents, type ReviewCompletedEvent } from '../reviews/reviews.events';
 import {
   UserEvents,
@@ -95,6 +99,21 @@ export class AuditListener {
   onDiscordLinked(e: DiscordLinkEvent) {
     return this.write('user.discord_link', 'user', e.userId, e.userId, {
       discordUsername: e.discordUsername,
+    });
+  }
+
+  /** An admin posted or edited the weekly leaderboard on Discord (learning-hub#83). */
+  @OnEvent(LeaderboardPostEvents.Posted)
+  onLeaderboardPosted(e: LeaderboardPostEvent) {
+    return this.write('leaderboard.post', 'leaderboard_week', e.weekId, e.actorId, {
+      members: e.members,
+    });
+  }
+
+  @OnEvent(LeaderboardPostEvents.Updated)
+  onLeaderboardUpdated(e: LeaderboardPostEvent) {
+    return this.write('leaderboard.update', 'leaderboard_week', e.weekId, e.actorId, {
+      members: e.members,
     });
   }
 

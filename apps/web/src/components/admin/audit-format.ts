@@ -16,6 +16,8 @@ const ACTION_LABEL: Record<string, string> = {
   'user.reactivate': 'Mở khóa tài khoản',
   'user.discord_link': 'Kết nối Discord',
   'user.discord_unlink': 'Huỷ kết nối Discord',
+  'leaderboard.post': 'Đăng bảng xếp hạng tuần',
+  'leaderboard.update': 'Cập nhật bảng xếp hạng tuần',
   'role.set': 'Đổi vai trò',
   'approved_emails.update': 'Cập nhật danh sách email',
   'content.sync': 'Đồng bộ nội dung',
@@ -74,6 +76,9 @@ export function describeAudit(row: Pick<AuditLogRow, 'action' | 'metadata'>): st
     case 'user.discord_link':
     case 'user.discord_unlink':
       return `Discord: ${str(m.discordUsername) || '—'}`;
+    case 'leaderboard.post':
+    case 'leaderboard.update':
+      return `${num(m.members)} thành viên trong bài`;
     case 'approved_emails.update':
       return `${str(m.mode) === 'replace' ? 'Thay toàn bộ' : 'Thêm'}: ${num(m.submitted)} email gửi lên, tổng ${num(m.total)}, kích hoạt ${num(m.activated)} tài khoản`;
     case 'content.sync': {

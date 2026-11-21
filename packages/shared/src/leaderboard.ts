@@ -50,3 +50,29 @@ export interface Leaderboard {
   /** score of one completed exercise by kind, so the page can explain it */
   weights: { graded: number; selfCheck: number };
 }
+
+/**
+ * GET /api/v1/admin/leaderboard-post → { data: LeaderboardPostStatus } (admin only,
+ * learning-hub#83). POST …/post ("Đăng ngay") and POST …/update ("Cập nhật") return it too.
+ * Always about last week (Monday → Monday, Vietnam time), the week the Monday job posts.
+ */
+export interface LeaderboardPostStatus {
+  /** ISO week, e.g. "2026-W47" */
+  weekId: string;
+  /** first moment of the week, ISO */
+  startsAt: string;
+  /** first moment after the week, ISO (exclusive) */
+  endsAt: string;
+  /** false when the club webhook is not configured: both buttons are disabled */
+  enabled: boolean;
+  /**
+   * not_posted: nothing for this week yet ("Đăng ngay");
+   * queued: waiting in the outbox (Discord failed, retried automatically);
+   * posted: on Discord, can be edited ("Cập nhật").
+   */
+  state: 'not_posted' | 'queued' | 'posted';
+  postedAt: string | null;
+  updatedAt: string | null;
+  /** opted-in members who would be in the post now (top 5) */
+  preview: LeaderboardRow[];
+}
