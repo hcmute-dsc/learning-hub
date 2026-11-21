@@ -10,11 +10,14 @@ import { itemHref } from './links';
 
 /** Main call to action of the track page; `.press` gives the click a small push-in. */
 const CTA_CLASS =
-  'press group inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-3 font-semibold text-white shadow-md shadow-brand-600/25 hover:bg-brand-700';
+  'press group/enroll inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-3 font-semibold text-white shadow-md shadow-brand-600/25 hover:bg-brand-700';
 
 function Arrow() {
   return (
-    <span aria-hidden className="transition-transform duration-200 group-hover:translate-x-1">
+    <span
+      aria-hidden
+      className="transition-transform duration-200 group-hover/enroll:translate-x-1"
+    >
       →
     </span>
   );

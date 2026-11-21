@@ -27,13 +27,13 @@ export function CodeBlock(props: ComponentPropsWithoutRef<'pre'>) {
 
   const label = { idle: 'Chép', copied: '✓ Đã chép', failed: 'Bấm Ctrl+C' }[state];
   return (
-    <div className="code-block group relative">
+    <div className="code-block group/code relative">
       <pre ref={preRef} tabIndex={0} {...props} />
       <button
         type="button"
         onClick={copy}
         aria-label="Chép đoạn code"
-        className="press absolute top-2 right-2 rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 font-sans text-xs opacity-80 transition-opacity group-hover:opacity-100 hover:border-brand-500 focus-visible:opacity-100 sm:opacity-0"
+        className="press absolute top-2 right-2 rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 font-sans text-xs opacity-80 transition-opacity group-hover/code:opacity-100 hover:border-brand-500 focus-visible:opacity-100 sm:opacity-0"
       >
         <span aria-live="polite">{label}</span>
       </button>

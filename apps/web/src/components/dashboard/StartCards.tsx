@@ -37,12 +37,12 @@ export function StartCards({ cards }: { cards: StartCard[] }) {
 
 function CardLink({ card }: { card: StartCard }) {
   const className =
-    'surface lift press group flex h-full flex-col rounded-2xl p-5 shadow-sm sm:p-6';
+    'surface lift press group/card flex h-full flex-col rounded-2xl p-5 shadow-sm sm:p-6';
   const body = (
     <>
       <span
         aria-hidden
-        className="grid h-16 w-16 place-items-center rounded-2xl bg-brand-50 text-4xl transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6"
+        className="grid h-16 w-16 place-items-center rounded-2xl bg-brand-50 text-4xl transition-transform duration-300 group-hover/card:scale-110 group-hover/card:-rotate-6"
       >
         {card.emoji}
       </span>
@@ -50,7 +50,10 @@ function CardLink({ card }: { card: StartCard }) {
       <span className="muted mt-1 flex-1 text-sm">{card.description}</span>
       <span className="mt-4 text-sm font-medium text-brand-600">
         {card.cta}{' '}
-        <span aria-hidden className="inline-block transition-transform group-hover:translate-x-1">
+        <span
+          aria-hidden
+          className="inline-block transition-transform group-hover/card:translate-x-1"
+        >
           →
         </span>
       </span>

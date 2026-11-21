@@ -25,17 +25,17 @@ export function TrackCard({
   percent?: number;
 }) {
   return (
-    <article className="surface lift group relative flex h-full flex-col rounded-2xl p-5 shadow-sm">
+    <article className="surface lift group/card relative flex h-full flex-col rounded-2xl p-5 shadow-sm">
       <span className="flex items-start gap-4">
         <HexIcon
           label={trackIconLabel(track)}
           size={60}
-          className="transition-transform duration-300 group-hover:rotate-6"
+          className="transition-transform duration-300 group-hover/card:rotate-6"
         />
         <span className="min-w-0">
           <Link
             href={`/tracks/${track.slug}`}
-            className="block text-lg font-semibold group-hover:underline after:absolute after:inset-0 after:z-[1] after:rounded-2xl"
+            className="block text-lg font-semibold group-hover/card:underline after:absolute after:inset-0 after:z-[1] after:rounded-2xl"
           >
             {track.title}
           </Link>
