@@ -685,17 +685,17 @@ docker compose -f docker-compose.prod.yml ps                    # 7. kiểm tra
 
 ## Hiện trạng production (cập nhật khi thay đổi)
 
-| Mục                             | Giá trị                                                                                                        |
-| ------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| Cài lần đầu                     | 17/11/2026, Ubuntu 22.04, Traefik v3 có sẵn (mạng `edge`)                                                      |
-| Thư mục                         | `/opt/learning-hub` (chủ: `learnhub`), database riêng trong stack này, không dùng chung Postgres site khác     |
-| User deploy                     | `learnhub` (nhóm `docker`, không `sudo`, chỉ SSH key)                                                          |
-| Secret environment `production` | `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, `VPS_KNOWN_HOSTS`                                                       |
-| Secret repo                     | `DISCORD_ALERT_WEBHOOK_URL` (workflow Uptime)                                                                  |
-| Biến repo                       | `DEPLOY_ENABLED=true`                                                                                          |
-| DNS                             | `learn` → VPS, Cloudflare Proxied, `TRUST_PROXY_HOPS=2`                                                        |
-| Sao lưu                         | cron 19:30 UTC của `learnhub`, giữ 14 ngày, `/opt/learning-hub/backups`                                        |
-| Bản sao ngoài VPS               | chưa bật (learning-hub#1): mã hóa `age` Chủ nhật 20:00 UTC, kéo về máy tech lead thứ Hai, giữ 4 + 12 bản       |
-| Discord                         | bật 17/11/2026 (kênh CLB + kênh vận hành)                                                                      |
-| Email tóm tắt (SMTP)            | chưa bật: `SMTP_*` trong `.env` còn trống (Bước 13)                                                            |
-| Kết nối Discord (#76)           | chưa bật: `DISCORD_CLIENT_ID`/`DISCORD_CLIENT_SECRET` trống (Bước 14); bài tuần vẫn đăng khi có người bật bảng |
+| Mục                             | Giá trị                                                                                                    |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Cài lần đầu                     | 17/11/2026, Ubuntu 22.04, Traefik v3 có sẵn (mạng `edge`)                                                  |
+| Thư mục                         | `/opt/learning-hub` (chủ: `learnhub`), database riêng trong stack này, không dùng chung Postgres site khác |
+| User deploy                     | `learnhub` (nhóm `docker`, không `sudo`, chỉ SSH key)                                                      |
+| Secret environment `production` | `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, `VPS_KNOWN_HOSTS`                                                   |
+| Secret repo                     | `DISCORD_ALERT_WEBHOOK_URL` (workflow Uptime)                                                              |
+| Biến repo                       | `DEPLOY_ENABLED=true`                                                                                      |
+| DNS                             | `learn` → VPS, Cloudflare Proxied, `TRUST_PROXY_HOPS=2`                                                    |
+| Sao lưu                         | cron 19:30 UTC của `learnhub`, giữ 14 ngày, `/opt/learning-hub/backups`                                    |
+| Bản sao ngoài VPS               | chưa bật (learning-hub#1): mã hóa `age` Chủ nhật 20:00 UTC, kéo về máy tech lead thứ Hai, giữ 4 + 12 bản   |
+| Discord                         | bật 17/11/2026 (kênh CLB + kênh vận hành)                                                                  |
+| Email tóm tắt (SMTP)            | chưa bật: `SMTP_*` trong `.env` còn trống (Bước 13)                                                        |
+| Kết nối Discord (#76)           | bật 21/11/2026 (Discord application "HCMUTE DSC Learning Hub", Bước 14); bài tuần đăng sáng thứ Hai 9:00   |
