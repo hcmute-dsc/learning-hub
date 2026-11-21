@@ -1,4 +1,5 @@
 import type { LeaderboardRow } from '@hub/shared';
+import { isoWeekId, type Week } from '../../leaderboard/week';
 import { escapeDiscord } from '../messages';
 
 /**
@@ -22,28 +23,8 @@ const SNOWFLAKE = /^[0-9]{15,21}$/;
 /** Discord orange-ish brand color of the embed (DSC orange). */
 const EMBED_COLOR = 0xf26b1d;
 
-export interface Week {
-  /** ISO week, e.g. "2026-W47" */
-  id: string;
-  startsAt: Date;
-  /** exclusive */
-  endsAt: Date;
-}
-
-/** ISO 8601 week id ("YYYY-Www") of the Vietnam day that contains this moment. */
-export function isoWeekId(at: Date): string {
-  const local = new Date(at.getTime() + VIETNAM_OFFSET_MS);
-  const day = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate()));
-  const weekday = (day.getUTCDay() + 6) % 7; // Monday = 0
-  // The Thursday of this week decides the ISO year.
-  const thursday = new Date(day.getTime() + (3 - weekday) * DAY_MS);
-  const year = thursday.getUTCFullYear();
-  const firstThursday = new Date(Date.UTC(year, 0, 4));
-  const firstWeekday = (firstThursday.getUTCDay() + 6) % 7;
-  const week1Monday = firstThursday.getTime() - firstWeekday * DAY_MS;
-  const week = Math.floor((thursday.getTime() - week1Monday) / (7 * DAY_MS)) + 1;
-  return `${year}-W${String(week).padStart(2, '0')}`;
-}
+export type { Week };
+export { isoWeekId };
 
 /**
  * The week whose post is due at `now`: on Monday from 09:00 until the end of Monday

@@ -13,6 +13,9 @@ function setup(counts: MemberCounts[], optedIn: boolean) {
   const repo = {
     countsBetween: jest.fn().mockResolvedValue(counts),
     optedIn: jest.fn().mockResolvedValue(optedIn),
+    trackBySlug: jest.fn(async (slug: string) =>
+      slug === 'sql-30-days' ? { id: 'track-1', slug, title: 'SQL 30 ngày' } : null,
+    ),
   };
   const clock: Clock = { now: () => new Date('2026-11-21T05:00:00Z') };
   const env = { LEADERBOARD_WEIGHT_GRADED: 3, LEADERBOARD_WEIGHT_SELF_CHECK: 1 } as Env;
@@ -26,8 +29,14 @@ describe('LeaderboardService', () => {
     const board = await service.forViewer('me');
 
     const hk1 = termById('2026-1')!;
-    expect(repo.countsBetween).toHaveBeenCalledWith(hk1.startsAt, hk1.endsAt);
-    expect(board.term).toMatchObject({ id: '2026-1', previousId: '2025-3', nextId: null });
+    expect(repo.countsBetween).toHaveBeenCalledWith(hk1.startsAt, hk1.endsAt, undefined);
+    expect(board.range).toMatchObject({
+      period: 'term',
+      id: '2026-1',
+      previousId: '2025-3',
+      nextId: null,
+    });
+    expect(board.track).toBeNull();
     expect(board.optedIn).toBe(true);
     expect(board.me).toMatchObject({ rank: 1, score: 5, completed: 3 });
     expect(board.weights).toEqual({ graded: 3, selfCheck: 1 });
@@ -44,13 +53,46 @@ describe('LeaderboardService', () => {
 
   it('opens a past term with a link to the next one', async () => {
     const { service } = setup([], true);
-    const board = await service.forViewer('me', '2025-3');
-    expect(board.term).toMatchObject({ id: '2025-3', nextId: '2026-1' });
+    const board = await service.forViewer('me', { term: '2025-3' });
+    expect(board.range).toMatchObject({ id: '2025-3', nextId: '2026-1' });
     expect(board.top).toEqual([]);
   });
 
   it('refuses a future term', async () => {
     const { service } = setup([], true);
-    await expect(service.forViewer('me', '2027-1')).rejects.toBeInstanceOf(DomainError);
+    await expect(service.forViewer('me', { term: '2027-1' })).rejects.toBeInstanceOf(DomainError);
+  });
+
+  it('counts one week (Monday → Monday, Vietnam time) for period=week (learning-hub#88)', async () => {
+    const { service, repo } = setup([], true);
+    const board = await service.forViewer('me', { period: 'week' });
+    // 21/11/2026 is a Saturday: the current week is W47 (16/11 → 23/11)
+    expect(board.range).toMatchObject({
+      period: 'week',
+      id: '2026-W47',
+      label: 'Tuần 47 (16/11 – 22/11/2026)',
+      previousId: '2026-W46',
+      nextId: null,
+    });
+    expect(repo.countsBetween).toHaveBeenCalledWith(
+      new Date('2026-11-15T17:00:00Z'),
+      new Date('2026-11-22T17:00:00Z'),
+      undefined,
+    );
+    const past = await service.forViewer('me', { period: 'week', week: '2026-W45' });
+    expect(past.range).toMatchObject({ id: '2026-W45', nextId: '2026-W46' });
+    await expect(
+      service.forViewer('me', { period: 'week', week: '2026-W48' }),
+    ).rejects.toBeInstanceOf(DomainError);
+  });
+
+  it('counts only one track when asked, and refuses an unknown track', async () => {
+    const { service, repo } = setup([], true);
+    const board = await service.forViewer('me', { track: 'sql-30-days' });
+    expect(board.track).toEqual({ slug: 'sql-30-days', title: 'SQL 30 ngày' });
+    expect(repo.countsBetween).toHaveBeenCalledWith(expect.any(Date), expect.any(Date), 'track-1');
+    await expect(service.forViewer('me', { track: 'nope' })).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+    });
   });
 });

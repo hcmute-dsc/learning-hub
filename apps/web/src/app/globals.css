@@ -618,3 +618,188 @@ main:has(> .page-wide) {
     transform: none;
   }
 }
+
+/* ---------------------------------------------------------------- leaderboard (learning-hub#88)
+   Podium: 2nd, 1st, 3rd on steps in gold, silver, bronze (--badge-from/--badge-to, the
+   same tones as the medal badges of #75). Steps rise in one after the other, the medal
+   pops; the global prefers-reduced-motion rule above turns every animation off. */
+.lb-tabs {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 0.6rem;
+  border: 1px solid var(--border);
+  background: var(--code-bg);
+}
+.lb-tab {
+  padding: 0.3rem 0.85rem;
+  border-radius: 0.45rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+.lb-tab:hover {
+  color: var(--text);
+}
+.lb-tab[aria-current='page'] {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
+}
+.lb-podium {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 0.5rem;
+  max-width: 34rem;
+  margin: 0 auto;
+}
+/* One or two people: keep them centred instead of stuck in the left columns. */
+.lb-podium:has(> li:nth-child(2):last-child) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 23rem;
+}
+.lb-podium:has(> li:only-child) {
+  grid-template-columns: minmax(0, 12rem);
+  justify-content: center;
+}
+.lb-place {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+.lb-person {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding: 0 0.25rem 0.6rem;
+  animation: fade-up 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(0.25s + var(--i, 0) * 120ms);
+}
+.lb-avatar-ring {
+  position: relative;
+  display: inline-flex;
+  border-radius: 9999px;
+  padding: 3px;
+  background: linear-gradient(145deg, var(--badge-from), var(--badge-to));
+  box-shadow: 0 8px 22px -6px color-mix(in srgb, var(--badge-to) 60%, transparent);
+}
+.lb-avatar-ring > img,
+.lb-avatar-ring > span:first-child {
+  border: 3px solid var(--surface);
+}
+.lb-medal {
+  position: absolute;
+  right: -0.5rem;
+  bottom: -0.35rem;
+  animation: pop-in 0.45s cubic-bezier(0.3, 1.5, 0.5, 1) both;
+  animation-delay: calc(0.55s + var(--i, 0) * 120ms);
+}
+.lb-step {
+  display: grid;
+  place-items: start center;
+  width: 100%;
+  padding-top: 0.5rem;
+  border-radius: 0.9rem 0.9rem 0.3rem 0.3rem;
+  background: linear-gradient(180deg, var(--badge-from), var(--badge-to));
+  box-shadow:
+    inset 0 2px 0 rgb(255 255 255 / 0.45),
+    inset 0 -4px 8px rgb(0 0 0 / 0.15);
+  color: rgb(31 19 5 / 0.85);
+  font-size: 1.75rem;
+  font-weight: 800;
+  transform-origin: bottom center;
+  animation: lb-rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 120ms);
+}
+.lb-place[data-medal='gold'] .lb-step {
+  height: 7.5rem;
+}
+.lb-place[data-medal='silver'] .lb-step {
+  height: 5.5rem;
+}
+.lb-place[data-medal='bronze'] .lb-step {
+  height: 4.25rem;
+}
+/* The first place gets a slow shine across its step. */
+.lb-place[data-medal='gold'] .lb-step {
+  position: relative;
+  overflow: hidden;
+}
+.lb-place[data-medal='gold'] .lb-step::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 35%, rgb(255 255 255 / 0.5) 50%, transparent 65%);
+  transform: translateX(-120%);
+  animation: badge-shine 1.2s ease 1s both;
+}
+.lb-place[data-me] .lb-person a {
+  color: var(--color-brand-600);
+}
+@keyframes lb-rise {
+  from {
+    transform: scaleY(0.2);
+    opacity: 0;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+.lb-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  transition:
+    border-color 0.15s,
+    transform 0.15s;
+}
+.lb-row:hover {
+  border-color: var(--color-brand-500);
+  transform: translateX(2px);
+}
+.lb-row[data-me] {
+  border-color: var(--color-brand-500);
+  background: color-mix(in srgb, var(--color-brand-500) 8%, transparent);
+}
+@media (max-width: 480px) {
+  .lb-step {
+    font-size: 1.35rem;
+  }
+  /* Smaller faces and medals on phones, so the medal does not cover the face. */
+  .lb-avatar-ring > img,
+  .lb-avatar-ring > span:first-child {
+    width: 3.5rem !important;
+    height: 3.5rem !important;
+    font-size: 1.1rem !important;
+  }
+  .lb-place[data-medal='gold'] .lb-avatar-ring > img,
+  .lb-place[data-medal='gold'] .lb-avatar-ring > span:first-child {
+    width: 4.25rem !important;
+    height: 4.25rem !important;
+  }
+  .lb-medal.badge-medal[data-size='sm'] {
+    width: 1.75rem;
+    height: 1.75rem;
+    right: -0.4rem;
+    bottom: -0.3rem;
+  }
+  .lb-medal .badge-medal-icon {
+    font-size: 0.9rem;
+  }
+  .lb-place[data-medal='gold'] .lb-step {
+    height: 5.5rem;
+  }
+  .lb-place[data-medal='silver'] .lb-step {
+    height: 4rem;
+  }
+  .lb-place[data-medal='bronze'] .lb-step {
+    height: 3rem;
+  }
+}
