@@ -1,6 +1,6 @@
 import type { LeaderboardRow } from '@hub/shared';
 import { initials, MEDAL_TONE, medalFor, podiumOrder } from './board';
-import type { ShareCardData } from './share-card';
+import { cardName, type ShareCardData } from './share-card';
 
 /**
  * The share image (learning-hub#88), drawn by next/og (Satori): inline styles only, and
@@ -221,12 +221,13 @@ function Podium({
                 marginTop: 12,
                 fontSize: wide ? 22 : first ? 30 : 26,
                 fontWeight: 800,
-                maxWidth: wide ? 200 : 290,
+                width: wide ? 200 : 290,
                 textAlign: 'center',
                 justifyContent: 'center',
+                lineHeight: 1.2,
               }}
             >
-              {clip(row.user.displayName, wide ? 18 : 22)}
+              {cardName(row.user.displayName)}
             </div>
             <div
               style={{ display: 'flex', color: C.muted, fontSize: wide ? 18 : 22, marginTop: 4 }}
@@ -299,16 +300,12 @@ function List({
             {row.rank}
           </div>
           <Avatar row={row} avatars={avatars} size={40} />
-          <div style={{ display: 'flex', flex: 1, fontWeight: 800 }}>
-            {clip(row.user.displayName, wide ? 22 : 18)}
+          <div style={{ display: 'flex', flex: 1, fontWeight: 800, lineHeight: 1.2 }}>
+            {cardName(row.user.displayName)}
           </div>
           <div style={{ display: 'flex', color: C.brand, fontWeight: 800 }}>{row.score} điểm</div>
         </div>
       ))}
     </div>
   );
-}
-
-function clip(text: string, max: number): string {
-  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }

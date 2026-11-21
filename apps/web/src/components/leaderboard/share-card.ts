@@ -1,4 +1,4 @@
-import type { Leaderboard, LeaderboardRow } from '@hub/shared';
+import { DISPLAY_NAME_MAX, type Leaderboard, type LeaderboardRow } from '@hub/shared';
 import { splitPodium, type ShareSize } from './board';
 
 /** What the share image shows (tested in board.test.ts / share-card.test.ts). */
@@ -45,4 +45,14 @@ export function avatarSmall(url: string, px: number): string {
   } catch {
     return url;
   }
+}
+
+/**
+ * A member's name on the image: always the whole name (learning-hub#92), on one line of
+ * text that the card wraps when it is long. Only spaces are tidied; the profile already
+ * caps names at DISPLAY_NAME_MAX, and this cap only guards the layout from bad data.
+ */
+export function cardName(name: string): string {
+  const tidy = name.replace(/\s+/g, ' ').trim();
+  return tidy.length > DISPLAY_NAME_MAX ? `${tidy.slice(0, DISPLAY_NAME_MAX - 1)}…` : tidy;
 }
