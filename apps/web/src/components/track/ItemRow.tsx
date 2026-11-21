@@ -31,7 +31,7 @@ export function ItemRow({
       <Link
         prefetch={false}
         href={href}
-        className="lift group flex items-center gap-3 rounded-xl border border-[var(--border)] px-3 py-2.5 sm:px-4"
+        className="lift group/row flex items-center gap-3 rounded-xl border border-[var(--border)] px-3 py-2.5 sm:px-4"
       >
         <span
           aria-hidden
@@ -43,7 +43,7 @@ export function ItemRow({
         </span>
 
         <span className="min-w-0 flex-1">
-          <span className="block font-medium leading-snug group-hover:text-brand-600">
+          <span className="block font-medium leading-snug group-hover/row:text-brand-600">
             <span className="sr-only">{kind === 'lesson' ? 'Bài học' : 'Bài tập'}: </span>
             {title}
           </span>
