@@ -29,6 +29,32 @@ const FONT_FILES = [
   { file: 'BeVietnamPro-ExtraBold.ttf', weight: 800 },
 ] as const;
 
+/** Fonts and logo are read once per server process, not on every image. */
+let staticAssets: Promise<{ fonts: FontEntry[]; logo: string }> | null = null;
+type FontEntry = { name: string; data: Buffer; weight: 400 | 800; style: 'normal' };
+
+function loadStaticAssets() {
+  staticAssets ??= Promise.all([
+    Promise.all(
+      FONT_FILES.map(async (f) => ({
+        name: 'Be Vietnam Pro',
+        data: await readFile(join(PUBLIC_DIR, 'fonts', f.file)),
+        weight: f.weight,
+        style: 'normal' as const,
+      })),
+    ),
+    readFile(join(PUBLIC_DIR, 'brand', 'hcmute-dsc-mark-dark.png')).then(
+      (b) => `data:image/png;base64,${b.toString('base64')}`,
+    ),
+  ])
+    .then(([fonts, logo]) => ({ fonts, logo }))
+    .catch((err: unknown) => {
+      staticAssets = null; // try again on the next request
+      throw err;
+    });
+  return staticAssets;
+}
+
 export async function GET(req: NextRequest) {
   const params = Object.fromEntries(req.nextUrl.searchParams.entries());
   const query = parseBoardQuery(params);
@@ -49,18 +75,8 @@ export async function GET(req: NextRequest) {
 
   const host = req.headers.get('x-forwarded-host') ?? req.nextUrl.host;
   const data = shareCardData(board, size, host);
-  const [fonts, logo, avatars] = await Promise.all([
-    Promise.all(
-      FONT_FILES.map(async (f) => ({
-        name: 'Be Vietnam Pro',
-        data: await readFile(join(PUBLIC_DIR, 'fonts', f.file)),
-        weight: f.weight,
-        style: 'normal' as const,
-      })),
-    ),
-    readFile(join(PUBLIC_DIR, 'brand', 'hcmute-dsc-mark-dark.png')).then(
-      (b) => `data:image/png;base64,${b.toString('base64')}`,
-    ),
+  const [{ fonts, logo }, avatars] = await Promise.all([
+    loadStaticAssets(),
     loadAvatars([...data.podium, ...data.rest]),
   ]);
 
