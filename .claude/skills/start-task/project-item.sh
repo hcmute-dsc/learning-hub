@@ -17,10 +17,14 @@
 # Derived automatically for issues (org fields shown in the issue sidebar):
 #   Priority P0/P1/P2 -> org Priority Urgent/High/Medium
 #   Size S/M/L        -> org Effort Low/Medium/High
-#   Sprint            -> Start/Target = sprint start/end, unless given
+#   Start/Target dates (item-dates.sh, learning-hub#89):
+#     In progress -> Start = today (kept if already set); Done -> Target = today (real finish)
+#     Sprint (until Done) -> Target = last day of the sprint; Start=/Target= given by hand win
 #
 # Needs gh with the `project` scope (gh auth refresh -h github.com -s project). No jq needed.
 set -euo pipefail
+# shellcheck source=item-dates.sh
+. "$(dirname "$0")/item-dates.sh"
 OWNER=hcmute-dsc
 NUMBER=1
 url=$1
@@ -126,12 +130,14 @@ add_org_date() { # <org field> <YYYY-MM-DD>
 
 start=""
 target=""
+status=""
 for pair in "$@"; do
   key=${pair%%=*}
   value=${pair#*=}
   case "$key" in
   Status | Area | Epic)
     set_project_option "$key" "$value"
+    [ "$key" != Status ] || status=$value
     ;;
   Priority)
     set_project_option Priority "$value"
@@ -174,12 +180,14 @@ for pair in "$@"; do
 done
 
 if [ "$kind" = issue ]; then
-  if [ -n "$sprint_start" ]; then
-    : "${start:=$sprint_start}"
-    : "${target:=$(date -d "$sprint_start + $((sprint_days - 1)) days" +%F)}"
-  fi
-  [ -z "$start" ] || add_org_date "Start date" "$start"
-  [ -z "$target" ] || add_org_date "Target date" "$target"
+  current_start=$(gh api graphql -f u="$url" -f query='query($u: URI!) { resource(url: $u) {
+    ... on Issue { issueFieldValues(first: 20) { nodes { ... on IssueFieldDateValue {
+      value field { ... on IssueFieldDate { name } } } } } } } }' \
+    -q '.data.resource.issueFieldValues.nodes[] | select(.field.name == "Start date") | .value')
+  read -r start target <<<"$(item_dates "$status" "$(date +%F)" "$current_start" \
+    "$sprint_start" "${sprint_days:-0}" "$start" "$target")"
+  [ "$start" = - ] || add_org_date "Start date" "$start"
+  [ "$target" = - ] || add_org_date "Target date" "$target"
   if [ ${#org_values[@]} -gt 0 ]; then
     issue_id=$(gh issue view "$url" --json id -q .id)
     values=$(

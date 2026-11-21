@@ -53,6 +53,8 @@ jobs:
       # Backup scripts in deploy/ (offsite copy): bash tests need age; Pester 5 ships with the runner.
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq age
       - run: bash deploy/test/offsite.test.sh
+      # Board date rules used by .claude/skills/start-task/project-item.sh (learning-hub#89).
+      - run: bash .claude/skills/start-task/item-dates.test.sh
       - run: pwsh -NoProfile -Command "Invoke-Pester deploy/test -Output Detailed -CI"
       # Migrations must apply cleanly to an empty database; the seed must run on top.
       - run: pnpm --filter @hub/api exec prisma migrate deploy

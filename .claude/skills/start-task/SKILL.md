@@ -61,11 +61,12 @@ Required for every issue:
 | `Epic`      | `E6 Chấm tự động`, `E8 Mentorship`, `E13 SQL checker`, `E14 Bảng xếp hạng`, `E15 Web Push`, `Phase 0`, `Vận hành` | ops, fixes and tooling go to `Vận hành`                                                                                   |
 | `Milestone` | `Phase 0 — Dùng thử`, `MVP-Full` (learning-hub only)                                                              | MVP-Full = epics E6/E8/E13/E14/E15                                                                                        |
 | `Assignee`  | `@me` or a login                                                                                                  | whoever does it now. Backlog items stay unassigned on purpose (free to take)                                              |
-| `Sprint`    | `@current` or `Sprint 2`…                                                                                         | anything you start now. Also sets **Start/Target date** to the sprint's dates                                             |
+| `Sprint`    | `@current` or `Sprint 2`…                                                                                         | anything you start now. Also sets **Target date** to the sprint's last day (planned deadline)                             |
 
 Optional:
 
-- `Start=YYYY-MM-DD` and `Target=YYYY-MM-DD` override the sprint dates. A closed issue gets its real start and close dates.
+- **Start date** is the day work really starts: `Status=In progress` sets it to today (kept if already set). **Target date** becomes the real finish day when you set `Status=Done`. Rules and tests: `item-dates.sh`, `item-dates.test.sh` (learning-hub#89).
+- `Start=YYYY-MM-DD` and `Target=YYYY-MM-DD` override both. A closed issue gets its real start and close dates.
 - **Relationships**: set them when they exist. A blocked task: `addBlockedBy` (GraphQL), or the sidebar → Relationships. Pieces of a big task: sub-issues.
 - **Development**: PRs link themselves through `Closes #n`. A PR in another repo can only `Refs`, so comment its link on the issue.
 
