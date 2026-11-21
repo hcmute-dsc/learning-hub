@@ -50,6 +50,12 @@ export const envSchema = z.object({
    */
   LEADERBOARD_WEIGHT_GRADED: z.coerce.number().int().min(1).max(100).default(3),
   LEADERBOARD_WEIGHT_SELF_CHECK: z.coerce.number().int().min(0).max(100).default(1),
+  /**
+   * Discord application for "Kết nối Discord" in /settings (learning-hub#76, scope
+   * `identify` only). Both empty = the button is hidden and nobody can link.
+   */
+  DISCORD_CLIENT_ID: z.string().default(''),
+  DISCORD_CLIENT_SECRET: z.string().default(''),
   /** Discord channel webhook for club notifications (E9). Empty = notifications off. */
   DISCORD_WEBHOOK_URL: z
     .string()

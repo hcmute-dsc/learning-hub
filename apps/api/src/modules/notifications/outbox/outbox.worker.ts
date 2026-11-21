@@ -3,6 +3,7 @@ import { Clock } from '../../../infrastructure/clock';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { DigestService } from '../digest/digest.service';
 import { InboxService } from '../inbox/inbox.service';
+import { WeeklyLeaderboardService } from '../weekly-leaderboard/weekly-leaderboard.service';
 import { NotificationDispatcher } from './notification-dispatcher';
 import { afterFailure, errorText, OUTBOX_TYPES } from './outbox';
 
@@ -39,6 +40,7 @@ export class OutboxWorker implements OnApplicationShutdown {
     private readonly dispatcher: NotificationDispatcher,
     private readonly digest: DigestService,
     private readonly inbox: InboxService,
+    private readonly weeklyLeaderboard: WeeklyLeaderboardService,
   ) {}
 
   start(): void {
@@ -62,6 +64,7 @@ export class OutboxWorker implements OnApplicationShutdown {
       if (now - this.lastHousekeeping >= HOUSEKEEPING_MS) {
         this.lastHousekeeping = now;
         await this.digest.scheduleDue();
+        await this.weeklyLeaderboard.scheduleDue();
         await this.inbox.pruneOld();
       }
       await this.processDue();

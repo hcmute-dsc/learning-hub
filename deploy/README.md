@@ -395,7 +395,55 @@ docker compose -f docker-compose.prod.yml exec -T db psql -U hub -d learning_hub
   "select id, type, status, attempts, last_error, created_at from outbox_events where status <> 'sent' order by id desc limit 20"
 ```
 
-Discord không đi qua bảng này; tắt SMTP không ảnh hưởng Discord hay chuông.
+Discord không đi qua bảng này; tắt SMTP không ảnh hưởng Discord hay chuông. Ngoại lệ duy nhất là bài đăng bảng xếp hạng tuần (Bước 14).
+
+## Bước 14. Kết nối Discord và bảng xếp hạng tuần (không bắt buộc)
+
+Thành viên bấm **Kết nối Discord** trong `/settings` để gắn tài khoản Discord với tài khoản Learning Hub (learning-hub#76). Sáng thứ Hai lúc 9:00 (giờ Việt Nam), API đăng top 5 bảng xếp hạng của tuần trước lên **kênh CLB** (`DISCORD_WEBHOOK_URL`, Bước 12). Người đã kết nối Discord được tag, người chưa kết nối hiện tên trên Learning Hub. Không cần bot Discord.
+
+Quy tắc (ADR-08): chỉ người đã bật "Hiện tôi trên bảng xếp hạng" mới có tên. Kết nối Discord **không** có nghĩa là đồng ý lên bảng. Tuần không có ai thì không đăng. Mỗi tuần đăng đúng 1 lần (khoá `leaderboard-week:<YYYY-Www>` trong `outbox_events`), lỗi Discord được thử lại như email.
+
+Hai phần độc lập:
+
+| Phần                                | Cần gì                                                            | Thiếu thì                                             |
+| ----------------------------------- | ----------------------------------------------------------------- | ----------------------------------------------------- |
+| Đăng bảng xếp hạng tuần             | `DISCORD_WEBHOOK_URL` (đã có từ Bước 12)                          | không đăng gì                                         |
+| Nút "Kết nối Discord" (để được tag) | Discord application: `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` | nút bị ẩn; bài tuần vẫn đăng, mọi người hiện bằng tên |
+
+**Tạo Discord application** (người quản lý server Discord của CLB làm, một lần):
+
+1. Vào https://discord.com/developers/applications → **New Application**, tên `DSC Learning Hub`, đồng ý điều khoản của Discord.
+2. Tab **OAuth2** → **Redirects** → **Add Redirect**: `https://learn.hcmute-dsc.io.vn/api/v1/me/discord/callback` → **Save Changes**. Khi chạy local thêm `http://localhost:3000/api/v1/me/discord/callback`, tốt nhất là một application riêng cho local.
+3. Cũng ở tab **OAuth2**: chép **Client ID**; bấm **Reset Secret** để lấy **Client Secret** (chỉ hiện một lần).
+4. Không cần tạo bot, không cần mời application vào server. App chỉ dùng scope `identify` (đọc id và tên Discord), không đọc tin nhắn hay danh sách server.
+
+**Đặt vào đâu:** chỉ trong `/opt/learning-hub/.env` trên VPS, không commit, không dán vào chat, issue hay PR. Đăng nhập bằng user `learnhub`, `nano /opt/learning-hub/.env`, điền:
+
+```bash
+DISCORD_CLIENT_ID=<Client ID>
+DISCORD_CLIENT_SECRET=<Client Secret>
+```
+
+Lưu, rồi **Actions → Deploy → Run workflow** để API đọc lại `.env`. Lộ secret thì bấm **Reset Secret** trên Discord, sửa `.env` và Deploy lại.
+
+**Kiểm tra:**
+
+1. Vào `/settings` → mục **Discord** phải có nút **Kết nối Discord**. Bấm, đồng ý trên trang Discord, quay về thấy "Đã kết nối Discord" và tên Discord của bạn.
+2. Vào **Quản trị → Nhật ký** thấy dòng "Kết nối Discord". Bấm **Huỷ kết nối** thì có dòng "Huỷ kết nối Discord".
+3. Sáng thứ Hai sau 9:00, xem bài đăng tuần (hoặc tra bảng, `status` phải là `sent`):
+
+   ```bash
+   docker compose -f docker-compose.prod.yml exec -T db psql -U hub -d learning_hub -c \
+     "select id, idempotency_key, status, attempts, last_error from outbox_events where type = 'discord.leaderboard_week' order by id desc limit 5"
+   ```
+
+| Thấy gì                                        | Nguyên nhân                                                                                                |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Mục Discord ghi "CLB chưa bật kết nối Discord" | `.env` thiếu `DISCORD_CLIENT_ID` hoặc `DISCORD_CLIENT_SECRET`, hoặc chưa Deploy lại                        |
+| Discord báo "Invalid OAuth2 redirect_uri"      | Redirect ở bước 2 không khớp đúng từng ký tự với `WEB_ORIGIN` + `/api/v1/me/discord/callback`              |
+| Quay về `/settings` với "Chưa kết nối được"    | bấm Huỷ trên Discord, quá 10 phút, hoặc Client Secret sai (xem log API)                                    |
+| "đã được một thành viên khác kết nối"          | tài khoản Discord đó đang gắn với tài khoản khác; người kia huỷ kết nối trước                              |
+| Thứ Hai không có bài                           | tuần trước không ai bật bảng xếp hạng có bài hoàn thành, hoặc `DISCORD_WEBHOOK_URL` trống; xem bảng ở trên |
 
 ---
 
@@ -637,16 +685,17 @@ docker compose -f docker-compose.prod.yml ps                    # 7. kiểm tra
 
 ## Hiện trạng production (cập nhật khi thay đổi)
 
-| Mục                             | Giá trị                                                                                                    |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Cài lần đầu                     | 17/11/2026, Ubuntu 22.04, Traefik v3 có sẵn (mạng `edge`)                                                  |
-| Thư mục                         | `/opt/learning-hub` (chủ: `learnhub`), database riêng trong stack này, không dùng chung Postgres site khác |
-| User deploy                     | `learnhub` (nhóm `docker`, không `sudo`, chỉ SSH key)                                                      |
-| Secret environment `production` | `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, `VPS_KNOWN_HOSTS`                                                   |
-| Secret repo                     | `DISCORD_ALERT_WEBHOOK_URL` (workflow Uptime)                                                              |
-| Biến repo                       | `DEPLOY_ENABLED=true`                                                                                      |
-| DNS                             | `learn` → VPS, Cloudflare Proxied, `TRUST_PROXY_HOPS=2`                                                    |
-| Sao lưu                         | cron 19:30 UTC của `learnhub`, giữ 14 ngày, `/opt/learning-hub/backups`                                    |
-| Bản sao ngoài VPS               | chưa bật (learning-hub#1): mã hóa `age` Chủ nhật 20:00 UTC, kéo về máy tech lead thứ Hai, giữ 4 + 12 bản   |
-| Discord                         | bật 17/11/2026 (kênh CLB + kênh vận hành)                                                                  |
-| Email tóm tắt (SMTP)            | chưa bật: `SMTP_*` trong `.env` còn trống (Bước 13)                                                        |
+| Mục                             | Giá trị                                                                                                        |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Cài lần đầu                     | 17/11/2026, Ubuntu 22.04, Traefik v3 có sẵn (mạng `edge`)                                                      |
+| Thư mục                         | `/opt/learning-hub` (chủ: `learnhub`), database riêng trong stack này, không dùng chung Postgres site khác     |
+| User deploy                     | `learnhub` (nhóm `docker`, không `sudo`, chỉ SSH key)                                                          |
+| Secret environment `production` | `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, `VPS_KNOWN_HOSTS`                                                       |
+| Secret repo                     | `DISCORD_ALERT_WEBHOOK_URL` (workflow Uptime)                                                                  |
+| Biến repo                       | `DEPLOY_ENABLED=true`                                                                                          |
+| DNS                             | `learn` → VPS, Cloudflare Proxied, `TRUST_PROXY_HOPS=2`                                                        |
+| Sao lưu                         | cron 19:30 UTC của `learnhub`, giữ 14 ngày, `/opt/learning-hub/backups`                                        |
+| Bản sao ngoài VPS               | chưa bật (learning-hub#1): mã hóa `age` Chủ nhật 20:00 UTC, kéo về máy tech lead thứ Hai, giữ 4 + 12 bản       |
+| Discord                         | bật 17/11/2026 (kênh CLB + kênh vận hành)                                                                      |
+| Email tóm tắt (SMTP)            | chưa bật: `SMTP_*` trong `.env` còn trống (Bước 13)                                                            |
+| Kết nối Discord (#76)           | chưa bật: `DISCORD_CLIENT_ID`/`DISCORD_CLIENT_SECRET` trống (Bước 14); bài tuần vẫn đăng khi có người bật bảng |

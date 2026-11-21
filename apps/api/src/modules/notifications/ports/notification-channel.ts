@@ -20,3 +20,28 @@ export class NoopChannel implements NotificationChannel {
   readonly enabled = false;
   async send(): Promise<void> {}
 }
+
+/**
+ * A rich post on the club channel (learning-hub#76): text, embeds, and the only
+ * accounts that may be pinged. Unlike NotificationChannel.send, `post` THROWS when the
+ * post did not go through, so the outbox retries it later.
+ */
+export interface ClubPost {
+  content: string;
+  embeds: object[];
+  /** Discord ids allowed to be pinged; nothing else is (no @everyone, no roles) */
+  mentionUserIds: string[];
+}
+
+export interface ClubPoster {
+  /** false when no club webhook is configured */
+  readonly enabled: boolean;
+  post(message: ClubPost): Promise<void>;
+}
+
+export const CLUB_POSTER = Symbol('CLUB_POSTER');
+
+export class NoopPoster implements ClubPoster {
+  readonly enabled = false;
+  async post(): Promise<void> {}
+}

@@ -1,5 +1,9 @@
 import { Logger } from '@nestjs/common';
-import type { NotificationChannel } from '../../modules/notifications/ports/notification-channel';
+import type {
+  ClubPost,
+  ClubPoster,
+  NotificationChannel,
+} from '../../modules/notifications/ports/notification-channel';
 
 /** Discord rejects messages longer than this. */
 const DISCORD_MAX_CONTENT = 2000;
@@ -13,13 +17,17 @@ export interface DiscordWebhookOptions {
   logger?: Pick<Logger, 'warn'>;
 }
 
+/** Discord ids only: a mention list must never carry anything else. */
+const SNOWFLAKE = /^[0-9]{15,21}$/;
+
 /**
- * Posts plain-text messages to one Discord channel webhook.
+ * Posts messages to one Discord channel webhook.
  * - 5 s timeout per request, so a slow Discord never piles up pending sends.
  * - On 429 waits `retry_after` once and retries; then gives up.
- * - Never throws and never logs the URL (the URL itself is the secret).
+ * - `send` (plain text) never throws; `post` (embeds, from the outbox) throws on failure
+ *   so the outbox retries. Neither ever logs the URL (the URL itself is the secret).
  */
-export class DiscordWebhookChannel implements NotificationChannel {
+export class DiscordWebhookChannel implements NotificationChannel, ClubPoster {
   readonly enabled = true;
   private readonly timeoutMs: number;
   private readonly fetchFn: typeof fetch;
@@ -44,7 +52,7 @@ export class DiscordWebhookChannel implements NotificationChannel {
         // Belt and braces with the escaping in messages.ts: Discord pings nobody.
         allowed_mentions: { parse: [] },
       });
-      let res = await this.post(body);
+      let res = await this.request(body);
       if (res.status === 429) {
         const waitMs = await retryAfterMs(res);
         if (waitMs > MAX_RETRY_WAIT_MS) {
@@ -52,7 +60,7 @@ export class DiscordWebhookChannel implements NotificationChannel {
           return;
         }
         await this.sleep(waitMs);
-        res = await this.post(body);
+        res = await this.request(body);
       }
       if (!res.ok) {
         this.logger.warn({ channel: this.name, status: res.status }, 'Discord webhook refused');
@@ -63,7 +71,33 @@ export class DiscordWebhookChannel implements NotificationChannel {
     }
   }
 
-  private async post(body: string): Promise<Response> {
+  /**
+   * Embed post with explicit mentions (learning-hub#76): `allowed_mentions.parse` is
+   * empty, so only the listed users can be pinged, never @everyone or a role.
+   */
+  async post(message: ClubPost): Promise<void> {
+    const body = JSON.stringify({
+      content: message.content.slice(0, DISCORD_MAX_CONTENT),
+      embeds: message.embeds,
+      allowed_mentions: {
+        parse: [],
+        users: [...new Set(message.mentionUserIds.filter((id) => SNOWFLAKE.test(id)))].slice(
+          0,
+          100,
+        ),
+      },
+    });
+    let res = await this.request(body);
+    if (res.status === 429) {
+      const waitMs = await retryAfterMs(res);
+      if (waitMs > MAX_RETRY_WAIT_MS) throw new Error(`Discord rate limit ${waitMs} ms`);
+      await this.sleep(waitMs);
+      res = await this.request(body);
+    }
+    if (!res.ok) throw new Error(`Discord webhook refused: HTTP ${res.status}`);
+  }
+
+  private async request(body: string): Promise<Response> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
     timer.unref?.();

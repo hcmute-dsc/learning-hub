@@ -14,6 +14,8 @@ export const OutboxTypes = {
   TrackPublished: 'inbox.track_published',
   /** payload: EmailDigestPayload → one email */
   EmailDigest: 'email.digest',
+  /** payload: WeeklyPost (weekly-post.ts) → one embed on the club channel (learning-hub#76) */
+  LeaderboardWeek: 'discord.leaderboard_week',
 } as const;
 
 export type OutboxType = (typeof OutboxTypes)[keyof typeof OutboxTypes];

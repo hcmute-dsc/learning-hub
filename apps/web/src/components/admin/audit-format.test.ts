@@ -73,4 +73,10 @@ describe('describeAudit', () => {
     expect(describeAudit({ action: 'x.y', metadata: { a: 1 } })).toBe('{"a":1}');
     expect(describeAudit({ action: 'user.reactivate', metadata: {} })).toBe('');
   });
+  it('names the Discord account a member linked or unlinked', () => {
+    expect(
+      describeAudit({ action: 'user.discord_link', metadata: { discordUsername: 'an' } }),
+    ).toBe('Discord: an');
+    expect(describeAudit({ action: 'user.discord_unlink', metadata: {} })).toBe('Discord: —');
+  });
 });

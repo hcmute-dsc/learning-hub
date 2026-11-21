@@ -25,13 +25,15 @@ function setup() {
     }),
   };
   const digest = { send: jest.fn(async () => 'sent') };
+  const poster = { enabled: true, post: jest.fn(async (_message: unknown) => {}) };
   const dispatcher = new NotificationDispatcher(
     catalog as unknown as CatalogReader,
     users as unknown as UsersService,
     inbox as unknown as InboxService,
     digest as unknown as DigestService,
+    poster,
   );
-  return { dispatcher, catalog, users, delivered, digest };
+  return { dispatcher, catalog, users, delivered, digest, poster };
 }
 
 describe('NotificationDispatcher', () => {
@@ -99,5 +101,26 @@ describe('NotificationDispatcher', () => {
       }),
     ).rejects.toThrow('db down');
     await expect(dispatcher.dispatch(7n, 'something.else', {})).rejects.toThrow('Unknown');
+  });
+
+  it('posts the weekly leaderboard as queued, and throws when Discord refuses (retry)', async () => {
+    const { dispatcher, poster } = setup();
+    const payload = {
+      weekId: '2026-W47',
+      content: 'hi <@123456789012345678>',
+      embeds: [{ title: 't' }],
+      mentionUserIds: ['123456789012345678'],
+    };
+    await dispatcher.dispatch(8n, OutboxTypes.LeaderboardWeek, payload);
+    expect(poster.post).toHaveBeenCalledWith({
+      content: payload.content,
+      embeds: payload.embeds,
+      mentionUserIds: payload.mentionUserIds,
+    });
+
+    poster.post.mockRejectedValueOnce(new Error('Discord webhook refused: HTTP 500'));
+    await expect(dispatcher.dispatch(9n, OutboxTypes.LeaderboardWeek, payload)).rejects.toThrow(
+      'HTTP 500',
+    );
   });
 });

@@ -14,6 +14,8 @@ const ACTION_LABEL: Record<string, string> = {
   'user.approve': 'Duyệt tài khoản',
   'user.suspend': 'Tạm khóa tài khoản',
   'user.reactivate': 'Mở khóa tài khoản',
+  'user.discord_link': 'Kết nối Discord',
+  'user.discord_unlink': 'Huỷ kết nối Discord',
   'role.set': 'Đổi vai trò',
   'approved_emails.update': 'Cập nhật danh sách email',
   'content.sync': 'Đồng bộ nội dung',
@@ -69,6 +71,9 @@ export function describeAudit(row: Pick<AuditLogRow, 'action' | 'metadata'>): st
       return APPROVAL_REASON[str(m.reason)] ?? str(m.reason);
     case 'user.suspend':
       return m.previousStatus ? `Trước đó: ${statusLabel(m.previousStatus)}` : '';
+    case 'user.discord_link':
+    case 'user.discord_unlink':
+      return `Discord: ${str(m.discordUsername) || '—'}`;
     case 'approved_emails.update':
       return `${str(m.mode) === 'replace' ? 'Thay toàn bộ' : 'Thêm'}: ${num(m.submitted)} email gửi lên, tổng ${num(m.total)}, kích hoạt ${num(m.activated)} tài khoản`;
     case 'content.sync': {
