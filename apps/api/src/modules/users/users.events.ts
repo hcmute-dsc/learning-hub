@@ -6,7 +6,15 @@ export const UserEvents = {
   ApprovedEmailsChanged: 'user.approved_emails_changed',
   Suspended: 'user.suspended',
   Reactivated: 'user.reactivated',
+  DiscordLinked: 'user.discord_linked',
+  DiscordUnlinked: 'user.discord_unlinked',
 } as const;
+
+/** A member linked (or unlinked) their Discord account from /settings (learning-hub#76). */
+export interface DiscordLinkEvent {
+  userId: string;
+  discordUsername: string;
+}
 
 export interface RolesChangedEvent {
   actorId: string;

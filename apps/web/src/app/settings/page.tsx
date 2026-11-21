@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import type { Me, MyCertificate, NotificationSettings } from '@hub/shared';
+import type { DiscordLink, Me, MyCertificate, NotificationSettings } from '@hub/shared';
 import { CertificateVisibility } from '@/components/certificate/CertificateVisibility';
 import { AchievementsToggle } from '@/components/settings/AchievementsToggle';
+import { DiscordLinkPanel } from '@/components/settings/DiscordLinkPanel';
+import { parseDiscordResult } from '@/components/settings/discord-link';
 import { EmailDigestToggle } from '@/components/settings/EmailDigestToggle';
 import { LeaderboardToggle } from '@/components/settings/LeaderboardToggle';
 import { ProfileForm } from '@/components/settings/ProfileForm';
@@ -12,12 +14,19 @@ import { api } from '@/lib/api';
 export const metadata: Metadata = { title: 'Cài đặt' };
 
 /** Personal settings: what other members see on the profile, the color scheme, the email digest. */
-export default async function SettingsPage() {
-  const [{ data: me }, { data: certificates }, { data: notify }] = await Promise.all([
-    api<{ data: Me }>('/auth/me'),
-    api<{ data: MyCertificate[] }>('/me/certificates'),
-    api<{ data: NotificationSettings }>('/me/notifications/settings'),
-  ]);
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ discord?: string | string[] }>;
+}) {
+  const discordResult = parseDiscordResult((await searchParams).discord);
+  const [{ data: me }, { data: certificates }, { data: notify }, { data: discord }] =
+    await Promise.all([
+      api<{ data: Me }>('/auth/me'),
+      api<{ data: MyCertificate[] }>('/me/certificates'),
+      api<{ data: NotificationSettings }>('/me/notifications/settings'),
+      api<{ data: DiscordLink }>('/me/discord'),
+    ]);
   return (
     <div className="motion-fade-up mx-auto max-w-2xl space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
@@ -93,6 +102,23 @@ export default async function SettingsPage() {
           chỉ hiện người tự bật, mặc định tắt. Không tính tốc độ, sang kỳ mới bắt đầu lại.
         </p>
         <LeaderboardToggle optedIn={me.leaderboardOptIn} />
+      </section>
+
+      <section
+        id="discord"
+        aria-labelledby="discord-heading"
+        className="surface scroll-mt-20 rounded-2xl p-5 sm:p-6"
+      >
+        <h2 id="discord-heading" className="text-lg font-semibold">
+          Discord
+        </h2>
+        <p className="muted mt-1 text-sm">
+          Sáng thứ Hai, Learning Hub đăng top 5 bảng xếp hạng tuần trước lên kênh Discord của CLB.
+          Kết nối Discord để được tag tên khi bạn có mặt. Chỉ đọc id và tên Discord, không đọc tin
+          nhắn. Kết nối không làm bạn xuất hiện trên bảng: điều đó chỉ do công tắc bảng xếp hạng ở
+          trên.
+        </p>
+        <DiscordLinkPanel link={discord} result={discordResult} />
       </section>
 
       <section aria-labelledby="notify-heading" className="surface rounded-2xl p-5 sm:p-6">

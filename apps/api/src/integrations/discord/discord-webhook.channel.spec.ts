@@ -104,4 +104,41 @@ describe('DiscordWebhookChannel', () => {
     await expect(channel.send('hi')).resolves.toBeUndefined();
     expect(logger.warn).toHaveBeenCalled();
   });
+
+  describe('post (embeds from the outbox, learning-hub#76)', () => {
+    const A = '111111111111111111';
+    const message = {
+      content: `hi <@${A}>`,
+      embeds: [{ title: 't' }],
+      mentionUserIds: [A, A, 'x'],
+    };
+
+    it('sends embeds and lets Discord ping only the listed snowflakes', async () => {
+      const { channel, fetch } = setup([new Response(null, { status: 204 })]);
+      await channel.post(message);
+      expect(JSON.parse(fetch.mock.calls[0][1].body as string)).toEqual({
+        content: `hi <@${A}>`,
+        embeds: [{ title: 't' }],
+        allowed_mentions: { parse: [], users: [A] },
+      });
+    });
+
+    it('throws when Discord refuses, so the outbox retries; never with the URL', async () => {
+      const { channel } = setup([new Response('bad', { status: 500 })]);
+      const err = await channel.post(message).catch((e: Error) => e);
+      expect(err).toBeInstanceOf(Error);
+      expect((err as Error).message).toContain('500');
+      expect((err as Error).message).not.toContain('secret-token');
+    });
+
+    it('waits a short rate limit once, then succeeds', async () => {
+      const { channel, sleep, fetch } = setup([
+        Response.json({ retry_after: 0.5 }, { status: 429 }),
+        new Response(null, { status: 204 }),
+      ]);
+      await expect(channel.post(message)).resolves.toBeUndefined();
+      expect(sleep).toHaveBeenCalledWith(500);
+      expect(fetch).toHaveBeenCalledTimes(2);
+    });
+  });
 });

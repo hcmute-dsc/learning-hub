@@ -46,6 +46,22 @@ export const settingsUpdateSchema = z
   });
 export type SettingsUpdateInput = z.infer<typeof settingsUpdateSchema>;
 
+/**
+ * GET /api/v1/me/discord → { data: DiscordLink } (learning-hub#76).
+ * Linking only lets the weekly leaderboard post mention the member; whether they appear
+ * at all is `Me.leaderboardOptIn`.
+ */
+export interface DiscordLink {
+  /** false when the server has no Discord application: the button is hidden */
+  available: boolean;
+  /** linked Discord username, or null */
+  username: string | null;
+}
+
+/** ?discord=… on /settings after the Discord round trip */
+export const DISCORD_LINK_RESULTS = ['linked', 'taken', 'error'] as const;
+export type DiscordLinkResult = (typeof DISCORD_LINK_RESULTS)[number];
+
 /** Number of learning actions (lessons completed + submissions) on one day. */
 export interface ActivityDay {
   /** YYYY-MM-DD in Vietnam time */

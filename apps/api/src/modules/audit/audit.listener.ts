@@ -9,6 +9,7 @@ import { ContentEvents, type ContentVersionEvent } from '../content/content.even
 import { ReviewEvents, type ReviewCompletedEvent } from '../reviews/reviews.events';
 import {
   UserEvents,
+  type DiscordLinkEvent,
   type RolesChangedEvent,
   type UserReactivatedEvent,
   type UserSuspendedEvent,
@@ -87,6 +88,21 @@ export class AuditListener {
   @OnEvent(UserEvents.Reactivated)
   onReactivated(e: UserReactivatedEvent) {
     return this.write('user.reactivate', 'user', e.userId, e.actorId);
+  }
+
+  /** The member themself links or unlinks Discord in /settings (learning-hub#76). */
+  @OnEvent(UserEvents.DiscordLinked)
+  onDiscordLinked(e: DiscordLinkEvent) {
+    return this.write('user.discord_link', 'user', e.userId, e.userId, {
+      discordUsername: e.discordUsername,
+    });
+  }
+
+  @OnEvent(UserEvents.DiscordUnlinked)
+  onDiscordUnlinked(e: DiscordLinkEvent) {
+    return this.write('user.discord_unlink', 'user', e.userId, e.userId, {
+      discordUsername: e.discordUsername,
+    });
   }
 
   @OnEvent(ContentEvents.Synced)

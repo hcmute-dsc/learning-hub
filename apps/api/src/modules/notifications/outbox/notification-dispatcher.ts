@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { DomainError } from '../../../common/errors';
 import { CatalogReader } from '../../catalog/catalog.reader';
 import { UsersService } from '../../users/users.service';
@@ -9,6 +9,8 @@ import {
   trackPublishedNotice,
 } from '../inbox/inbox-messages';
 import { InboxService } from '../inbox/inbox.service';
+import { CLUB_POSTER, type ClubPoster } from '../ports/notification-channel';
+import type { WeeklyPost } from '../weekly-leaderboard/weekly-post';
 import {
   OutboxTypes,
   type EmailDigestPayload,
@@ -29,6 +31,7 @@ export class NotificationDispatcher {
     private readonly users: UsersService,
     private readonly inbox: InboxService,
     private readonly digest: DigestService,
+    @Inject(CLUB_POSTER) private readonly poster: ClubPoster,
   ) {}
 
   async dispatch(eventId: bigint, type: string, payload: unknown): Promise<void> {
@@ -80,6 +83,16 @@ export class NotificationDispatcher {
       case OutboxTypes.EmailDigest:
         await this.digest.send(payload as EmailDigestPayload);
         return;
+      case OutboxTypes.LeaderboardWeek: {
+        // Built when it was queued (WeeklyLeaderboardService); throws to retry.
+        const p = payload as WeeklyPost;
+        await this.poster.post({
+          content: p.content,
+          embeds: p.embeds,
+          mentionUserIds: p.mentionUserIds,
+        });
+        return;
+      }
       default:
         throw new Error(`Unknown outbox type ${type}`);
     }

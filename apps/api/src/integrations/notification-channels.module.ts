@@ -8,7 +8,9 @@ import {
 import {
   ALERT_CHANNEL,
   CLUB_CHANNEL,
+  CLUB_POSTER,
   NoopChannel,
+  NoopPoster,
   type NotificationChannel,
 } from '../modules/notifications/ports/notification-channel';
 import { DiscordWebhookChannel } from './discord/discord-webhook.channel';
@@ -46,8 +48,17 @@ export function mailSender(env: Env): MailSender {
       inject: [ENV],
       useFactory: (env: Env) => channel(env.DISCORD_ALERT_WEBHOOK_URL, 'alert'),
     },
+    {
+      // Same club webhook; embeds with explicit mentions for the weekly leaderboard (#76)
+      provide: CLUB_POSTER,
+      inject: [ENV],
+      useFactory: (env: Env) =>
+        env.DISCORD_WEBHOOK_URL
+          ? new DiscordWebhookChannel(env.DISCORD_WEBHOOK_URL, 'club')
+          : new NoopPoster(),
+    },
     { provide: MAIL_SENDER, inject: [ENV], useFactory: mailSender },
   ],
-  exports: [CLUB_CHANNEL, ALERT_CHANNEL, MAIL_SENDER],
+  exports: [CLUB_CHANNEL, ALERT_CHANNEL, CLUB_POSTER, MAIL_SENDER],
 })
 export class NotificationChannelsModule {}

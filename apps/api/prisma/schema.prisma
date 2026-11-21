@@ -29,6 +29,11 @@ model User {
   showAchievements Boolean   @default(true) @map("show_achievements")
   /// true shows the member on the term leaderboard (E14, ADR-08). Off by default.
   leaderboardOptIn Boolean   @default(false) @map("leaderboard_opt_in")
+  /// Discord account linked from /settings (OAuth2 scope `identify`, learning-hub#76). Unique when set.
+  /// Linking is NOT consent to appear on the leaderboard: only leaderboardOptIn is.
+  discordUserId    String?   @unique @map("discord_user_id")
+  /// Discord username at link time, shown in /settings
+  discordUsername  String?   @map("discord_username")
   /// pending | active | suspended
   status           String    @default("pending")
   lastLoginAt      DateTime? @map("last_login_at") @db.Timestamptz
@@ -527,15 +532,17 @@ model WebhookDelivery {
 }
 
 model OutboxEvent {
-  id            BigInt   @id @default(autoincrement())
-  type          String
-  payload       Json
+  id             BigInt   @id @default(autoincrement())
+  type           String
+  payload        Json
   /// pending | sent | failed
-  status        String   @default("pending")
-  attempts      Int      @default(0)
-  nextAttemptAt DateTime @default(now()) @map("next_attempt_at") @db.Timestamptz
-  lastError     String?  @map("last_error")
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+  status         String   @default("pending")
+  attempts       Int      @default(0)
+  nextAttemptAt  DateTime @default(now()) @map("next_attempt_at") @db.Timestamptz
+  lastError      String?  @map("last_error")
+  /// Optional: a second row with the same key is never written (e.g. leaderboard-week:2026-W47)
+  idempotencyKey String?  @unique @map("idempotency_key")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   @@index([status, nextAttemptAt])
   @@map("outbox_events")
