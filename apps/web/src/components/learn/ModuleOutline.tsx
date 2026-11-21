@@ -51,7 +51,7 @@ export function ModuleOutline({
     <details
       id={anchor}
       open={defaultOpen}
-      className="surface group scroll-mt-20 rounded-2xl p-4 sm:p-6"
+      className="surface group/module scroll-mt-20 rounded-2xl p-4 sm:p-6"
     >
       <summary className="flex cursor-pointer list-none items-start gap-4 rounded-xl [&::-webkit-details-marker]:hidden">
         <span
@@ -88,7 +88,7 @@ export function ModuleOutline({
         </div>
         <span
           aria-hidden
-          className="muted mt-2 shrink-0 text-sm transition-transform group-open:rotate-180"
+          className="muted mt-2 shrink-0 text-sm transition-transform group-open/module:rotate-180"
         >
           ▾
         </span>

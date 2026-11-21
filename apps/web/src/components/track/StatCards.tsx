@@ -71,7 +71,7 @@ function NextCard({ next, enrolled }: { next: NextItem | null; enrolled: boolean
       href={itemHref(next)}
       // Not `.surface`: that class sets the `background` shorthand outside Tailwind's
       // layers, which would wipe out the gradient below.
-      className="lift press group flex h-full flex-col rounded-2xl border border-brand-500/40 bg-[var(--surface)] bg-gradient-to-br from-brand-500/10 to-transparent p-5"
+      className="lift press group/card flex h-full flex-col rounded-2xl border border-brand-500/40 bg-[var(--surface)] bg-gradient-to-br from-brand-500/10 to-transparent p-5"
     >
       <span className="text-sm font-medium text-brand-600">
         {enrolled ? 'Tiếp theo' : 'Bắt đầu với'}
@@ -81,7 +81,7 @@ function NextCard({ next, enrolled }: { next: NextItem | null; enrolled: boolean
         {next.title}
         <span
           aria-hidden
-          className="text-brand-600 transition-transform duration-200 group-hover:translate-x-1"
+          className="text-brand-600 transition-transform duration-200 group-hover/card:translate-x-1"
         >
           →
         </span>

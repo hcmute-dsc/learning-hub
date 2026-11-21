@@ -45,7 +45,7 @@ export function TrackSidebar({
           const mod = countDone([m], progress);
           return (
             <li key={m.id}>
-              <details open={isCurrent} className="group">
+              <details open={isCurrent}>
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-md px-2 py-1.5 font-medium hover:bg-[var(--code-bg)]">
                   <span className="min-w-0">{m.title}</span>
                   <span className="muted shrink-0 font-mono text-xs tabular-nums">
