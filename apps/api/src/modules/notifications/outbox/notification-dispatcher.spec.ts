@@ -134,4 +134,14 @@ describe('NotificationDispatcher', () => {
       'HTTP 500',
     );
   });
+
+  it('never re-posts the week when saving the message id fails after Discord accepted it', async () => {
+    const { dispatcher, poster, weekly } = setup();
+    weekly.recordPosted.mockRejectedValueOnce(new Error('db down'));
+    const payload = { weekId: '2026-W47', content: 'x', embeds: [], mentionUserIds: [] };
+    await expect(
+      dispatcher.dispatch(10n, OutboxTypes.LeaderboardWeek, payload),
+    ).resolves.toBeUndefined();
+    expect(poster.post).toHaveBeenCalledTimes(1);
+  });
 });

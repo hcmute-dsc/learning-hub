@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { DomainError } from '../../../common/errors';
 import { CatalogReader } from '../../catalog/catalog.reader';
 import { UsersService } from '../../users/users.service';
@@ -27,6 +27,8 @@ import {
  */
 @Injectable()
 export class NotificationDispatcher {
+  private readonly logger = new Logger(NotificationDispatcher.name);
+
   constructor(
     private readonly catalog: CatalogReader,
     private readonly users: UsersService,
@@ -93,8 +95,11 @@ export class NotificationDispatcher {
           embeds: p.embeds,
           mentionUserIds: p.mentionUserIds,
         });
-        // Kept so an admin can edit the post later (learning-hub#83).
-        await this.weeklyLeaderboard.recordPosted(p.weekId, messageId);
+        // Kept so an admin can edit the post later (learning-hub#83). The post is already
+        // on Discord: a failure here must not make the outbox retry and post it twice.
+        await this.weeklyLeaderboard.recordPosted(p.weekId, messageId).catch((err: unknown) => {
+          this.logger.error({ err, week: p.weekId }, 'Weekly post sent, message id not saved');
+        });
         return;
       }
       default:

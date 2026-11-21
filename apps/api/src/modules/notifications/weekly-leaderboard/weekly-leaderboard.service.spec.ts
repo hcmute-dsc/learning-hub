@@ -118,7 +118,17 @@ function setup(
     { WEB_ORIGIN: 'https://learn.example.org' } as Env,
     events as unknown as EventEmitter2,
   );
-  return { service, outbox, posts, outboxEvent, leaderboard, links, poster, events };
+  return {
+    service,
+    outbox,
+    posts,
+    outboxEvent,
+    leaderboardWeekPost,
+    leaderboard,
+    links,
+    poster,
+    events,
+  };
 }
 
 describe('WeeklyLeaderboardService: Monday job (learning-hub#76)', () => {
@@ -213,6 +223,14 @@ describe('WeeklyLeaderboardService: admin post and update (learning-hub#83)', ()
       data: expect.objectContaining({ nextAttemptAt: WEDNESDAY }),
     });
     expect(posts).toHaveLength(0);
+  });
+
+  it('once Discord accepted the post, a bookkeeping error never hands the week back to the worker', async () => {
+    const { service, outbox, poster, leaderboardWeekPost } = setup({ now: WEDNESDAY });
+    leaderboardWeekPost.upsert.mockRejectedValueOnce(new Error('db down'));
+    await expect(service.postNow('admin-1')).resolves.toMatchObject({ weekId: '2026-W47' });
+    expect(outbox[0].status).toBe('sent');
+    expect(poster.post).toHaveBeenCalledTimes(1);
   });
 
   it('lets a week the worker gave up on (failed) be posted by hand', async () => {

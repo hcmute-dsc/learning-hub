@@ -140,13 +140,9 @@ export class WeeklyLeaderboardService {
       );
     }
 
+    let messageId: string | null;
     try {
-      const { messageId } = await this.poster.post(post);
-      await this.prisma.outboxEvent.update({
-        where: { idempotencyKey: weekKey(week) },
-        data: { status: 'sent', attempts: 1, lastError: null },
-      });
-      await this.recordPosted(week.id, messageId);
+      ({ messageId } = await this.poster.post(post));
     } catch (err) {
       // Hand it to the worker: due now, retried with backoff like any outbox row.
       await this.prisma.outboxEvent.update({
@@ -159,6 +155,17 @@ export class WeeklyLeaderboardService {
         502,
         'Discord chưa nhận bài. Bài đã vào hàng đợi và sẽ được thử lại tự động.',
       );
+    }
+    // The post is on Discord now. Bookkeeping must never hand the row back to the worker,
+    // or the week would be posted twice; a failure here only loses the "Cập nhật" link.
+    try {
+      await this.prisma.outboxEvent.update({
+        where: { idempotencyKey: weekKey(week) },
+        data: { status: 'sent', attempts: 1, lastError: null },
+      });
+      await this.recordPosted(week.id, messageId);
+    } catch (err) {
+      this.logger.error({ err, week: week.id }, 'Weekly post sent, bookkeeping failed');
     }
     await this.emit(LeaderboardPostEvents.Posted, actorId, week, rows.length);
     return this.status();
