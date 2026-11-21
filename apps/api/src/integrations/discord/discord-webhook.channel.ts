@@ -1,8 +1,9 @@
 import { Logger } from '@nestjs/common';
-import type {
-  ClubPost,
-  ClubPoster,
-  NotificationChannel,
+import {
+  ClubPostGoneError,
+  type ClubPost,
+  type ClubPoster,
+  type NotificationChannel,
 } from '../../modules/notifications/ports/notification-channel';
 
 /** Discord rejects messages longer than this. */
@@ -74,36 +75,56 @@ export class DiscordWebhookChannel implements NotificationChannel, ClubPoster {
   /**
    * Embed post with explicit mentions (learning-hub#76): `allowed_mentions.parse` is
    * empty, so only the listed users can be pinged, never @everyone or a role.
+   * `?wait=true` makes Discord answer with the message, so its id can be kept for
+   * later edits (learning-hub#83).
    */
-  async post(message: ClubPost): Promise<void> {
-    const body = JSON.stringify({
-      content: message.content.slice(0, DISCORD_MAX_CONTENT),
-      embeds: message.embeds,
-      allowed_mentions: {
-        parse: [],
-        users: [...new Set(message.mentionUserIds.filter((id) => SNOWFLAKE.test(id)))].slice(
-          0,
-          100,
-        ),
-      },
-    });
-    let res = await this.request(body);
+  async post(message: ClubPost): Promise<{ messageId: string | null }> {
+    const res = await this.send429Once(richBody(message), 'POST', webhookUrlWithWait(this.url));
+    if (!res.ok) throw new Error(`Discord webhook refused: HTTP ${res.status}`);
+    const data = (await res.json().catch(() => null)) as { id?: unknown } | null;
+    const id = typeof data?.id === 'string' && SNOWFLAKE.test(data.id) ? data.id : null;
+    return { messageId: id };
+  }
+
+  /**
+   * Replace the text and embeds of a message this webhook posted (learning-hub#83).
+   * Discord never pings on an edit; the same allowed_mentions are sent anyway. A
+   * message deleted on Discord answers 404 → ClubPostGoneError.
+   */
+  async edit(messageId: string, message: ClubPost): Promise<void> {
+    if (!SNOWFLAKE.test(messageId)) throw new ClubPostGoneError();
+    const res = await this.send429Once(
+      richBody(message),
+      'PATCH',
+      webhookMessageUrl(this.url, messageId),
+    );
+    if (res.status === 404) throw new ClubPostGoneError();
+    if (!res.ok) throw new Error(`Discord webhook refused the edit: HTTP ${res.status}`);
+  }
+
+  /** One request, and on 429 one short wait and a retry. Throws when the wait is too long. */
+  private async send429Once(body: string, method: 'POST' | 'PATCH', url: string) {
+    let res = await this.request(body, method, url);
     if (res.status === 429) {
       const waitMs = await retryAfterMs(res);
       if (waitMs > MAX_RETRY_WAIT_MS) throw new Error(`Discord rate limit ${waitMs} ms`);
       await this.sleep(waitMs);
-      res = await this.request(body);
+      res = await this.request(body, method, url);
     }
-    if (!res.ok) throw new Error(`Discord webhook refused: HTTP ${res.status}`);
+    return res;
   }
 
-  private async request(body: string): Promise<Response> {
+  private async request(
+    body: string,
+    method: 'POST' | 'PATCH' = 'POST',
+    url: string = this.url,
+  ): Promise<Response> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
     timer.unref?.();
     try {
-      return await this.fetchFn(this.url, {
-        method: 'POST',
+      return await this.fetchFn(url, {
+        method,
         headers: { 'content-type': 'application/json' },
         body,
         signal: controller.signal,
@@ -126,4 +147,33 @@ async function retryAfterMs(res: Response): Promise<number> {
   if (!Number.isFinite(seconds)) seconds = Number(res.headers.get('retry-after'));
   if (!Number.isFinite(seconds) || seconds < 0) seconds = 1;
   return Math.ceil(seconds * 1000);
+}
+
+function richBody(message: ClubPost): string {
+  return JSON.stringify({
+    content: message.content.slice(0, DISCORD_MAX_CONTENT),
+    embeds: message.embeds,
+    allowed_mentions: {
+      parse: [],
+      users: [...new Set(message.mentionUserIds.filter((id) => SNOWFLAKE.test(id)))].slice(0, 100),
+    },
+  });
+}
+
+/** The webhook URL with `wait=true`, keeping any query it already has (e.g. thread_id). */
+export function webhookUrlWithWait(webhookUrl: string): string {
+  const url = new URL(webhookUrl);
+  url.searchParams.set('wait', 'true');
+  return url.toString();
+}
+
+/**
+ * `/webhooks/{id}/{token}/messages/{message_id}` for one message of this webhook
+ * (Discord "Edit Webhook Message"), keeping thread_id if the webhook URL has one.
+ */
+export function webhookMessageUrl(webhookUrl: string, messageId: string): string {
+  const url = new URL(webhookUrl);
+  url.pathname = `${url.pathname.replace(/\/+$/, '')}/messages/${messageId}`;
+  url.searchParams.delete('wait');
+  return url.toString();
 }

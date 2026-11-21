@@ -12,6 +12,7 @@ import { InboxService } from './inbox/inbox.service';
 import { NotificationsListener } from './notifications.listener';
 import { NotificationDispatcher } from './outbox/notification-dispatcher';
 import { OutboxWorker } from './outbox/outbox.worker';
+import { LeaderboardPostController } from './weekly-leaderboard/leaderboard-post.controller';
 import { WeeklyLeaderboardService } from './weekly-leaderboard/weekly-leaderboard.service';
 
 /**
@@ -28,7 +29,7 @@ import { WeeklyLeaderboardService } from './weekly-leaderboard/weekly-leaderboar
  */
 @Module({
   imports: [NotificationChannelsModule, CatalogModule, UsersModule, LeaderboardModule],
-  controllers: [InboxController, UnsubscribeController],
+  controllers: [InboxController, UnsubscribeController, LeaderboardPostController],
   providers: [
     NotificationsListener,
     ErrorAlerts,

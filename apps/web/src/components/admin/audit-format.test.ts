@@ -79,4 +79,10 @@ describe('describeAudit', () => {
     ).toBe('Discord: an');
     expect(describeAudit({ action: 'user.discord_unlink', metadata: {} })).toBe('Discord: —');
   });
+
+  it('describes the weekly leaderboard post actions (learning-hub#83)', () => {
+    expect(describeAudit({ action: 'leaderboard.update', metadata: { members: 3 } })).toBe(
+      '3 thành viên trong bài',
+    );
+  });
 });

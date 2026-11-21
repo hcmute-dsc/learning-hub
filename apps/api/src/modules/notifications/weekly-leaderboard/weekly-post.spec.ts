@@ -1,5 +1,12 @@
 import type { LeaderboardRow } from '@hub/shared';
-import { allowedMentions, buildWeeklyPost, dueWeek, isoWeekId, weekKey } from './weekly-post';
+import {
+  allowedMentions,
+  buildWeeklyPost,
+  dueWeek,
+  isoWeekId,
+  previousWeek,
+  weekKey,
+} from './weekly-post';
 
 const A = '111111111111111111';
 const B = '222222222222222222';
@@ -42,6 +49,21 @@ describe('weekly leaderboard: week math', () => {
     expect(dueWeek(new Date('2026-11-23T01:59:00Z'))).toBeNull(); // Monday 08:59
     expect(dueWeek(new Date('2026-11-23T17:00:00Z'))).toBeNull(); // Tuesday 00:00
     expect(dueWeek(new Date('2026-11-21T02:00:00Z'))).toBeNull(); // Saturday
+  });
+
+  it('previousWeek is the last full week on any day, and the job week on Monday 09:00', () => {
+    const w47 = {
+      id: '2026-W47',
+      startsAt: new Date('2026-11-15T17:00:00Z'),
+      endsAt: new Date('2026-11-22T17:00:00Z'),
+    };
+    expect(previousWeek(new Date('2026-11-23T02:00:00Z'))).toEqual(w47); // Monday 09:00
+    expect(previousWeek(new Date('2026-11-23T00:30:00Z'))).toEqual(w47); // Monday 07:30
+    expect(previousWeek(new Date('2026-11-29T16:30:00Z'))).toEqual(w47); // Sunday 23:30
+    expect(previousWeek(new Date('2026-11-29T17:10:00Z')).id).toBe('2026-W48'); // next Monday
+    expect(previousWeek(new Date('2026-11-23T02:00:00Z'))).toEqual(
+      dueWeek(new Date('2026-11-23T02:00:00Z')),
+    );
   });
 
   it('keys the outbox row by week, so reruns in the same week are no-ops', () => {

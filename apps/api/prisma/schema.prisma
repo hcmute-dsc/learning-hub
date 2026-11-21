@@ -548,6 +548,19 @@ model OutboxEvent {
   @@map("outbox_events")
 }
 
+/// The weekly leaderboard post on the club Discord channel, one row per ISO week
+/// (learning-hub#83). Keeps the Discord message id so an admin can edit the post later.
+model LeaderboardWeekPost {
+  /// ISO week, e.g. "2026-W47" (same as the outbox key leaderboard-week:<weekId>)
+  weekId           String   @id @map("week_id")
+  /// id Discord returned for the webhook message (?wait=true)
+  discordMessageId String   @map("discord_message_id")
+  postedAt         DateTime @default(now()) @map("posted_at") @db.Timestamptz
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("leaderboard_week_posts")
+}
+
 // ---------------------------------------------------------------- notifications (P2, F13)
 
 /// One row per recipient for the in-app bell. Written by the outbox worker, never by a request.

@@ -17,6 +17,7 @@ export const ADMIN_TABS: AdminTab[] = [
   { href: '/admin/members', label: 'Thành viên', roles: ['mentor'] },
   { href: '/admin/content', label: 'Nội dung', roles: ['content_maintainer'] },
   { href: '/admin/certificates', label: 'Chứng nhận', roles: [] },
+  { href: '/admin/leaderboard', label: 'Bảng xếp hạng', roles: [] },
   { href: '/admin/audit', label: 'Nhật ký', roles: [] },
 ];
 

@@ -10,6 +10,7 @@ import {
 } from '../inbox/inbox-messages';
 import { InboxService } from '../inbox/inbox.service';
 import { CLUB_POSTER, type ClubPoster } from '../ports/notification-channel';
+import { WeeklyLeaderboardService } from '../weekly-leaderboard/weekly-leaderboard.service';
 import type { WeeklyPost } from '../weekly-leaderboard/weekly-post';
 import {
   OutboxTypes,
@@ -32,6 +33,7 @@ export class NotificationDispatcher {
     private readonly inbox: InboxService,
     private readonly digest: DigestService,
     @Inject(CLUB_POSTER) private readonly poster: ClubPoster,
+    private readonly weeklyLeaderboard: WeeklyLeaderboardService,
   ) {}
 
   async dispatch(eventId: bigint, type: string, payload: unknown): Promise<void> {
@@ -86,11 +88,13 @@ export class NotificationDispatcher {
       case OutboxTypes.LeaderboardWeek: {
         // Built when it was queued (WeeklyLeaderboardService); throws to retry.
         const p = payload as WeeklyPost;
-        await this.poster.post({
+        const { messageId } = await this.poster.post({
           content: p.content,
           embeds: p.embeds,
           mentionUserIds: p.mentionUserIds,
         });
+        // Kept so an admin can edit the post later (learning-hub#83).
+        await this.weeklyLeaderboard.recordPosted(p.weekId, messageId);
         return;
       }
       default:

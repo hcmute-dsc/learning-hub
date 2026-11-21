@@ -1,4 +1,9 @@
-import { DiscordWebhookChannel } from './discord-webhook.channel';
+import { ClubPostGoneError } from '../../modules/notifications/ports/notification-channel';
+import {
+  DiscordWebhookChannel,
+  webhookMessageUrl,
+  webhookUrlWithWait,
+} from './discord-webhook.channel';
 
 const URL = 'https://discord.com/api/webhooks/1/secret-token';
 
@@ -136,9 +141,48 @@ describe('DiscordWebhookChannel', () => {
         Response.json({ retry_after: 0.5 }, { status: 429 }),
         new Response(null, { status: 204 }),
       ]);
-      await expect(channel.post(message)).resolves.toBeUndefined();
+      await expect(channel.post(message)).resolves.toEqual({ messageId: null });
       expect(sleep).toHaveBeenCalledWith(500);
       expect(fetch).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('post with wait and edit (learning-hub#83)', () => {
+    const A = '111111111111111111';
+    const MSG = '999999999999999999';
+    const message = { content: `hi <@${A}>`, embeds: [{ title: 't' }], mentionUserIds: [A] };
+
+    it('builds the ?wait=true and PATCH message URLs, keeping thread_id', () => {
+      expect(webhookUrlWithWait(URL)).toBe(`${URL}?wait=true`);
+      expect(webhookMessageUrl(URL, MSG)).toBe(`${URL}/messages/${MSG}`);
+      expect(webhookMessageUrl(`${URL}?thread_id=42`, MSG)).toBe(
+        `${URL}/messages/${MSG}?thread_id=42`,
+      );
+      expect(webhookMessageUrl(`${URL}/`, MSG)).toBe(`${URL}/messages/${MSG}`);
+    });
+
+    it('posts with ?wait=true and returns the message id', async () => {
+      const { channel, fetch } = setup([Response.json({ id: MSG })]);
+      await expect(channel.post(message)).resolves.toEqual({ messageId: MSG });
+      expect(fetch.mock.calls[0][0]).toBe(`${URL}?wait=true`);
+    });
+
+    it('edits with PATCH on the message URL and the same allowed_mentions', async () => {
+      const { channel, fetch } = setup([Response.json({ id: MSG })]);
+      await channel.edit(MSG, message);
+      const [url, init] = fetch.mock.calls[0];
+      expect(url).toBe(`${URL}/messages/${MSG}`);
+      expect(init.method).toBe('PATCH');
+      expect(JSON.parse(init.body as string).allowed_mentions).toEqual({ parse: [], users: [A] });
+    });
+
+    it('reports a message deleted on Discord as ClubPostGoneError, other errors as Error', async () => {
+      const gone = setup([new Response('{}', { status: 404 })]);
+      await expect(gone.channel.edit(MSG, message)).rejects.toBeInstanceOf(ClubPostGoneError);
+      const down = setup([new Response('bad', { status: 500 })]);
+      const err = await down.channel.edit(MSG, message).catch((e: Error) => e);
+      expect(err).not.toBeInstanceOf(ClubPostGoneError);
+      expect((err as Error).message).not.toContain('secret-token');
     });
   });
 });

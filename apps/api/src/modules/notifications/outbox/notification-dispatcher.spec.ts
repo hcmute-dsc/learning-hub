@@ -4,6 +4,7 @@ import type { UsersService } from '../../users/users.service';
 import type { DigestService } from '../digest/digest.service';
 import type { InboxNotice } from '../inbox/inbox-messages';
 import type { InboxService } from '../inbox/inbox.service';
+import type { WeeklyLeaderboardService } from '../weekly-leaderboard/weekly-leaderboard.service';
 import { NotificationDispatcher } from './notification-dispatcher';
 import { OutboxTypes } from './outbox';
 
@@ -25,15 +26,23 @@ function setup() {
     }),
   };
   const digest = { send: jest.fn(async () => 'sent') };
-  const poster = { enabled: true, post: jest.fn(async (_message: unknown) => {}) };
+  const poster = {
+    enabled: true,
+    post: jest.fn(async (_message: unknown) => ({
+      messageId: '999999999999999999' as string | null,
+    })),
+    edit: jest.fn(async () => {}),
+  };
+  const weekly = { recordPosted: jest.fn(async () => {}) };
   const dispatcher = new NotificationDispatcher(
     catalog as unknown as CatalogReader,
     users as unknown as UsersService,
     inbox as unknown as InboxService,
     digest as unknown as DigestService,
     poster,
+    weekly as unknown as WeeklyLeaderboardService,
   );
-  return { dispatcher, catalog, users, delivered, digest, poster };
+  return { dispatcher, catalog, users, delivered, digest, poster, weekly };
 }
 
 describe('NotificationDispatcher', () => {
@@ -104,7 +113,7 @@ describe('NotificationDispatcher', () => {
   });
 
   it('posts the weekly leaderboard as queued, and throws when Discord refuses (retry)', async () => {
-    const { dispatcher, poster } = setup();
+    const { dispatcher, poster, weekly } = setup();
     const payload = {
       weekId: '2026-W47',
       content: 'hi <@123456789012345678>',
@@ -117,6 +126,8 @@ describe('NotificationDispatcher', () => {
       embeds: payload.embeds,
       mentionUserIds: payload.mentionUserIds,
     });
+    // the message id is kept for the admin's "Cập nhật" (learning-hub#83)
+    expect(weekly.recordPosted).toHaveBeenCalledWith('2026-W47', '999999999999999999');
 
     poster.post.mockRejectedValueOnce(new Error('Discord webhook refused: HTTP 500'));
     await expect(dispatcher.dispatch(9n, OutboxTypes.LeaderboardWeek, payload)).rejects.toThrow(
