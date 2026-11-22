@@ -30,6 +30,8 @@ export function SyncContentButton({ knownIds }: { knownIds: string[] }) {
     const res = await run(() => sendJson<SyncedVersion>('/admin/content/sync', 'POST', {}));
     if (res.ok) {
       setResult({ version: res.data, isNew: !knownIds.includes(res.data.id) });
+      // Show the new draft in "Các phiên bản" too, not only in the message above (#87).
+      router.refresh();
     } else if (res.problem.status === 422) {
       // Invalid content is still recorded as a `rejected` version: show it in the list.
       router.refresh();
