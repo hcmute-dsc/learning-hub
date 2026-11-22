@@ -7,6 +7,12 @@ on:
   schedule:
     - cron: '*/15 * * * *'
   workflow_dispatch:
+    inputs:
+      test_alert:
+        # Checks the whole alert path (secret, jq, Discord) without stopping the API (#2).
+        description: 'Gửi thử một cảnh báo 🔴 vào kênh vận hành (site không cần lỗi)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -22,6 +28,8 @@ jobs:
     env:
       SITE: https://learn.hcmute-dsc.io.vn
       DISCORD_ALERT_WEBHOOK_URL: ${{ secrets.DISCORD_ALERT_WEBHOOK_URL }}
+      # Empty on the schedule; "true" only when someone ticks it in Run workflow.
+      TEST_ALERT: ${{ inputs.test_alert }}
     # Only curl and jq from the runner image: no third-party actions to keep pinned.
     steps:
       - name: Check the site and the API
@@ -47,6 +55,10 @@ jobs:
           expect "$SITE/" 200
           # 401 = the web app forwarded /api to the API and the API answered (no session)
           expect "$SITE/api/v1/tracks" 401
+
+          if [ "${TEST_ALERT:-}" = "true" ]; then
+            failures="${failures}- 🧪 Chạy thử (\`test_alert\`): site vẫn bình thường, tin này chỉ để kiểm tra kênh cảnh báo"$'\n'
+          fi
 
           if [ -z "$failures" ]; then
             exit 0

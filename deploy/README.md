@@ -335,7 +335,7 @@ docker compose -f docker-compose.prod.yml exec -T api sh -c \
   'test -n "$DISCORD_WEBHOOK_URL" && echo club:set; test -n "$DISCORD_ALERT_WEBHOOK_URL" && echo alert:set'
 ```
 
-Workflow **Uptime** chỉ gửi tin khi site lỗi, nên chạy tay mà site khỏe thì sẽ không có tin nào. Đó là đúng.
+Workflow **Uptime** chỉ gửi tin khi site lỗi, nên chạy tay mà site khỏe thì sẽ không có tin nào. Đó là đúng. Muốn thử cả đường cảnh báo (secret, Discord) mà không phải tắt `api`: **Actions → Uptime → Run workflow**, tick **test_alert** → kênh vận hành nhận "🔴" có dòng "🧪 Chạy thử", và job **đỏ** (đúng như khi site lỗi thật, GitHub cũng gửi email cho admin repo).
 
 Lần bật đầu tiên: 17/11/2026 (kênh CLB và kênh vận hành, secret repo đã thêm).
 
