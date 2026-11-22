@@ -26,11 +26,11 @@ export default async function AdminCertificatesPage() {
         </p>
       </header>
 
-      <section className="surface overflow-x-auto rounded-xl">
+      <section className="surface overflow-x-auto rounded-xl p-3 md:p-0">
         {rows.length === 0 ? (
           <p className="muted p-5 text-sm">Chưa có chứng nhận nào.</p>
         ) : (
-          <table className="w-full text-left text-sm">
+          <table className="stack-table w-full text-left text-sm">
             <thead className="muted border-b border-[var(--border)] text-xs uppercase">
               <tr>
                 <th className="px-4 py-2 font-medium">Thành viên</th>
@@ -42,10 +42,10 @@ export default async function AdminCertificatesPage() {
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--border)]">
+            <tbody className="md:divide-y divide-[var(--border)]">
               {rows.map((row) => (
                 <tr key={row.code}>
-                  <td className="px-4 py-2">
+                  <td className="py-1 md:px-4 md:py-2">
                     <span className="block font-medium">{row.recipientName}</span>
                     {row.githubLogin && (
                       <Link
@@ -56,7 +56,7 @@ export default async function AdminCertificatesPage() {
                       </Link>
                     )}
                   </td>
-                  <td className="px-4 py-2">
+                  <td data-label="Lộ trình" className="py-1 md:px-4 md:py-2">
                     <Link
                       href={certificatePath(row.code)}
                       className="hover:text-brand-600 hover:underline"
@@ -64,8 +64,10 @@ export default async function AdminCertificatesPage() {
                       {row.track.title}
                     </Link>
                   </td>
-                  <td className="px-4 py-2 whitespace-nowrap">{formatDateTime(row.completedAt)}</td>
-                  <td className="px-4 py-2">
+                  <td data-label="Hoàn thành" className="py-1 md:px-4 md:py-2 md:whitespace-nowrap">
+                    {formatDateTime(row.completedAt)}
+                  </td>
+                  <td data-label="Trạng thái" className="py-1 md:px-4 md:py-2">
                     {row.status === 'revoked' ? (
                       <span title={row.revokeReason ?? undefined}>
                         Đã thu hồi
@@ -77,7 +79,7 @@ export default async function AdminCertificatesPage() {
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-2 text-right">
+                  <td className="py-1 md:px-4 md:py-2 text-right">
                     <RevokeCertificateButton row={row} />
                   </td>
                 </tr>

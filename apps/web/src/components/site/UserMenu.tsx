@@ -10,7 +10,7 @@ import { REVIEW_LINK, isActivePath, type NavItem } from './nav';
 import { ReviewCount } from './ReviewCount';
 
 const ITEM =
-  'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm hover:bg-[var(--bg)] focus-visible:bg-[var(--bg)] focus-visible:outline-none aria-[current=page]:font-semibold aria-[current=page]:text-brand-600';
+  'flex min-h-11 w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm md:min-h-0 hover:bg-[var(--bg)] focus-visible:bg-[var(--bg)] focus-visible:outline-none aria-[current=page]:font-semibold aria-[current=page]:text-brand-600';
 
 /**
  * The avatar button on the right of the top bar (learning-hub#97). One menu for the
@@ -111,7 +111,7 @@ export function UserMenu({
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
         aria-label={`Tài khoản @${me.githubLogin}`}
-        className="flex items-center gap-2 rounded-full border border-transparent py-0.5 pr-2 pl-0.5 hover:border-[var(--border)] aria-expanded:border-[var(--border)]"
+        className="flex min-h-11 items-center gap-2 rounded-full border border-transparent py-0.5 pr-2 pl-0.5 md:min-h-0 hover:border-[var(--border)] aria-expanded:border-[var(--border)]"
       >
         <Avatar src={me.avatarUrl} size={28} />
         <span className="hidden max-w-[10rem] truncate lg:inline">@{me.githubLogin}</span>

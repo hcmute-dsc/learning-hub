@@ -96,7 +96,7 @@ export function AccountsTable({ rows, meId }: { rows: AdminUserRow[]; meId: stri
         <p className="muted text-sm">Không có tài khoản nào khớp.</p>
       ) : (
         <div className="table-wrap overflow-x-auto" tabIndex={0}>
-          <table className="w-full min-w-[60rem] text-left text-sm">
+          <table className="stack-table w-full md:min-w-[60rem] text-left text-sm">
             <thead className="muted">
               <tr className="border-b border-[var(--border)]">
                 <th className="py-2 pr-4 font-medium">Thành viên</th>
@@ -108,10 +108,10 @@ export function AccountsTable({ rows, meId }: { rows: AdminUserRow[]; meId: stri
                 <th className="py-2 font-medium">Thao tác</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--border)]">
+            <tbody className="md:divide-y divide-[var(--border)]">
               {shown.map((row) => (
                 <tr key={row.id}>
-                  <td className="py-2 pr-4">
+                  <td className="py-1 md:py-2 md:pr-4">
                     <div className="flex items-center gap-2">
                       <Avatar src={row.avatarUrl} size={28} />
                       <div className="min-w-0">
@@ -129,7 +129,7 @@ export function AccountsTable({ rows, meId }: { rows: AdminUserRow[]; meId: stri
                       </div>
                     </div>
                   </td>
-                  <td className="py-2 pr-4">
+                  <td data-label="Email" className="py-1 md:py-2 md:pr-4">
                     {row.email ? (
                       <>
                         <span className="font-mono text-xs">{row.email}</span>
@@ -145,7 +145,7 @@ export function AccountsTable({ rows, meId }: { rows: AdminUserRow[]; meId: stri
                       <span className="muted text-xs">GitHub không chia sẻ email</span>
                     )}
                   </td>
-                  <td className="py-2 pr-4">
+                  <td data-label="Trạng thái" className="py-1 md:py-2 md:pr-4">
                     {row.status === 'pending' && !isApproved(row.id) ? (
                       <div className="flex items-center gap-2">
                         <span
@@ -167,16 +167,22 @@ export function AccountsTable({ rows, meId }: { rows: AdminUserRow[]; meId: stri
                       </span>
                     )}
                   </td>
-                  <td className="py-2 pr-4 text-xs">
+                  <td data-label="Vai trò" className="py-1 md:py-2 md:pr-4 text-xs">
                     <RolesCell row={row} isSelf={row.id === meId} />
                   </td>
-                  <td className="py-2 pr-4 text-xs whitespace-nowrap">
+                  <td
+                    data-label="Tham gia"
+                    className="py-1 md:py-2 md:pr-4 text-xs md:whitespace-nowrap"
+                  >
                     {formatDateTime(row.createdAt)}
                   </td>
-                  <td className="py-2 pr-4 text-xs whitespace-nowrap">
+                  <td
+                    data-label="Đăng nhập gần nhất"
+                    className="py-1 md:py-2 md:pr-4 text-xs md:whitespace-nowrap"
+                  >
                     {row.lastLoginAt ? formatDateTime(row.lastLoginAt) : '—'}
                   </td>
-                  <td className="py-2">
+                  <td data-label="Thao tác" className="py-1 md:py-2">
                     <SuspendButton row={row} isSelf={row.id === meId} />
                   </td>
                 </tr>

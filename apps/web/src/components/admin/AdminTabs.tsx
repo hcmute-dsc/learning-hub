@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { centeredScrollLeft, isTabActive, type AdminTab } from './admin-tabs';
+import { TAB_STRIP, tabLinkClass } from '@/components/ui/tab-strip';
 
 /**
  * Sub-navigation of the admin area. On phones the tabs scroll sideways without a
@@ -23,10 +24,7 @@ export function AdminTabs({ tabs }: { tabs: AdminTab[] }) {
 
   return (
     <nav aria-label="Quản trị" className="border-b border-[var(--border)]">
-      <ul
-        ref={stripRef}
-        className="relative -mb-px flex gap-1 overflow-x-auto [scrollbar-width:none] max-sm:[mask-image:linear-gradient(to_right,transparent,black_12px,black_calc(100%-24px),transparent)] [&::-webkit-scrollbar]:hidden"
-      >
+      <ul ref={stripRef} className={TAB_STRIP}>
         {tabs.map((tab) => {
           const active = isTabActive(tab, pathname);
           return (
@@ -34,11 +32,7 @@ export function AdminTabs({ tabs }: { tabs: AdminTab[] }) {
               <Link
                 href={tab.href}
                 aria-current={active ? 'page' : undefined}
-                className={`block border-b-2 px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
-                  active
-                    ? 'border-brand-500 text-brand-600'
-                    : 'muted border-transparent hover:text-brand-600'
-                }`}
+                className={tabLinkClass(active)}
               >
                 {tab.label}
               </Link>

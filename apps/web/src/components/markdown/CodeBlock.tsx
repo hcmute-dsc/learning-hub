@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState, type ComponentPropsWithoutRef } from 'react';
+import { useOverflowFlag } from './use-overflow';
 
 /**
  * A code block of a lesson with a "Chép" (copy) button in its top-right corner.
@@ -10,6 +11,7 @@ import { useRef, useState, type ComponentPropsWithoutRef } from 'react';
 export function CodeBlock(props: ComponentPropsWithoutRef<'pre'>) {
   const preRef = useRef<HTMLPreElement>(null);
   const [state, setState] = useState<'idle' | 'copied' | 'failed'>('idle');
+  useOverflowFlag(preRef);
 
   async function copy() {
     const text = preRef.current?.innerText.replace(/\n$/, '') ?? '';
