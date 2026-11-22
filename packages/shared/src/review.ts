@@ -121,6 +121,15 @@ export interface ReviewQueueStats {
   inactiveMentees: number | null;
 }
 
+/**
+ * GET /api/v1/reviews/queue/count (mentor) → { data: ReviewQueueCount }.
+ * The number on the header's "Review" link (learning-hub#97): cheap, no rows.
+ */
+export interface ReviewQueueCount {
+  /** submissions waiting for review that no mentor has claimed yet */
+  unclaimed: number;
+}
+
 /** GET /api/v1/reviews/queue (mentor) → { data: ReviewQueue }, oldest submission first */
 export interface ReviewQueue {
   /** REVIEW_TARGET_HOURS: a submission waiting longer is highlighted */

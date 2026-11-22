@@ -6,6 +6,7 @@ import type {
   OpenReview,
   ReviewPage,
   ReviewQueue,
+  ReviewQueueCount,
   ReviewQueueQuery,
 } from '@hub/shared';
 import type { AuthUser } from '../../common/auth.decorators';
@@ -93,6 +94,11 @@ export class ReviewsService {
       options: { tracks, mentees: mentorship.mentees },
       items,
     };
+  }
+
+  /** The number on the header's "Review" link: every track, unclaimed only. */
+  async queueCount(): Promise<ReviewQueueCount> {
+    return { unclaimed: await this.submissions.unclaimedCount() };
   }
 
   async page(viewer: AuthUser, submissionId: string): Promise<ReviewPage> {

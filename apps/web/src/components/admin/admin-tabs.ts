@@ -37,3 +37,11 @@ export function isTabActive(tab: AdminTab, pathname: string): boolean {
   if (pathname === tab.href) return true;
   return !tab.exact && pathname.startsWith(`${tab.href}/`);
 }
+
+/**
+ * On a phone the 7 tabs scroll sideways. Where to scroll so the open tab sits in the
+ * middle of the strip (clamped by the browser), e.g. "Nhật ký" is not hidden off-screen.
+ */
+export function centeredScrollLeft(tabLeft: number, tabWidth: number, stripWidth: number): number {
+  return Math.max(0, Math.round(tabLeft + tabWidth / 2 - stripWidth / 2));
+}

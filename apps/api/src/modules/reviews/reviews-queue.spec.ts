@@ -36,6 +36,7 @@ function setup(opts: {
   const submissions = {
     awaitingReview: jest.fn().mockResolvedValue(opts.rows),
     awaitingReviewCounts: jest.fn().mockResolvedValue(opts.counts),
+    unclaimedCount: jest.fn().mockResolvedValue(opts.counts.waiting - opts.counts.claimed),
   };
   const catalog = {
     activeTracks: jest.fn().mockResolvedValue([{ slug: 'sql-30-days', title: 'SQL 30 ngày' }]),
@@ -112,6 +113,19 @@ describe('ReviewsService.queue', () => {
     expect(queue.options.mentees).toEqual([person('an')]);
     expect(queue.stats.inactiveMentees).toBe(1);
     expect(queue.filters.mentee).toBe('an');
+  });
+});
+
+describe('ReviewsService.queueCount', () => {
+  it('reports the unclaimed submissions for the header badge', async () => {
+    const { service, submissions } = setup({
+      rows: [],
+      counts: { waiting: 5, claimed: 2, overTarget: 0 },
+    });
+    await expect(service.queueCount()).resolves.toEqual({ unclaimed: 3 });
+    expect(submissions.unclaimedCount).toHaveBeenCalledTimes(1);
+    // no rows, filters or mentee lookups: it runs on every page a mentor opens
+    expect(submissions.awaitingReview).not.toHaveBeenCalled();
   });
 });
 

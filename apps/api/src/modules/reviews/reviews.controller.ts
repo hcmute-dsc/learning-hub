@@ -28,6 +28,12 @@ export class ReviewsController {
     return this.reviews.queue(user, query).then((data) => ({ data }));
   }
 
+  /** Unclaimed submissions, for the badge on the header's "Review" link. */
+  @Get('reviews/queue/count')
+  queueCount() {
+    return this.reviews.queueCount().then((data) => ({ data }));
+  }
+
   @Get('reviews/submissions/:submissionId')
   page(@CurrentUser() user: AuthUser, @Param('submissionId', idPipe) submissionId: string) {
     return this.reviews.page(user, submissionId).then((data) => ({ data }));

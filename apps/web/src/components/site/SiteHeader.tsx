@@ -1,86 +1,56 @@
 import Link from 'next/link';
 import type { Me } from '@hub/shared';
-import { adminHomeFor } from '@/components/admin/admin-tabs';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
-import { Avatar } from '@/components/ui/Avatar';
 import { BrandLogo } from './BrandLogo';
 import { NavLink } from './NavLink';
+import { ReviewCount } from './ReviewCount';
+import { UserMenu } from './UserMenu';
+import { REVIEW_LINK, accountLinksFor, mainLinksFor } from './nav';
 
-// `phone: false` hides a link on small screens to keep the bar on one line;
-// the dashboard is still where sign-in lands, so phones lose nothing.
-const NAV = [
-  { href: '/dashboard', label: 'Bảng điều khiển', phone: false },
-  { href: '/tracks', label: 'Lộ trình', phone: true },
-  { href: '/leaderboard', label: 'Xếp hạng', phone: false },
-];
-
-/** Mentor review queue (E7): mentors and admins; the page and API check roles again. */
-const REVIEW_LINK = { href: '/review', label: 'Review', phone: true };
-
-const canReview = (me: Me | null) =>
-  !!me && (me.roles.includes('admin') || me.roles.includes('mentor'));
-
-/** Top bar in the style of the club website: white bar, DSC mark, dark links with orange hover. */
+/**
+ * Top bar (INFORMATION-ARCHITECTURE §1, learning-hub#97), three parts:
+ *
+ *   [DSC logo → home]  main links (≤ 4)          [🔔] [avatar ▾ account menu]
+ *
+ * Which links each role gets is decided in nav.ts (guests: none, only "Đăng nhập").
+ * Below md the main links move into the account menu, so the bar never wraps or scrolls.
+ */
 export function SiteHeader({ me }: { me: Me | null }) {
-  // "Quản trị" opens the first admin tab this person may use; pages and API check again.
-  const adminHref = me ? adminHomeFor(me.roles) : null;
-  const links = [
-    ...NAV,
-    ...(canReview(me) ? [REVIEW_LINK] : []),
-    ...(adminHref ? [{ href: adminHref, label: 'Quản trị', phone: false }] : []),
-  ];
+  const mainLinks = mainLinksFor(me);
   return (
     <header className="surface sticky top-0 z-20 border-x-0 border-t-0 shadow-sm">
       <nav
         aria-label="Chính"
-        className="mx-auto flex max-w-6xl items-center gap-5 px-4 py-2.5 text-sm"
+        className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-2.5 text-sm md:gap-6"
       >
-        <Link
-          href="/"
-          className="flex items-center gap-2.5"
-          aria-label="DSC Learning Hub — trang chủ"
-        >
+        <Link href="/" className="shrink-0" aria-label="DSC Learning Hub — trang chủ">
           <BrandLogo height={30} />
-          <span className="hidden border-l border-[var(--border)] pl-2.5 font-semibold sm:inline">
-            Learning Hub
-          </span>
         </Link>
-        {links.map((n) => (
-          <NavLink key={n.href} href={n.href} className={n.phone ? '' : 'hidden sm:inline'}>
-            {n.label}
-          </NavLink>
-        ))}
-        <div className="ml-auto flex items-center gap-2 sm:gap-3">
+
+        {mainLinks.length > 0 && (
+          <ul className="hidden items-center gap-5 md:flex">
+            {mainLinks.map((item) => (
+              <li key={item.href}>
+                <NavLink href={item.href}>
+                  {item.label}
+                  {item.href === REVIEW_LINK.href && <ReviewCount />}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
           {me ? (
             <>
-              <Link
-                href={`/u/${me.githubLogin}`}
-                className="flex items-center gap-2 rounded-full hover:text-brand-600"
-                title="Hồ sơ của bạn"
-              >
-                <Avatar src={me.avatarUrl} size={28} />
-                <span className="hidden sm:inline">@{me.githubLogin}</span>
-              </Link>
               {/* pending accounts have nothing to read yet and the API would refuse them */}
               {me.status === 'active' && <NotificationBell />}
-              <Link
-                href="/settings"
-                aria-label="Cài đặt"
-                title="Cài đặt"
-                className="rounded-md p-1.5 text-lg leading-none hover:bg-[var(--bg)]"
-              >
-                <span aria-hidden>⚙️</span>
-              </Link>
-              <form action="/logout" method="post">
-                <button className="rounded-md border border-[var(--border)] px-3 py-1.5 whitespace-nowrap hover:border-brand-500">
-                  Đăng xuất
-                </button>
-              </form>
+              <UserMenu me={me} mainLinks={mainLinks} accountLinks={accountLinksFor(me)} />
             </>
           ) : (
             <Link
               href="/login"
-              className="press rounded-md bg-brand-600 px-3 py-1.5 font-medium text-white hover:bg-brand-700"
+              className="press rounded-md bg-brand-600 px-3 py-1.5 font-medium whitespace-nowrap text-white hover:bg-brand-700"
             >
               Đăng nhập
             </Link>

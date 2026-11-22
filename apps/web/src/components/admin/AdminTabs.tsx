@@ -2,14 +2,31 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { isTabActive, type AdminTab } from './admin-tabs';
+import { useEffect, useRef } from 'react';
+import { centeredScrollLeft, isTabActive, type AdminTab } from './admin-tabs';
 
-/** Sub-navigation of the admin area. Client component only for usePathname. */
+/**
+ * Sub-navigation of the admin area. On phones the tabs scroll sideways without a
+ * scrollbar, the edges fade to show there is more, and the open tab is scrolled
+ * into the middle (learning-hub#97). Client component for usePathname and the scroll.
+ */
 export function AdminTabs({ tabs }: { tabs: AdminTab[] }) {
   const pathname = usePathname();
+  const stripRef = useRef<HTMLUListElement>(null);
+
+  useEffect(() => {
+    const strip = stripRef.current;
+    const active = strip?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (!strip || !active || strip.scrollWidth <= strip.clientWidth) return;
+    strip.scrollLeft = centeredScrollLeft(active.offsetLeft, active.offsetWidth, strip.clientWidth);
+  }, [pathname]);
+
   return (
     <nav aria-label="Quản trị" className="border-b border-[var(--border)]">
-      <ul className="-mb-px flex gap-1 overflow-x-auto">
+      <ul
+        ref={stripRef}
+        className="relative -mb-px flex gap-1 overflow-x-auto [scrollbar-width:none] max-sm:[mask-image:linear-gradient(to_right,transparent,black_12px,black_calc(100%-24px),transparent)] [&::-webkit-scrollbar]:hidden"
+      >
         {tabs.map((tab) => {
           const active = isTabActive(tab, pathname);
           return (

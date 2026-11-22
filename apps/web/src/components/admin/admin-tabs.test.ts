@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { ADMIN_TABS, adminHomeFor, adminTabsFor, isTabActive } from './admin-tabs';
+import {
+  ADMIN_TABS,
+  adminHomeFor,
+  adminTabsFor,
+  centeredScrollLeft,
+  isTabActive,
+} from './admin-tabs';
 
 const hrefs = (roles: Parameters<typeof adminTabsFor>[0]) => adminTabsFor(roles).map((t) => t.href);
 
@@ -51,5 +57,17 @@ describe('isTabActive', () => {
     const overview = ADMIN_TABS[0];
     expect(isTabActive(overview, '/admin')).toBe(true);
     expect(isTabActive(overview, '/admin/members')).toBe(false);
+  });
+});
+
+describe('centeredScrollLeft', () => {
+  it('puts the open tab in the middle of the strip', () => {
+    // tab at 500–600 px in a 300 px strip → scroll so 550 is at 150
+    expect(centeredScrollLeft(500, 100, 300)).toBe(400);
+  });
+
+  it('never scrolls before the first tab', () => {
+    expect(centeredScrollLeft(0, 90, 300)).toBe(0);
+    expect(centeredScrollLeft(60, 90, 300)).toBe(0);
   });
 });
