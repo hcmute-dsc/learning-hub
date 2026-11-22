@@ -4,6 +4,14 @@ import type { ContentSource } from '../../modules/content/ports/content-source';
 const API = 'https://api.github.com';
 const RAW = 'https://raw.githubusercontent.com';
 const SHA = /^[0-9a-f]{40}$/;
+/** One GitHub request may take this long before it counts as a network failure. */
+const TIMEOUT_MS = 20_000;
+/** Network failures (no response at all) are retried; GitHub's own error answers are not. */
+const ATTEMPTS = 3;
+const RETRY_DELAY_MS = 1_000;
+
+type Fetch = (url: string, init: RequestInit) => Promise<Response>;
+const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 /**
  * Reads learning-hub-content from GitHub at an exact commit (ARCHITECTURE §7).
@@ -20,6 +28,9 @@ export class GithubContentSource implements ContentSource {
     private readonly repo: string,
     private readonly branch: string,
     private readonly token?: string,
+    /** For tests: the HTTP client and the pause between retries. */
+    private readonly http: Fetch = fetch,
+    private readonly sleep: (ms: number) => Promise<void> = wait,
   ) {
     this.sourceRepo = repo;
   }
@@ -34,7 +45,7 @@ export class GithubContentSource implements ContentSource {
   }
 
   private async get(url: string, accept?: string): Promise<Response> {
-    const res = await fetch(url, { headers: this.headers(accept) });
+    const res = await this.fetchWithRetry(url, accept);
     if (res.status === 404) throw DomainError.notFound(`GitHub resource ${url.replace(API, '')}`);
     if (res.status === 403 || res.status === 429) {
       throw new DomainError(
@@ -45,6 +56,32 @@ export class GithubContentSource implements ContentSource {
     }
     if (!res.ok) throw new DomainError('UPSTREAM_ERROR', 502, `GitHub responded ${res.status}`);
     return res;
+  }
+
+  /**
+   * `fetch` throws (TypeError "fetch failed", or a timeout) when there is no response at all:
+   * DNS, a dropped connection, GitHub not answering. That used to escape as a 500 (#87).
+   * GETs are safe to repeat, so try again a couple of times, then answer 502 with a message
+   * the admin can act on.
+   */
+  private async fetchWithRetry(url: string, accept?: string): Promise<Response> {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await this.http(url, {
+          headers: this.headers(accept),
+          signal: AbortSignal.timeout(TIMEOUT_MS),
+        });
+      } catch {
+        if (attempt >= ATTEMPTS) {
+          throw new DomainError(
+            'UPSTREAM_ERROR',
+            502,
+            'Could not reach GitHub; try again in a minute',
+          );
+        }
+        await this.sleep(RETRY_DELAY_MS * attempt);
+      }
+    }
   }
 
   async getHead(): Promise<{ sha: string }> {
