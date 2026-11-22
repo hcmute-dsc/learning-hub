@@ -12,6 +12,7 @@ on:
     types: [completed]
     branches: [main]
   # Manual run from the Actions tab, e.g. to redeploy after changing the VPS .env.
+  # Only a run started on main deploys (see the guards on the jobs below).
   workflow_dispatch:
 
 permissions:
@@ -29,7 +30,17 @@ env:
 
 jobs:
   images:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    # Deploy only what was pushed to main of this repository and passed CI, or a manual
+    # run started on main. The `branches` filter above matches by branch name only, so the
+    # event, repository and branch are checked here too. scripts/deploy-guards.test.mjs
+    # fails if one of these checks is removed (learning-hub#98).
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+      || (github.event_name == 'workflow_run'
+      && github.event.workflow_run.conclusion == 'success'
+      && github.event.workflow_run.event == 'push'
+      && github.event.workflow_run.head_repository.full_name == github.repository
+      && github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -62,7 +73,15 @@ jobs:
 
   deploy:
     needs: images
-    if: vars.DEPLOY_ENABLED == 'true'
+    # The same guard as the images job, repeated so this job never runs on its own.
+    if: >-
+      vars.DEPLOY_ENABLED == 'true'
+      && ((github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+      || (github.event_name == 'workflow_run'
+      && github.event.workflow_run.conclusion == 'success'
+      && github.event.workflow_run.event == 'push'
+      && github.event.workflow_run.head_repository.full_name == github.repository
+      && github.event.workflow_run.head_branch == 'main'))
     runs-on: ubuntu-latest
     timeout-minutes: 25
     environment:
