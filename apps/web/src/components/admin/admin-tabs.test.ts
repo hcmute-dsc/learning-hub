@@ -11,6 +11,7 @@ describe('adminTabsFor', () => {
       '/admin/content',
       '/admin/certificates',
       '/admin/leaderboard',
+      '/admin/reports',
       '/admin/audit',
     ]);
   });

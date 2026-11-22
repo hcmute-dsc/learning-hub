@@ -35,6 +35,7 @@ function Target({ row }: { row: AuditLogRow }) {
   }
   if (row.entityType === 'approved_emails') return <span>Danh sách email</span>;
   if (row.entityType === 'certificate') return <span>Chứng nhận</span>;
+  if (row.entityType === 'report') return <span>Báo cáo tiến độ</span>;
   return (
     <span className="muted font-mono text-xs">
       {row.entityType}/{row.entityId.slice(0, 8)}

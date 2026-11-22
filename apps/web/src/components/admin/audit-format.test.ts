@@ -85,4 +85,22 @@ describe('describeAudit', () => {
       '3 thành viên trong bài',
     );
   });
+
+  it('describes a report export without listing any member (learning-hub#34)', () => {
+    const metadata = { table: 'members', from: '2026-11-23', to: '2026-11-29', rows: 21 };
+    expect(
+      describeAudit({
+        action: 'report.export',
+        metadata: { ...metadata, track: 'sql-30-days', cohort: 'sql-2026', anonymized: true },
+      }),
+    ).toBe(
+      'Bảng thành viên, 2026-11-23 → 2026-11-29, track sql-30-days, đợt sql-2026, 21 dòng, ẩn danh',
+    );
+    expect(
+      describeAudit({
+        action: 'report.export',
+        metadata: { ...metadata, table: 'summary', track: null, cohort: '-', anonymized: false },
+      }),
+    ).toBe('Bảng tổng hợp, 2026-11-23 → 2026-11-29, track tất cả, chưa gắn đợt, 21 dòng');
+  });
 });

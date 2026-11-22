@@ -10,6 +10,7 @@ import {
   LeaderboardPostEvents,
   type LeaderboardPostEvent,
 } from '../notifications/weekly-leaderboard/weekly-leaderboard.events';
+import { ReportEvents, type ReportExportedEvent } from '../reports/reports.events';
 import { ReviewEvents, type ReviewCompletedEvent } from '../reviews/reviews.events';
 import {
   UserEvents,
@@ -115,6 +116,13 @@ export class AuditListener {
     return this.write('leaderboard.update', 'leaderboard_week', e.weekId, e.actorId, {
       members: e.members,
     });
+  }
+
+  /** Which table and filters, and how many rows: never the rows themselves. */
+  @OnEvent(ReportEvents.Exported)
+  onReportExported(e: ReportExportedEvent) {
+    const { actorId, ...details } = e;
+    return this.write('report.export', 'report', e.table, actorId, details);
   }
 
   @OnEvent(UserEvents.DiscordUnlinked)

@@ -129,3 +129,4 @@ export * from './achievements';
 export * from './notifications';
 export * from './certificate';
 export * from './leaderboard';
+export * from './report';

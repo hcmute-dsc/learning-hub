@@ -1,4 +1,4 @@
-import type { AuditLogRow, Role } from '@hub/shared';
+import { REPORT_NO_COHORT, type AuditLogRow, type Role } from '@hub/shared';
 import { ROLE_LABEL } from '@/components/profile/profile';
 import { STATUS_LABEL } from './account-filter';
 import { shortSha, VERSION_STATUS_LABEL } from './content-version';
@@ -25,6 +25,7 @@ const ACTION_LABEL: Record<string, string> = {
   'content.reject': 'Từ chối nội dung',
   'review.complete': 'Hoàn thành review',
   'certificate.revoke': 'Thu hồi chứng nhận',
+  'report.export': 'Xuất báo cáo CSV',
 };
 
 /** Mentor review outcomes (E7, written by AuditListener.onReviewCompleted). */
@@ -92,7 +93,21 @@ export function describeAudit(row: Pick<AuditLogRow, 'action' | 'metadata'>): st
       return `Kết luận: ${REVIEW_OUTCOME_LABEL[str(m.outcome)] ?? (str(m.outcome) || '—')}`;
     case 'certificate.revoke':
       return `Lộ trình ${str(m.trackSlug) || '—'}: ${str(m.reason) || 'không ghi lý do'}`;
+    case 'report.export':
+      return describeReportExport(m);
     default:
       return Object.keys(m).length ? JSON.stringify(m) : '';
   }
+}
+
+/** "Bảng thành viên, 2026-11-23 → 2026-11-29, track sql-30-days, đợt sql-2026, 21 dòng, ẩn danh" */
+function describeReportExport(m: Record<string, unknown>): string {
+  return [
+    str(m.table) === 'summary' ? 'Bảng tổng hợp' : 'Bảng thành viên',
+    `${str(m.from)} → ${str(m.to)}`,
+    `track ${str(m.track) || 'tất cả'}`,
+    m.cohort === REPORT_NO_COHORT ? 'chưa gắn đợt' : `đợt ${str(m.cohort) || 'tất cả'}`,
+    `${num(m.rows)} dòng`,
+    ...(m.anonymized === true ? ['ẩn danh'] : []),
+  ].join(', ');
 }
