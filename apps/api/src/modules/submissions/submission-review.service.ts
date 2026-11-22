@@ -138,6 +138,13 @@ export class SubmissionReviewService {
     return { waiting, claimed, overTarget };
   }
 
+  /** Waiting submissions nobody has claimed: the header badge (learning-hub#97). */
+  unclaimedCount(): Promise<number> {
+    return this.prisma.submission.count({
+      where: { ...awaitingReviewWhere({}), reviews: { none: { status: 'in_progress' } } },
+    });
+  }
+
   /** userId → when they last submitted anything (mentor dashboard: inactive mentees). */
   async lastSubmittedFor(userIds: string[]): Promise<{ userId: string; at: Date | null }[]> {
     if (!userIds.length) return [];

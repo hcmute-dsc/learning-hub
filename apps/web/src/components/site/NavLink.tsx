@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
+import { isActivePath } from './nav';
 
 /**
  * Header link that shows where you are: an orange underline on the current section
@@ -18,7 +19,7 @@ export function NavLink({
   children: ReactNode;
 }) {
   const pathname = usePathname();
-  const active = pathname === href || pathname.startsWith(`${href}/`);
+  const active = isActivePath(href, pathname);
   return (
     <Link
       href={href}

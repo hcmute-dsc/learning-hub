@@ -71,3 +71,18 @@ describe('SubmissionReviewService.awaitingReviewCounts', () => {
     );
   });
 });
+
+describe('SubmissionReviewService.unclaimedCount', () => {
+  it('counts waiting submissions with no review in progress, across every track', async () => {
+    const count = jest.fn().mockResolvedValue(4);
+    const service = new SubmissionReviewService(
+      { submission: { count } } as never,
+      {} as never,
+      {} as never,
+    );
+    await expect(service.unclaimedCount()).resolves.toBe(4);
+    expect(count).toHaveBeenCalledWith({
+      where: { ...awaitingReviewWhere({}), reviews: { none: { status: 'in_progress' } } },
+    });
+  });
+});

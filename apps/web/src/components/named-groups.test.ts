@@ -35,8 +35,9 @@ describe('Tailwind groups', () => {
   });
 
   it('never marks an element with a plain group class', () => {
+    // role="group" is ARIA (the account menu's sections, #97), not a Tailwind class.
     const offenders = files
-      .filter((f) => /(?<=["'`\s])group(?=["'`\s])/.test(f.text))
+      .filter((f) => /(?<=["'`\s])group(?=["'`\s])/.test(f.text.replace(/role="group"/g, '')))
       .map((f) => f.path);
     expect(offenders).toEqual([]);
   });
