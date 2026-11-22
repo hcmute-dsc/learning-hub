@@ -15,8 +15,8 @@ const ACTION_LINK =
  */
 export function ReviewQueueTable({ items, meId }: { items: ReviewQueueItem[]; meId: string }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-[var(--border)]">
-      <table className="w-full min-w-[46rem] border-collapse text-left text-sm">
+    <div className="overflow-x-auto md:rounded-xl md:border md:border-[var(--border)]">
+      <table className="stack-table w-full md:min-w-[46rem] border-collapse text-left text-sm">
         <caption className="sr-only">Bài nộp đang chờ review, cũ nhất trước</caption>
         <thead className="bg-[var(--code-bg)]">
           <tr>
@@ -45,8 +45,8 @@ export function ReviewQueueTable({ items, meId }: { items: ReviewQueueItem[]; me
             const claimedByMe = item.openReview?.reviewer.id === meId;
             const isOwn = item.member.id === meId;
             return (
-              <tr key={item.submissionId} className="border-t border-[var(--border)] align-top">
-                <td className="px-3 py-2.5">
+              <tr key={item.submissionId} className="border-[var(--border)] align-top md:border-t">
+                <td className="py-1 md:px-3 md:py-2.5">
                   <span className="flex items-center gap-2">
                     <Avatar src={item.member.avatarUrl} size={28} />
                     <span className="min-w-0">
@@ -55,16 +55,16 @@ export function ReviewQueueTable({ items, meId }: { items: ReviewQueueItem[]; me
                     </span>
                   </span>
                 </td>
-                <td className="px-3 py-2.5">
+                <td data-label="Bài tập" className="py-1 md:px-3 md:py-2.5">
                   <span className="block font-medium">{item.exercise.title}</span>
                   <span className="muted block text-xs">
                     {item.track.title} · lần {item.attempt}
                   </span>
                 </td>
-                <td className="px-3 py-2.5 whitespace-nowrap">
+                <td data-label="Nộp lúc" className="py-1 md:px-3 md:py-2.5 md:whitespace-nowrap">
                   <time dateTime={item.submittedAt}>{formatDateTime(item.submittedAt)}</time>
                 </td>
-                <td className="px-3 py-2.5 whitespace-nowrap">
+                <td data-label="Đã chờ" className="py-1 md:px-3 md:py-2.5 md:whitespace-nowrap">
                   {formatWaiting(item.hoursWaiting)}
                   {item.overTarget && (
                     <span className="ml-2 rounded-full border border-orange-300 bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-900 dark:border-orange-800 dark:bg-orange-950 dark:text-orange-100">
@@ -72,7 +72,7 @@ export function ReviewQueueTable({ items, meId }: { items: ReviewQueueItem[]; me
                     </span>
                   )}
                 </td>
-                <td className="px-3 py-2.5">
+                <td data-label="Người nhận" className="py-1 md:px-3 md:py-2.5">
                   {item.openReview ? (
                     <span className="flex items-center gap-1.5">
                       <Avatar src={item.openReview.reviewer.avatarUrl} size={20} />
@@ -82,7 +82,7 @@ export function ReviewQueueTable({ items, meId }: { items: ReviewQueueItem[]; me
                     <span className="muted">Chưa ai nhận</span>
                   )}
                 </td>
-                <td className="px-3 py-2.5 text-right">
+                <td className="py-1 md:px-3 md:py-2.5 text-right">
                   {claimedByMe ? (
                     <Link
                       href={`/review/${item.submissionId}`}

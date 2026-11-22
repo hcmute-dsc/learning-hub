@@ -43,7 +43,7 @@ export default async function ContentAdminPage() {
           <p className="muted mt-3 text-sm">Chưa có phiên bản nào. Bấm “Đồng bộ từ GitHub”.</p>
         ) : (
           <div className="table-wrap mt-4 overflow-x-auto" tabIndex={0}>
-            <table className="w-full min-w-[44rem] text-left text-sm">
+            <table className="stack-table w-full md:min-w-[44rem] text-left text-sm">
               <thead className="muted">
                 <tr className="border-b border-[var(--border)]">
                   <th className="py-2 pr-4 font-medium">Trạng thái</th>
@@ -56,27 +56,33 @@ export default async function ContentAdminPage() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[var(--border)]">
+              <tbody className="md:divide-y divide-[var(--border)]">
                 {versions.map((v) => (
                   <tr key={v.id}>
-                    <td className="py-2 pr-4">
+                    <td data-label="Trạng thái" className="py-1 md:py-2 md:pr-4">
                       <VersionStatusBadge status={v.status} />
                     </td>
-                    <td className="py-2 pr-4">
+                    <td data-label="Commit" className="py-1 md:py-2 md:pr-4">
                       <CommitLink sourceRepo={v.sourceRepo} sha={v.commitSha} />
                     </td>
-                    <td className="py-2 pr-4 text-xs whitespace-nowrap">
+                    <td
+                      data-label="Thay đổi"
+                      className="py-1 md:py-2 md:pr-4 text-xs md:whitespace-nowrap"
+                    >
                       {v.status === 'rejected' && v.summary.issueCount
                         ? `${v.summary.issueCount} lỗi`
                         : diffShort(v.summary)}
                     </td>
-                    <td className="py-2 pr-4 text-xs whitespace-nowrap">
+                    <td
+                      data-label="Đồng bộ lúc"
+                      className="py-1 md:py-2 md:pr-4 text-xs md:whitespace-nowrap"
+                    >
                       {formatDateTime(v.createdAt)}
                     </td>
-                    <td className="py-2 pr-4 text-xs">
+                    <td data-label="Người đồng bộ" className="py-1 md:py-2 md:pr-4 text-xs">
                       {v.syncedBy ? `@${v.syncedBy.githubLogin}` : 'Hệ thống'}
                     </td>
-                    <td className="py-2 text-right">
+                    <td className="py-1 md:py-2 text-right">
                       <Link
                         href={`/admin/content/versions/${v.id}`}
                         prefetch={false}

@@ -8,6 +8,7 @@ import { rewriteContentUrl, type ContentOrigin } from './content-url';
 import { CodeBlock } from './CodeBlock';
 import { MermaidDiagram } from './MermaidDiagram';
 import { mermaidSource } from './mermaid-source';
+import { TableWrap } from './TableWrap';
 
 /**
  * Renders Markdown from a content repo (lessons, exercise statements).
@@ -77,11 +78,7 @@ const COMPONENTS: Components = {
     return diagram === null ? <CodeBlock {...props} /> : <MermaidDiagram code={diagram} />;
   },
   // Wide tables scroll inside their own box instead of squeezing the columns.
-  table: ({ node: _node, ...props }) => (
-    <div className="table-wrap" tabIndex={0}>
-      <table {...props} />
-    </div>
-  ),
+  table: ({ node: _node, ...props }) => <TableWrap {...props} />,
 };
 
 function MarkdownLink(props: ComponentPropsWithoutRef<'a'>) {

@@ -77,7 +77,7 @@ export default async function MembersAdminPage() {
                 Xem {list.total} email trong danh sách
               </summary>
               <div className="mt-3 overflow-x-auto">
-                <table className="w-full text-left text-sm">
+                <table className="stack-table w-full text-left text-sm">
                   <thead className="muted">
                     <tr>
                       <th className="py-1 pr-4 font-medium">Email</th>
@@ -85,12 +85,16 @@ export default async function MembersAdminPage() {
                       <th className="py-1 font-medium">Thêm lúc</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[var(--border)]">
+                  <tbody className="md:divide-y divide-[var(--border)]">
                     {list.emails.map((row) => (
                       <tr key={row.email}>
-                        <td className="py-1 pr-4 font-mono">{row.email}</td>
-                        <td className="py-1 pr-4">{row.note ?? '—'}</td>
-                        <td className="py-1">{formatDateTime(row.createdAt)}</td>
+                        <td className="font-mono break-all md:py-1 md:pr-4">{row.email}</td>
+                        <td data-label="Ghi chú" className="md:py-1 md:pr-4">
+                          {row.note ?? '—'}
+                        </td>
+                        <td data-label="Thêm lúc" className="md:py-1">
+                          {formatDateTime(row.createdAt)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

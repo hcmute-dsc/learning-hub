@@ -47,7 +47,7 @@ const TD = 'py-2 pr-4 tabular-nums';
 export function GroupTable({ groups }: { groups: ReportGroup[] }) {
   return (
     <div className="table-wrap overflow-x-auto" tabIndex={0}>
-      <table className="w-full min-w-[56rem] text-left text-sm">
+      <table className="stack-table w-full md:min-w-[56rem] text-left text-sm">
         <thead className="muted">
           <tr className="border-b border-[var(--border)]">
             <th className={TH}>Track</th>
@@ -66,24 +66,37 @@ export function GroupTable({ groups }: { groups: ReportGroup[] }) {
           {groups.map((g) => (
             <tr
               key={`${g.track.slug}:${g.cohort ?? ''}`}
-              className="border-b border-[var(--border)] last:border-0"
+              className="border-[var(--border)] md:border-b md:last:border-0"
             >
-              <td className="py-2 pr-4">{g.track.title}</td>
-              <td className={`py-2 pr-4 ${g.cohort ? '' : 'muted italic'}`}>
+              <td className="py-1 md:py-2 md:pr-4">{g.track.title}</td>
+              <td
+                data-label="Đợt"
+                className={`py-1 md:py-2 md:pr-4 ${g.cohort ? '' : 'muted italic'}`}
+              >
                 {cohortLabel(g.cohort)}
               </td>
-              <td className={TD}>{g.enrolled}</td>
-              <td className={TD}>{g.active}</td>
-              <td className={TD}>{g.lessonsCompleted}</td>
-              <td className={TD}>{g.exercisesCompleted}</td>
-              <td className={TD}>
+              <td data-label="Ghi danh" className={TD}>
+                {g.enrolled}
+              </td>
+              <td data-label="Hoạt động" className={TD}>
+                {g.active}
+              </td>
+              <td data-label="Bài học" className={TD}>
+                {g.lessonsCompleted}
+              </td>
+              <td data-label="Bài tập" className={TD}>
+                {g.exercisesCompleted}
+              </td>
+              <td data-label="≥ 5 bài" className={TD}>
                 {g.atLeastFive} ({g.atLeastFiveRate}%)
               </td>
-              <td className={TD}>
+              <td data-label="Hoàn thành" className={TD}>
                 {g.completedTrack} ({g.completionRate}%)
               </td>
-              <td className={TD}>{g.awaitingReview}</td>
-              <td className="py-2 tabular-nums">
+              <td data-label="Chờ review" className={TD}>
+                {g.awaitingReview}
+              </td>
+              <td data-label="Review (trung vị / lâu nhất)" className="py-1 md:py-2 tabular-nums">
                 {g.reviewsDone === 0
                   ? '—'
                   : `${formatHours(g.reviewHoursMedian)} / ${formatHours(g.reviewHoursMax)} (${g.reviewsDone})`}
@@ -99,7 +112,7 @@ export function GroupTable({ groups }: { groups: ReportGroup[] }) {
 export function MemberTable({ members }: { members: ReportMemberRow[] }) {
   return (
     <div className="table-wrap overflow-x-auto" tabIndex={0}>
-      <table className="w-full min-w-[56rem] text-left text-sm">
+      <table className="stack-table w-full md:min-w-[56rem] text-left text-sm">
         <thead className="muted">
           <tr className="border-b border-[var(--border)]">
             <th className={TH}>GitHub</th>
@@ -115,9 +128,9 @@ export function MemberTable({ members }: { members: ReportMemberRow[] }) {
           {members.map((m) => (
             <tr
               key={`${m.githubLogin}:${m.trackSlug}`}
-              className="border-b border-[var(--border)] last:border-0"
+              className="border-[var(--border)] md:border-b md:last:border-0"
             >
-              <td className="py-2 pr-4">
+              <td className="py-1 md:py-2 md:pr-4">
                 @{m.githubLogin}
                 {m.completedAt && (
                   <span className="ml-2 rounded bg-emerald-50 px-1.5 py-0.5 text-xs text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
@@ -125,18 +138,25 @@ export function MemberTable({ members }: { members: ReportMemberRow[] }) {
                   </span>
                 )}
               </td>
-              <td className="py-2 pr-4">{m.trackSlug}</td>
-              <td className={`py-2 pr-4 ${m.cohort ? '' : 'muted italic'}`}>
+              <td data-label="Track" className="py-1 md:py-2 md:pr-4">
+                {m.trackSlug}
+              </td>
+              <td
+                data-label="Đợt"
+                className={`py-1 md:py-2 md:pr-4 ${m.cohort ? '' : 'muted italic'}`}
+              >
                 {cohortLabel(m.cohort)}
               </td>
-              <td className={TD}>
+              <td data-label="Bài học (kỳ · tổng)" className={TD}>
                 {m.lessonsInPeriod} · {m.lessonsDone}/{m.lessonsTotal}
               </td>
-              <td className={TD}>
+              <td data-label="Bài tập (kỳ · tổng)" className={TD}>
                 {m.exercisesInPeriod} · {m.exercisesDone}/{m.exercisesTotal}
               </td>
-              <td className={TD}>{m.awaitingReview}</td>
-              <td className="py-2">
+              <td data-label="Chờ review" className={TD}>
+                {m.awaitingReview}
+              </td>
+              <td data-label="Hoạt động gần nhất" className="py-1 md:py-2">
                 {m.lastActiveAt ? formatDateTime(m.lastActiveAt) : <span className="muted">—</span>}
               </td>
             </tr>

@@ -77,7 +77,7 @@ export default async function ContentVersionPage({ params }: { params: Promise<{
         </p>
         {rows ? (
           <div className="table-wrap mt-4 overflow-x-auto" tabIndex={0}>
-            <table className="w-full min-w-[28rem] text-left text-sm">
+            <table className="stack-table w-full md:min-w-[28rem] text-left text-sm">
               <thead className="muted">
                 <tr className="border-b border-[var(--border)]">
                   <th className="py-2 pr-4 font-medium">Loại</th>
@@ -87,20 +87,31 @@ export default async function ContentVersionPage({ params }: { params: Promise<{
                   <th className="py-2 font-medium">Giữ nguyên</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[var(--border)] tabular-nums">
+              <tbody className="md:divide-y divide-[var(--border)] tabular-nums">
                 {rows.map((r) => (
                   <tr key={r.kind}>
-                    <td className="py-2 pr-4 font-medium">{r.label}</td>
-                    <td className="py-2 pr-4 text-emerald-700 dark:text-emerald-300">
+                    <td className="py-1 md:py-2 md:pr-4 font-medium">{r.label}</td>
+                    <td
+                      data-label="Thêm"
+                      className="py-1 md:py-2 md:pr-4 text-emerald-700 dark:text-emerald-300"
+                    >
                       {r.added ? `+${r.added}` : '0'}
                     </td>
-                    <td className="py-2 pr-4 text-amber-700 dark:text-amber-300">
+                    <td
+                      data-label="Sửa"
+                      className="py-1 md:py-2 md:pr-4 text-amber-700 dark:text-amber-300"
+                    >
                       {r.changed ? `~${r.changed}` : '0'}
                     </td>
-                    <td className="py-2 pr-4 text-red-700 dark:text-red-300">
+                    <td
+                      data-label="Xóa (lưu trữ)"
+                      className="py-1 md:py-2 md:pr-4 text-red-700 dark:text-red-300"
+                    >
                       {r.removed ? `−${r.removed}` : '0'}
                     </td>
-                    <td className="muted py-2">{r.unchanged}</td>
+                    <td data-label="Giữ nguyên" className="muted py-1 md:py-2">
+                      {r.unchanged}
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -84,7 +84,7 @@ export function AuditTable({
   return (
     <div className="space-y-4">
       <div className="table-wrap overflow-x-auto" tabIndex={0}>
-        <table className="w-full min-w-[48rem] text-left text-sm">
+        <table className="stack-table w-full md:min-w-[48rem] text-left text-sm">
           <thead className="muted">
             <tr className="border-b border-[var(--border)]">
               <th className="py-2 pr-4 font-medium">Thời gian</th>
@@ -94,22 +94,30 @@ export function AuditTable({
               <th className="py-2 font-medium">Chi tiết</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[var(--border)]">
+          <tbody className="md:divide-y divide-[var(--border)]">
             {rows.map((row) => (
               <tr key={row.id}>
-                <td className="py-2 pr-4 text-xs whitespace-nowrap">
+                <td
+                  data-label="Thời gian"
+                  className="py-1 md:py-2 md:pr-4 text-xs md:whitespace-nowrap"
+                >
                   {formatDateTime(row.createdAt)}
                 </td>
-                <td className="py-2 pr-4">
+                <td data-label="Người thực hiện" className="py-1 md:py-2 md:pr-4">
                   <Person user={row.actor} />
                 </td>
-                <td className="py-2 pr-4 font-medium whitespace-nowrap">
+                <td
+                  data-label="Hành động"
+                  className="py-1 md:py-2 md:pr-4 font-medium md:whitespace-nowrap"
+                >
                   {actionLabel(row.action)}
                 </td>
-                <td className="py-2 pr-4">
+                <td data-label="Đối tượng" className="py-1 md:py-2 md:pr-4">
                   <Target row={row} />
                 </td>
-                <td className="py-2 text-xs break-words">{describeAudit(row)}</td>
+                <td data-label="Chi tiết" className="py-1 md:py-2 text-xs break-words">
+                  {describeAudit(row)}
+                </td>
               </tr>
             ))}
           </tbody>

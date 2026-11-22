@@ -105,7 +105,7 @@ export function NotificationBell() {
         aria-expanded={open}
         aria-controls={panelId}
         title="Thông báo"
-        className="relative rounded-md p-1.5 text-lg leading-none hover:bg-[var(--bg)]"
+        className="relative inline-grid min-h-11 min-w-11 place-items-center rounded-md p-1.5 text-lg leading-none hover:bg-[var(--bg)] md:inline-block md:min-h-0 md:min-w-0"
       >
         <span aria-hidden>🔔</span>
         {badge && (
