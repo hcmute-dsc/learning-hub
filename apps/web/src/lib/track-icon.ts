@@ -8,6 +8,7 @@ const LABEL_BY_TAG: Record<string, string> = {
   postgresql: 'SQL',
   git: 'Git',
   github: 'Git',
+  'github-actions': 'CI', // GitHub Actions và Docker (CI/CD)
   docker: 'Dkr',
   python: 'Py',
   javascript: 'JS',
@@ -22,7 +23,12 @@ export function trackIconLabel(track: { title: string; tags?: string[] }): strin
   // Tags first; then known topics in the title, so pages without tags (the dashboard
   // only gets titles) still show the same label, e.g. "30 ngày học SQL" → "SQL".
   const words = track.title.split(/[\s,.:()&/-]+/).filter(Boolean);
-  for (const key of [...(track.tags ?? []), ...words]) {
+  // In the title, try each pair of words before the single word, so "GitHub Actions"
+  // matches `github-actions` (CI) before `github` (Git).
+  const titleKeys = words.flatMap((w, i) =>
+    i + 1 < words.length ? [`${w}-${words[i + 1]}`, w] : [w],
+  );
+  for (const key of [...(track.tags ?? []), ...titleKeys]) {
     const label = LABEL_BY_TAG[key.toLowerCase()];
     if (label) return label;
   }

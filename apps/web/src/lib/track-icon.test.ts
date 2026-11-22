@@ -18,6 +18,18 @@ describe('trackIconLabel', () => {
     expect(trackIconLabel({ title: 'Tự động hoá với Discord' })).toBe('DA');
   });
 
+  it('shows CI for the GitHub Actions and Docker track, from its tags or its title', () => {
+    const title = 'GitHub Actions và Docker: từ portfolio đến pipeline';
+    expect(trackIconLabel({ title, tags: ['github-actions', 'docker', 'docker-compose'] })).toBe(
+      'CI',
+    );
+    expect(trackIconLabel({ title })).toBe('CI');
+  });
+
+  it('still matches a single word when the pair is unknown', () => {
+    expect(trackIconLabel({ title: 'GitHub cho người mới' })).toBe('Git');
+  });
+
   it('falls back to the first letters of the first two words', () => {
     expect(trackIconLabel({ title: 'Thuật toán cơ bản' })).toBe('TT');
   });
