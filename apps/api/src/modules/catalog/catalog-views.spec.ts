@@ -38,6 +38,7 @@ function trackRow(over: Partial<TrackDetailRow> = {}): TrackDetailRow {
     starterRepo: null,
     setupMd: null,
     resourcesMd: null,
+    glossary: null,
     sourcePath: 'tracks/sql-30-days',
     contentVersion: { sourceRepo: REPO, commitSha: 'ea5de5c' },
     modules: [
@@ -113,6 +114,9 @@ describe('track pages (learning-hub#44)', () => {
   it('tells the track page which pages exist, without their text', () => {
     expect(toTrackDetail(withDocs(), null).docs).toEqual({ setup: true, resources: false });
     expect(toTrackDetail(trackRow(), null).docs).toEqual({ setup: false, resources: false });
+    expect(toTrackDetail(trackRow(), null).hasGlossary).toBe(false);
+    const glossary = [{ term: 'init', anchor: 'init', meaning: 'Khởi tạo.', see: [] }];
+    expect(toTrackDetail(trackRow({ glossary }), null).hasGlossary).toBe(true);
   });
 
   it('treats an empty text as no page', () => {
@@ -177,6 +181,7 @@ describe('toLessonContext', () => {
     title: 'Ngày 1',
     bodyMd: '# Ngày 1',
     estMinutes: 30,
+    terms: [],
     sourcePath: 'tracks/sql-30-days/modules/01/day-01.md',
     module: moduleRow,
     contentVersion: { sourceRepo: REPO, commitSha: '01aaa53' },
@@ -212,6 +217,20 @@ describe('toLessonContext', () => {
     expect(ctx.track).toEqual({ id: 't1', slug: 'sql-30-days', title: 'SQL 30 ngày' });
     expect(ctx.module).toEqual({ slug: '01-foundations', title: 'Nền tảng' });
     expect(ctx.exercises).toEqual([{ id: 'e1', title: 'Bài tập 1', type: 'quiz' }]);
+  });
+
+  it('gives the glossary entries of its terms, in front matter order (learning-hub#106)', () => {
+    const glossary = [
+      { term: 'SELECT', anchor: 'select', meaning: 'Chọn cột.', see: [] },
+      { term: 'row', anchor: 'row', literal: 'hàng', meaning: 'Một dòng.', see: [] },
+    ];
+    const ctx = toLessonContext({
+      ...lesson,
+      terms: ['row', 'select', 'missing'],
+      module: { ...moduleRow, track: { ...track, glossary } },
+    });
+    expect(ctx.terms.map((t) => t.term)).toEqual(['row', 'SELECT']);
+    expect(toLessonContext(lesson).terms).toEqual([]);
   });
 });
 

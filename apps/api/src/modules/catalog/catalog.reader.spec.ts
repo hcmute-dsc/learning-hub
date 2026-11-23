@@ -37,6 +37,7 @@ describe('CatalogReader', () => {
       title: 'Ngày 1',
       bodyMd: '',
       estMinutes: null,
+      terms: [],
       sourcePath: 'tracks/sql/modules/01/lessons/day-01.md',
       module: { slug: 'm1', title: 'M1', track: { id: 't1', slug: 'sql', title: 'SQL' } },
       contentVersion: { sourceRepo: 'hcmute-dsc/learning-hub-content', commitSha: 'old' },

@@ -1,4 +1,4 @@
-import { dirOf, itemRef, LAYOUT_PATTERNS } from './layout';
+import { dirOf, glossaryAnchor, itemRef, layout, LAYOUT_PATTERNS } from './layout';
 import type { ContentIssue, ContentTree, ExerciseNode } from './types';
 
 /**
@@ -8,6 +8,7 @@ import type { ContentIssue, ContentTree, ExerciseNode } from './types';
  *   3. references       — `lesson:` and `prerequisites:` point to things that exist,
  *                         and `code` exercises have a starter repo on their track
  *   4. no cycles        — exercise prerequisites form a DAG
+ *   5. glossary         — terms unique, `see:` and lessons' `terms:` name real terms (§3.1c)
  *
  * `earlier` = issues found while parsing. Files that already have a problem are not
  * reported again as orphans.
@@ -22,6 +23,7 @@ export function findCrossFileProblems(
     ...findDuplicates(tree),
     ...findBrokenReferences(tree),
     ...findPrerequisiteCycles(tree),
+    ...findGlossaryProblems(files, tree),
   ];
 }
 
@@ -192,5 +194,69 @@ function findPrerequisiteCycles(tree: ContentTree): ContentIssue[] {
   };
 
   for (const ref of exercises.keys()) visit(ref, []);
+  return issues;
+}
+
+// ------------------------------------------------------------------ 5. glossary
+
+/**
+ * `glossary.yaml` (§3.1c): each term once, and every `see:` and lesson `terms:` entry names a
+ * term of the same track. Terms are matched by `glossaryAnchor`, so case does not matter.
+ */
+function findGlossaryProblems(
+  files: ReadonlyMap<string, string>,
+  tree: ContentTree,
+): ContentIssue[] {
+  const issues: ContentIssue[] = [];
+  for (const t of tree.tracks) {
+    const path = layout.glossaryFile(dirOf(t.sourcePath));
+    const known = new Map<string, string>();
+    for (const entry of t.glossary ?? []) {
+      const first = known.get(entry.anchor);
+      if (first !== undefined)
+        issues.push({
+          path,
+          message:
+            first === entry.term
+              ? `term "${entry.term}" is listed twice`
+              : `terms "${first}" and "${entry.term}" are the same word (case and punctuation are ignored)`,
+        });
+      else known.set(entry.anchor, entry.term);
+    }
+
+    for (const entry of t.glossary ?? [])
+      for (const ref of entry.see) {
+        if (!known.has(glossaryAnchor(ref)))
+          issues.push({
+            path,
+            message: `"${entry.term}": see "${ref}" is not a term in this glossary`,
+          });
+        else if (glossaryAnchor(ref) === entry.anchor)
+          issues.push({ path, message: `"${entry.term}": see points to the term itself` });
+      }
+
+    for (const m of t.modules)
+      for (const l of m.lessons) {
+        if (l.terms.length === 0) continue;
+        if (t.glossary === null) {
+          // A glossary.yaml that failed to parse already has its own issue.
+          if (files.has(path)) continue;
+          issues.push({
+            path: l.sourcePath,
+            message: `terms need ${path} (the track has no glossary)`,
+          });
+          continue;
+        }
+        const seen = new Set<string>();
+        for (const term of l.terms) {
+          const anchor = glossaryAnchor(term);
+          if (!known.has(anchor))
+            issues.push({ path: l.sourcePath, message: `term "${term}" is not in ${path}` });
+          else if (seen.has(anchor))
+            issues.push({ path: l.sourcePath, message: `term "${term}" is listed twice` });
+          seen.add(anchor);
+        }
+      }
+  }
   return issues;
 }

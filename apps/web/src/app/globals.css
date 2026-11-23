@@ -293,6 +293,62 @@ main:has(> .page-wide) {
   display: inline-block;
 }
 
+/* New words of a lesson (learning-hub#106): the first use of each term has a dotted
+   underline and opens a note (components/markdown/GlossaryNote.tsx). The note is a native
+   popover in the top layer: `position: fixed`, placed by the component under the word. */
+.glossary-term {
+  font-style: normal;
+}
+.glossary-term-button {
+  font: inherit;
+  color: inherit;
+  text-decoration: underline dotted;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.2em;
+  cursor: help;
+  border-radius: 2px;
+}
+.glossary-term-button:focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 2px;
+}
+.glossary-note {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  width: min(20rem, calc(100vw - 1rem));
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.15);
+}
+.glossary-note-title,
+.glossary-note-line,
+.glossary-note-link {
+  display: block;
+}
+.glossary-note-line,
+.glossary-note-link {
+  margin-top: 0.35rem;
+}
+.glossary-note .glossary-note-link {
+  font-weight: 500;
+}
+
+/* A term opened from a link (/tracks/:slug/glossary#init) stands out for a moment. */
+.glossary-entry {
+  scroll-margin-top: 5rem;
+}
+.glossary-entry:target {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 4px;
+  border-radius: 0.5rem;
+}
+
 /* Code highlighting: classes added by rehype-highlight (Markdown.tsx). Colors follow
    GitHub's light and dark themes, so code looks the same as in the content repo. */
 :root {

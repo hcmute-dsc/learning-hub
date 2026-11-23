@@ -1,0 +1,18 @@
+# Từ vựng của lộ trình (CONTENT-SPECIFICATION §3.1c). Mỗi từ: chữ gốc, nghĩa đen, nghĩa ở đây.
+- term: repository
+  literal: kho chứa
+  meaning: Thư mục mà Git theo dõi, cùng toàn bộ lịch sử thay đổi của nó. Hay gọi tắt là repo.
+  see: [commit]
+
+- term: init
+  expansion: initialize
+  literal: khởi tạo
+  meaning: Tạo thư mục ẩn .git để Git bắt đầu theo dõi thư mục hiện tại.
+  example: git init
+  see: [repository]
+
+- term: commit
+  literal: cam kết, chốt lại
+  meaning: Một lần chốt thay đổi vào lịch sử, có lời nhắn mô tả thay đổi đó.
+  example: git commit -m "Add README"
+  see: [repository]

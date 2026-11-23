@@ -5,6 +5,7 @@ import { LessonNav } from '@/components/learn/LessonNav';
 import { LessonStatusBadge } from '@/components/learn/LessonStatusBadge';
 import { moduleHref } from '@/components/learn/links';
 import { MarkLessonDone } from '@/components/learn/MarkLessonDone';
+import { NewWords } from '@/components/learn/NewWords';
 import { RelatedExercises } from '@/components/learn/RelatedExercises';
 import { TrackSidebar } from '@/components/learn/TrackSidebar';
 import { githubBlobUrl } from '@/components/markdown/content-url';
@@ -76,7 +77,13 @@ export default async function LessonPage({ params }: Params) {
           </details>
         </header>
 
-        <Markdown source={lesson.bodyMd} origin={lesson.source} />
+        <NewWords trackSlug={lesson.track.slug} terms={lesson.terms ?? []} />
+
+        <Markdown
+          source={lesson.bodyMd}
+          origin={lesson.source}
+          glossary={{ trackSlug: lesson.track.slug, terms: lesson.terms ?? [] }}
+        />
 
         <section className="surface space-y-5 rounded-xl p-5">
           <MarkLessonDone lessonId={lesson.id} status={lesson.progress} />

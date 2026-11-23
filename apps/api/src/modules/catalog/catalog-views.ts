@@ -7,6 +7,7 @@ import type {
   TrackSummary,
 } from '@hub/shared';
 import type { ExerciseContext, LessonContext, OutlineItem, StoredHint } from './catalog.reader';
+import { lessonTerms, storedGlossary } from './glossary-views';
 
 /**
  * Pure mappers from database rows to what the catalog returns (CONTRIBUTING rule 3:
@@ -14,7 +15,7 @@ import type { ExerciseContext, LessonContext, OutlineItem, StoredHint } from './
  * fields used here only; Prisma results fit them structurally.
  */
 
-interface Source {
+export interface Source {
   sourceRepo: string;
   commitSha: string;
   /** registry versions only (DECISIONS ADR-10): where each track was read from, by slug */
@@ -83,6 +84,8 @@ export interface TrackDocsRow {
 
 export interface TrackDetailRow extends TrackRow, TrackDocsRow {
   starterRepo: string | null;
+  /** glossary.yaml as stored (JSON), null when the track has none */
+  glossary: unknown;
   /** the version that last wrote this track row */
   contentVersion: Source;
   modules: {
@@ -115,6 +118,8 @@ export function toTrackDetail(track: TrackDetailRow, published: Source | null) {
     starterRepo: track.starterRepo,
     /** which optional pages exist; the text itself comes from GET /tracks/:slug/docs/:page */
     docs: trackDocFlags(track),
+    /** the track has a "Từ vựng" page: GET /tracks/:slug/glossary */
+    hasGlossary: storedGlossary(track.glossary).length > 0,
     source: { ...source, path: track.sourcePath },
     modules: track.modules.map((m) => ({
       id: m.id,
@@ -188,7 +193,14 @@ export function toOutlineItems(track: OutlineRow): OutlineItem[] {
 interface ModuleWithTrack {
   slug: string;
   title: string;
-  track: { id: string; slug: string; title: string; starterRepo: string | null };
+  track: {
+    id: string;
+    slug: string;
+    title: string;
+    starterRepo: string | null;
+    /** only read for lessons (their new words); exercises leave it out */
+    glossary?: unknown;
+  };
 }
 
 export interface LessonRow {
@@ -197,6 +209,8 @@ export interface LessonRow {
   title: string;
   bodyMd: string;
   estMinutes: number | null;
+  /** front matter `terms:` (§3.1c) */
+  terms: string[];
   sourcePath: string;
   module: ModuleWithTrack;
   /** the version that last wrote this lesson; only used before the first publish */
@@ -224,6 +238,7 @@ export function toLessonContext(lesson: LessonRow, published: Source | null = nu
     track: { id: module.track.id, slug: module.track.slug, title: module.track.title },
     module: { slug: module.slug, title: module.title },
     source: sourceFor(published ?? lesson.contentVersion, module.track.slug),
+    terms: lessonTerms(module.track.glossary, lesson.terms),
     exercises: lesson.exercises.map((e) => ({
       id: e.id,
       title: e.title,

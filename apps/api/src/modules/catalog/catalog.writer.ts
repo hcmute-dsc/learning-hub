@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { exerciseIndex, type ContentTree } from '@hub/content';
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import type { CatalogChanges, DbSnapshot } from './catalog.types';
 
 type Tx = Prisma.TransactionClient;
@@ -69,6 +69,9 @@ export class CatalogWriter {
           starterRepo: t.starterRepo,
           setupMd: t.setupMd,
           resourcesMd: t.resourcesMd,
+          // JSON null would be a JSON value; DbNull is SQL NULL ("no glossary").
+          glossary:
+            t.glossary === null ? Prisma.DbNull : (t.glossary as unknown as Prisma.InputJsonValue),
           status: t.status,
           sourcePath: t.sourcePath,
           contentHash: t.hash,
@@ -107,6 +110,7 @@ export class CatalogWriter {
             title: l.title,
             bodyMd: l.bodyMd,
             estMinutes: l.estMinutes,
+            terms: l.terms,
             position: l.position,
             status: 'active',
             sourcePath: l.sourcePath,
