@@ -1,5 +1,11 @@
 import 'server-only';
-import type { TrackDocPage, TrackDocView, TrackItemsProgress, TrackLevel } from '@hub/shared';
+import type {
+  TrackDocPage,
+  TrackDocView,
+  TrackGlossaryView,
+  TrackItemsProgress,
+  TrackLevel,
+} from '@hub/shared';
 import type { ModuleOutlineData } from '@/components/learn/ModuleOutline';
 import type { TrackDocFlags } from '@/components/track/track-docs';
 import { api, apiOrNotFound } from './api';
@@ -15,6 +21,8 @@ export interface TrackDetail {
   starterRepo: string | null;
   /** which optional pages the track has ("Cài đặt", "Tài liệu thêm") */
   docs: TrackDocFlags;
+  /** the track has a "Từ vựng" page (glossary.yaml, learning-hub#106) */
+  hasGlossary?: boolean;
   source: { repo: string; commitSha: string; path: string };
   modules: ModuleOutlineData[];
 }
@@ -36,5 +44,12 @@ export async function loadTrackDoc(slug: string, page: TrackDocPage): Promise<Tr
     await apiOrNotFound<{ data: TrackDocView }>(
       `/tracks/${encodeURIComponent(slug)}/docs/${encodeURIComponent(page)}`,
     )
+  ).data;
+}
+
+/** "Từ vựng" of a track (404 page when the track has no glossary). */
+export async function loadTrackGlossary(slug: string): Promise<TrackGlossaryView> {
+  return (
+    await apiOrNotFound<{ data: TrackGlossaryView }>(`/tracks/${encodeURIComponent(slug)}/glossary`)
   ).data;
 }

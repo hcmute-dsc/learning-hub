@@ -56,7 +56,7 @@ export default async function TrackDocPage({ params }: Params) {
         )}
       </header>
 
-      <TrackTabs tabs={trackTabs(track.slug, track.docs, page)} />
+      <TrackTabs tabs={trackTabs(track.slug, track, page)} />
 
       <div className="max-w-[60rem]">
         <Markdown source={doc.bodyMd} origin={doc.source} />

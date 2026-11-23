@@ -168,6 +168,9 @@ model Track {
   setupMd          String?  @map("setup_md")
   /// docs/resources.md of the track ("Tài liệu thêm" page), null when the track has none
   resourcesMd      String?  @map("resources_md")
+  /// glossary.yaml of the track ("Từ vựng" page): [{ term, anchor, expansion, literal,
+  /// meaning, example, see }] in file order, null when the track has none
+  glossary         Json?
   /// active | archived
   status           String   @default("active")
   contentVersionId String   @map("content_version_id") @db.Uuid
@@ -217,6 +220,8 @@ model Lesson {
   title            String
   bodyMd           String   @map("body_md")
   estMinutes       Int?     @map("est_minutes") @db.SmallInt
+  /// glossary terms this lesson introduces (front matter `terms:`), as written
+  terms            String[] @default([])
   position         Int
   status           String   @default("active")
   contentVersionId String   @map("content_version_id") @db.Uuid

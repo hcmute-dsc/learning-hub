@@ -45,4 +45,10 @@ export class TracksController {
   ) {
     return this.catalog.getTrackDoc(slug, page).then((data) => ({ data }));
   }
+
+  /** "Từ vựng": the track's glossary.yaml and where each term is taught (learning-hub#106). */
+  @Get(':slug/glossary')
+  glossary(@Param('slug', new ZodPipe(slugSchema)) slug: string) {
+    return this.catalog.getTrackGlossary(slug).then((data) => ({ data }));
+  }
 }

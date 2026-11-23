@@ -52,7 +52,7 @@ export default async function TrackPage({ params }: Params) {
         }
       />
 
-      <TrackTabs tabs={trackTabs(track.slug, track.docs, 'overview')} />
+      <TrackTabs tabs={trackTabs(track.slug, track, 'overview')} />
 
       <ProgressPanel items={items} percent={overall.percent} enrolled={progress.enrolled} />
 

@@ -69,9 +69,44 @@ export const lessonFrontMatterSchema = z
     prerequisites: z.array(itemRef).default([]),
     authors: z.array(githubHandle).default([]),
     license: z.string().optional(),
+    /** Words this lesson introduces, from the track's glossary.yaml (§3.1c, learning-hub#106) */
+    terms: z.array(z.string().min(1).max(60)).max(30).default([]),
   })
   .strict();
 export type LessonFrontMatter = z.infer<typeof lessonFrontMatterSchema>;
+
+/**
+ * One entry of the optional `tracks/<slug>/glossary.yaml` (CONTENT-SPECIFICATION §3.1c,
+ * learning-hub#106). TEACHING.md T1: every new English word shows its full form and its
+ * literal Vietnamese meaning, so learners know what `init` stands for, not only what it does.
+ */
+export const glossaryEntrySchema = z
+  .object({
+    /** The word as learners meet it, in English: `init`, `pull request` */
+    term: z
+      .string()
+      .min(1)
+      .max(60)
+      .regex(/^\S(.*\S)?$/, 'term has spaces at the start or end')
+      .regex(/[\p{L}\p{N}]/u, 'term needs at least one letter or digit'),
+    /** The full form when `term` is short for something: init → initialize */
+    expansion: z.string().min(1).max(120).optional(),
+    /** Literal Vietnamese meaning of the word: initialize → khởi tạo */
+    literal: z.string().min(1).max(120).optional(),
+    /** What it means here, in a sentence or two */
+    meaning: z.string().min(1).max(500),
+    /** A command or short line that uses it: git init */
+    example: z.string().min(1).max(200).optional(),
+    /** Related terms in the same glossary */
+    see: z.array(z.string().min(1).max(60)).max(10).default([]),
+  })
+  .strict();
+export type GlossaryEntryFile = z.infer<typeof glossaryEntrySchema>;
+
+export const glossaryFileSchema = z
+  .array(glossaryEntrySchema)
+  .min(1, 'glossary is empty; delete the file or add a term')
+  .max(500);
 
 /**
  * Optional front matter of `hints/NN.md` (CONTENT-SPECIFICATION §3.7). `cost` is soft: the

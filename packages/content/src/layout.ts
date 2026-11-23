@@ -5,6 +5,7 @@
  *   tracks/<track>/track.yaml
  *   tracks/<track>/docs/setup.md          (optional) how to install the tools for this track
  *   tracks/<track>/docs/resources.md      (optional) extra reading for this track
+ *   tracks/<track>/glossary.yaml          (optional) English words of the track (§3.1c)
  *   tracks/<track>/modules/<module>/module.yaml
  *   tracks/<track>/modules/<module>/lessons/<lesson>.md
  *   tracks/<track>/modules/<module>/exercises/<exercise>/exercise.yaml
@@ -22,6 +23,7 @@ export const layout = {
   trackFile: (trackDir: string) => `${trackDir}/track.yaml`,
   trackDocsDir: (trackDir: string) => `${trackDir}/docs/`,
   trackDocFile: (trackDir: string, page: TrackDocPage) => `${trackDir}/docs/${page}.md`,
+  glossaryFile: (trackDir: string) => `${trackDir}/glossary.yaml`,
   moduleDir: (trackDir: string, name: string) => `${trackDir}/modules/${name}`,
   moduleFile: (moduleDir: string) => `${moduleDir}/module.yaml`,
   lessonFile: (moduleDir: string, name: string) => `${moduleDir}/lessons/${name}.md`,
@@ -59,6 +61,17 @@ export const LAYOUT_PATTERNS = {
   /** checker repo */
   solution: /^exercises\/[^/]+\/[^/]+\/solution\.md$/,
 };
+
+/**
+ * Anchor of a glossary term on the "Từ vựng" page (`#pull-request`), and the key that
+ * `see:` and a lesson's `terms:` are matched by: case and punctuation do not matter, so
+ * `Pull request` and `pull-request` are the same term (§3.1c).
+ */
+export const glossaryAnchor = (term: string) =>
+  term
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, '-')
+    .replace(/^-+|-+$/g, '');
 
 /** Parent folder of a path: `a/b/c.yaml` → `a/b` */
 export const dirOf = (path: string) => path.slice(0, path.lastIndexOf('/'));

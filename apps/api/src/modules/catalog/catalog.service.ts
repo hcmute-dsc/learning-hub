@@ -3,13 +3,15 @@ import type {
   Paginated,
   TrackDocPage,
   TrackDocView,
+  TrackGlossaryView,
   TrackListQuery,
   TrackSummary,
 } from '@hub/shared';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { DomainError } from '../../common/errors';
-import { toTrackDetail, toTrackDoc, toTrackSummary } from './catalog-views';
+import { sourceFor, toTrackDetail, toTrackDoc, toTrackSummary } from './catalog-views';
+import { toTrackGlossary } from './glossary-views';
 
 /** Read side of published content (BACKEND-DESIGN §2 catalog). Writes come from `content`. */
 @Injectable()
@@ -121,5 +123,39 @@ export class CatalogService {
     const doc = toTrackDoc(track, page, published);
     if (!doc) throw DomainError.notFound('Track page');
     return doc;
+  }
+
+  /** "Từ vựng" of an active track (§3.1c, learning-hub#106); 404 when it has no glossary. */
+  async getTrackGlossary(slug: string): Promise<TrackGlossaryView> {
+    const track = await this.prisma.track.findUnique({
+      where: { slug },
+      select: {
+        slug: true,
+        title: true,
+        status: true,
+        glossary: true,
+        sourcePath: true,
+        contentVersion: { select: { commitSha: true, sourceRepo: true, trackSources: true } },
+        modules: {
+          where: { status: 'active' },
+          orderBy: { position: 'asc' },
+          select: {
+            lessons: {
+              where: { status: 'active' },
+              orderBy: { position: 'asc' },
+              select: { id: true, title: true, terms: true },
+            },
+          },
+        },
+      },
+    });
+    if (!track || track.status !== 'active') throw DomainError.notFound('Track');
+    const published = await this.prisma.contentVersion.findFirst({
+      where: { status: 'published' },
+      select: { commitSha: true, sourceRepo: true, trackSources: true },
+    });
+    const glossary = toTrackGlossary(track, sourceFor(published ?? track.contentVersion, slug));
+    if (!glossary) throw DomainError.notFound('Glossary');
+    return glossary;
   }
 }
