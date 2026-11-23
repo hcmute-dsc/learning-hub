@@ -3,17 +3,21 @@ import type { GlossaryTerm } from '@hub/shared';
 import { glossaryHref } from '@/components/track/glossary';
 
 /**
- * "Từ mới trong bài" at the top of a lesson (learning-hub#106): the words the lesson
+ * "Từ mới trong bài" at the end of a lesson (learning-hub#106, #114): the words the lesson
  * introduces (`terms:`), each with its full form and literal Vietnamese meaning, as
  * TEACHING.md T1 asks. Each word links to the track's "Từ vựng" page.
+ *
+ * Folded by default and below the text: the first use of each word in the text already
+ * has a note, so the box is a recap, not something to read before the lesson. A native
+ * <details> opens by tap or keyboard and works without JavaScript.
  */
 export function NewWords({ trackSlug, terms }: { trackSlug: string; terms: GlossaryTerm[] }) {
   if (terms.length === 0) return null;
   return (
-    <section aria-labelledby="new-words" className="surface rounded-xl p-4 sm:p-5">
-      <h2 id="new-words" className="font-semibold">
-        <span aria-hidden>🔤 </span>Từ mới trong bài
-      </h2>
+    <details className="surface rounded-xl p-4 sm:p-5">
+      <summary className="cursor-pointer font-semibold">
+        <span aria-hidden>🔤 </span>Từ mới trong bài ({terms.length})
+      </summary>
       <ul className="mt-3 space-y-2 text-sm">
         {terms.map((t) => (
           <li key={t.anchor}>
@@ -36,6 +40,6 @@ export function NewWords({ trackSlug, terms }: { trackSlug: string; terms: Gloss
           </li>
         ))}
       </ul>
-    </section>
+    </details>
   );
 }
