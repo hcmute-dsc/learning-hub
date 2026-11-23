@@ -10,6 +10,10 @@ export const ReviewEvents = {
   Released: 'review.released',
   /** a mentor finished the review: approved or changes requested */
   Completed: 'review.completed',
+  /** someone wrote in the conversation on a finished review (learning-hub#41) */
+  MessagePosted: 'review.message_posted',
+  /** the member thanked the mentor for a finished review (learning-hub#41) */
+  ThanksSent: 'review.thanks_sent',
 } as const;
 
 export type ReviewOutcome = 'approved' | 'changes_requested';
@@ -28,4 +32,16 @@ export interface ReviewCompletedEvent {
   memberId: string;
   reviewerId: string;
   outcome: ReviewOutcome;
+}
+
+/** MessagePosted and ThanksSent: enough for the bell to pick recipients and links. */
+export interface ReviewThreadEvent {
+  reviewId: string;
+  submissionId: string;
+  exerciseId: string;
+  /** the member who submitted */
+  memberId: string;
+  reviewerId: string;
+  /** who wrote the message or the note */
+  authorId: string;
 }

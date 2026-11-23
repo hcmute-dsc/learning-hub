@@ -71,6 +71,48 @@ describe('NotificationDispatcher', () => {
     expect(delivered[0].notice.payload.link).toBe('/review/s1');
   });
 
+  describe('a conversation on a review (learning-hub#41)', () => {
+    const thread = {
+      submissionId: 's1',
+      exerciseId: 'ex-1',
+      memberId: 'm1',
+      reviewerId: 'mentor-1',
+    };
+
+    it('tells the mentor when the member writes, with a link to the review page', async () => {
+      const { dispatcher, delivered } = setup();
+      await dispatcher.dispatch(7n, OutboxTypes.ReviewMessage, { ...thread, authorId: 'm1' });
+      expect(delivered).toHaveLength(1);
+      expect(delivered[0].userIds).toEqual(['mentor-1']);
+      expect(delivered[0].notice.type).toBe('review_message');
+      expect(delivered[0].notice.payload.link).toBe('/review/s1');
+    });
+
+    it('tells the member when the mentor writes, with a link to their review card', async () => {
+      const { dispatcher, delivered } = setup();
+      await dispatcher.dispatch(8n, OutboxTypes.ReviewMessage, { ...thread, authorId: 'mentor-1' });
+      expect(delivered.map((d) => d.userIds)).toEqual([['m1']]);
+      expect(delivered[0].notice.payload.link).toBe('/exercises/ex-1#review-s1');
+    });
+
+    it('tells both sides when an admin writes, each with their own link', async () => {
+      const { dispatcher, delivered } = setup();
+      await dispatcher.dispatch(9n, OutboxTypes.ReviewMessage, { ...thread, authorId: 'admin-1' });
+      expect(delivered.map((d) => [d.userIds[0], d.notice.payload.link])).toEqual([
+        ['m1', '/exercises/ex-1#review-s1'],
+        ['mentor-1', '/review/s1'],
+      ]);
+    });
+
+    it('tells only the mentor about a thank-you note', async () => {
+      const { dispatcher, delivered } = setup();
+      await dispatcher.dispatch(10n, OutboxTypes.ReviewThanks, { ...thread, authorId: 'm1' });
+      expect(delivered).toHaveLength(1);
+      expect(delivered[0].userIds).toEqual(['mentor-1']);
+      expect(delivered[0].notice.type).toBe('review_thanks');
+    });
+  });
+
   it('notifies every active member about a new track', async () => {
     const { dispatcher, delivered, users } = setup();
     await dispatcher.dispatch(3n, OutboxTypes.TrackPublished, { slug: 'git', title: 'Git' });

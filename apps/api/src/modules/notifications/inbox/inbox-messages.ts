@@ -45,6 +45,58 @@ export function reviewCompletedNotice(info: {
   };
 }
 
+/**
+ * Where each side reads the conversation on a review (learning-hub#41): the member on
+ * their exercise page, at the review card; the mentor on the review page.
+ */
+export function threadLink(
+  forMember: boolean,
+  info: { exerciseId: string; submissionId: string },
+): string {
+  return forMember
+    ? `/exercises/${info.exerciseId}#review-${info.submissionId}`
+    : `/review/${info.submissionId}`;
+}
+
+/**
+ * A new message on a review, to the other side. No text from the message itself: the
+ * bell and the digest email are not the place for a private conversation.
+ */
+export function reviewMessageNotice(info: {
+  forMember: boolean;
+  exerciseId: string;
+  submissionId: string;
+  exerciseTitle: string;
+}): InboxNotice {
+  const exercise = oneLine(info.exerciseTitle);
+  return {
+    type: 'review_message',
+    payload: {
+      title: info.forMember
+        ? `Mentor trả lời về bài "${exercise}"`
+        : `Thành viên hỏi lại về bài "${exercise}"`,
+      body: 'Mở trao đổi dưới phần nhận xét để đọc và trả lời.',
+      link: threadLink(info.forMember, info),
+    },
+  };
+}
+
+/** The member thanked the mentor; the note itself is read on the review page. */
+export function reviewThanksNotice(info: {
+  exerciseId: string;
+  submissionId: string;
+  exerciseTitle: string;
+}): InboxNotice {
+  return {
+    type: 'review_thanks',
+    payload: {
+      title: `Bạn nhận được lời cảm ơn cho review bài "${oneLine(info.exerciseTitle)}"`,
+      body: 'Bạn có thể chọn hiện lời cảm ơn này trên hồ sơ của mình.',
+      link: threadLink(false, info),
+    },
+  };
+}
+
 /** To every mentor and admin: a project is waiting in the review queue. No member name (SECURITY §1). */
 export function reviewRequestedNotice(info: {
   submissionId: string;

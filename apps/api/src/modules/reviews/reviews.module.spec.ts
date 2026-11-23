@@ -8,6 +8,7 @@ import { SubmissionsService } from '../submissions/submissions.service';
 import { SubmissionsModule } from '../submissions/submissions.module';
 import { ReviewsModule } from './reviews.module';
 import { ReviewRecords } from './review-records';
+import { ReviewThreadService } from './review-thread.service';
 import { ReviewsService } from './reviews.service';
 
 /**
@@ -33,6 +34,7 @@ describe('ReviewsModule wiring', () => {
       .compile();
 
     expect(moduleRef.get(ReviewsService)).toBeInstanceOf(ReviewsService);
+    expect(moduleRef.get(ReviewThreadService)).toBeInstanceOf(ReviewThreadService);
     const submissions = moduleRef.get(SubmissionsService) as unknown as { reviews: unknown };
     expect(submissions.reviews).toBe(moduleRef.get(ReviewRecords));
   });

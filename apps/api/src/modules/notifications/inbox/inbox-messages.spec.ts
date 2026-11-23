@@ -2,7 +2,9 @@ import {
   oneLine,
   readPayload,
   reviewCompletedNotice,
+  reviewMessageNotice,
   reviewRequestedNotice,
+  reviewThanksNotice,
   trackPublishedNotice,
 } from './inbox-messages';
 
@@ -30,6 +32,20 @@ describe('bell notification text', () => {
       body: 'Backend',
       link: '/review/sub-1',
     });
+  });
+
+  it('never copies a private message into the bell (learning-hub#41)', () => {
+    const base = { exerciseId: 'ex-1', submissionId: 'sub-1', exerciseTitle: 'Todo API' };
+    const toMember = reviewMessageNotice({ ...base, forMember: true });
+    expect(toMember.type).toBe('review_message');
+    expect(toMember.payload.title).toBe('Mentor trả lời về bài "Todo API"');
+    expect(toMember.payload.link).toBe('/exercises/ex-1#review-sub-1');
+    const toMentor = reviewMessageNotice({ ...base, forMember: false });
+    expect(toMentor.payload.title).toBe('Thành viên hỏi lại về bài "Todo API"');
+    expect(toMentor.payload.link).toBe('/review/sub-1');
+    const thanks = reviewThanksNotice(base);
+    expect(thanks.type).toBe('review_thanks');
+    expect(thanks.payload.link).toBe('/review/sub-1');
   });
 
   it('links a new track by slug', () => {

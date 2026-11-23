@@ -12,6 +12,10 @@ export const OutboxTypes = {
   ReviewRequested: 'inbox.review_requested',
   /** payload: TrackPublishedPayload → one bell row per active member */
   TrackPublished: 'inbox.track_published',
+  /** payload: ReviewThreadPayload → one bell row for the other side of the conversation (#41) */
+  ReviewMessage: 'inbox.review_message',
+  /** payload: ReviewThreadPayload → one bell row for the mentor (#41) */
+  ReviewThanks: 'inbox.review_thanks',
   /** payload: EmailDigestPayload → one email */
   EmailDigest: 'email.digest',
   /** payload: WeeklyPost (weekly-post.ts) → one embed on the club channel (learning-hub#76) */
@@ -32,6 +36,16 @@ export interface ReviewRequestedPayload {
   exerciseId: string;
   /** the member who submitted: never notified about their own submission */
   memberId: string;
+}
+
+/** A message or a thank-you on a finished review (learning-hub#41). */
+export interface ReviewThreadPayload {
+  submissionId: string;
+  exerciseId: string;
+  memberId: string;
+  reviewerId: string;
+  /** who wrote it: never notified about their own words */
+  authorId: string;
 }
 
 export interface TrackPublishedPayload {

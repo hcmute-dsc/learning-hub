@@ -197,3 +197,76 @@ export interface ReviewPage {
   /** false for the member's own submission: nobody reviews their own work */
   canReview: boolean;
 }
+
+/*
+ * The conversation on a finished review (learning-hub#41). After the mentor completes a
+ * review, the member who submitted and that mentor (and admins) can write to each other
+ * on it, and the member can send one short thank-you note. Nobody else can read it.
+ */
+
+/** Longest message in a review conversation (Markdown). */
+export const REVIEW_MESSAGE_MAX = 2000;
+/** A conversation stops taking messages after this many (keeps the page and the bell sane). */
+export const REVIEW_THREAD_MAX_MESSAGES = 100;
+/** Longest thank-you note (plain text, like the profile bio). */
+export const REVIEW_THANKS_MAX = 280;
+
+/** POST /api/v1/reviews/:id/messages → 201 { data: ReviewMessage } */
+export const reviewMessageSchema = z
+  .object({ bodyMd: z.string().trim().min(1).max(REVIEW_MESSAGE_MAX) })
+  .strict();
+export type ReviewMessageInput = z.infer<typeof reviewMessageSchema>;
+
+/** POST /api/v1/reviews/:id/thanks → 201 { data: ReviewThanksView }. Once per review. */
+export const reviewThanksSchema = z
+  .object({ body: z.string().trim().min(1).max(REVIEW_THANKS_MAX) })
+  .strict();
+export type ReviewThanksInput = z.infer<typeof reviewThanksSchema>;
+
+/** PUT /api/v1/reviews/:id/thanks/visibility (the mentor) → { data: ReviewThanksView } */
+export const reviewThanksVisibilitySchema = z.object({ isPublic: z.boolean() }).strict();
+export type ReviewThanksVisibilityInput = z.infer<typeof reviewThanksVisibilitySchema>;
+
+/** Who someone is in one conversation. */
+export type ThreadRole = 'mentee' | 'mentor' | 'admin';
+
+export interface ReviewMessage {
+  id: string;
+  author: PersonRef;
+  role: ThreadRole;
+  bodyMd: string;
+  createdAt: string;
+}
+
+export interface ReviewThanksView {
+  body: string;
+  /** the mentor chose to show it on their profile */
+  isPublic: boolean;
+  createdAt: string;
+}
+
+/** GET /api/v1/reviews/:id/thread → { data: ReviewThread }. 403 for anyone outside it. */
+export interface ReviewThread {
+  reviewId: string;
+  viewerRole: ThreadRole;
+  /** oldest first */
+  messages: ReviewMessage[];
+  /** false while the review is a draft or when the conversation is full */
+  canPost: boolean;
+  thanks: ReviewThanksView | null;
+  /** the member, once the review is finished, and only if they have not thanked yet */
+  canThank: boolean;
+  /** the mentor, once there is a note: may show or hide it on their profile */
+  canShowThanks: boolean;
+}
+
+/** GET /api/v1/members/:login/thanks → { data: PublicThanks[] }: notes the mentor made public, newest first. */
+export interface PublicThanks {
+  id: string;
+  body: string;
+  from: PersonRef;
+  createdAt: string;
+}
+
+/** How many public thank-you notes a profile shows at most. */
+export const PROFILE_THANKS_LIMIT = 20;

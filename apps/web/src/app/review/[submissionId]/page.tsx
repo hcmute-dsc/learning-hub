@@ -9,6 +9,7 @@ import { ClaimButton } from '@/components/review/ClaimButton';
 import { ReleaseButton } from '@/components/review/ReleaseButton';
 import { ReviewCard } from '@/components/review/ReviewCard';
 import { ReviewForm } from '@/components/review/ReviewForm';
+import { ReviewThread } from '@/components/review/ReviewThread';
 import { Avatar } from '@/components/ui/Avatar';
 import { api, apiOrNotFound } from '@/lib/api';
 import { formatDateTime } from '@/lib/format';
@@ -209,7 +210,12 @@ function SubmissionDetails({ submission }: { submission: ReviewedSubmission }) {
           {submission.note}
         </blockquote>
       )}
-      {submission.review && <ReviewCard review={submission.review} />}
+      {submission.review && (
+        <>
+          <ReviewCard review={submission.review} />
+          <ReviewThread reviewId={submission.review.id} />
+        </>
+      )}
     </div>
   );
 }
