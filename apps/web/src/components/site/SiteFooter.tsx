@@ -21,6 +21,11 @@ export function SiteFooter() {
             </a>
           </li>
           <li>
+            <a className="hover:text-white hover:underline" href={CLUB_LINKS.conduct}>
+              Quy tắc ứng xử
+            </a>
+          </li>
+          <li>
             <a className="hover:text-white hover:underline" href={CLUB_LINKS.github}>
               GitHub
             </a>

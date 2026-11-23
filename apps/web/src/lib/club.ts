@@ -10,6 +10,8 @@ export const CLUB_LINKS = {
   github: 'https://github.com/hcmute-dsc',
   /** how to contribute: lessons, new tracks, code (learning-hub#28) */
   contribute: '/contribute',
+  /** club code of conduct; GitHub applies it to every org repo (learning-hub-docs#51) */
+  conduct: 'https://github.com/hcmute-dsc/.github/blob/master/CODE_OF_CONDUCT.md',
   /** registry of tracks (ADR-10); each track lives in its own repo */
   content: 'https://github.com/hcmute-dsc/learning-hub-content',
 };
