@@ -13,9 +13,24 @@ export interface LessonNode {
   objectives: string[];
   /** logical refs: <track>/<module>/<slug> (lesson or exercise) */
   prerequisites: string[];
+  /** glossary terms this lesson introduces, as written in its front matter (§3.1c) */
+  terms: string[];
   position: number;
   sourcePath: string;
   hash: string;
+}
+
+/** One entry of a track's `glossary.yaml` (§3.1c, learning-hub#106). */
+export interface GlossaryEntry {
+  term: string;
+  /** `#anchor` on the "Từ vựng" page; also the key `see:` and `terms:` are matched by */
+  anchor: string;
+  expansion: string | null;
+  literal: string | null;
+  meaning: string;
+  example: string | null;
+  /** related terms, as written in the file */
+  see: string[];
 }
 
 /** One `hints/NN.md` file: opened one by one by members (CONTENT-SPECIFICATION §3.7). */
@@ -90,6 +105,8 @@ export interface TrackNode {
   setupMd: string | null;
   /** `docs/resources.md`: extra reading for the whole track (§3.1b). Null when absent. */
   resourcesMd: string | null;
+  /** `glossary.yaml`, in file order (§3.1c). Null when the track has none. */
+  glossary: GlossaryEntry[] | null;
   sourcePath: string;
   hash: string;
   modules: ModuleNode[];

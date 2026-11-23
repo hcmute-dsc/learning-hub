@@ -776,10 +776,156 @@ describe('track docs', () => {
 
   it('keeps the hash of a track without docs unchanged', () => {
     // Tracks written before docs/ existed must not all show up as "updated".
-    const git = gitTrack(parseContent(example));
+    const git = gitTrack(parseWith((files) => files.delete(`${GIT}/glossary.yaml`)));
     const { modules: _m, ...fields } = trackFileSchema.parse(
       parseYaml(example.get(`${GIT}/track.yaml`)!),
     );
     expect(git.hash).toBe(contentHash(fields));
+  });
+});
+
+// ------------------------------------------------------------------ glossary (§3.1c, learning-hub#106)
+
+describe('glossary', () => {
+  const GLOSSARY = `${GIT}/glossary.yaml`;
+  const TERMS = 'terms: [init, repository, commit]';
+  const gitTrack = (result: ParseResult) =>
+    result.tree.tracks.find((t) => t.slug === 'git-github-basics')!;
+  const firstCommit = (result: ParseResult) => gitTrack(result).modules[0].lessons[1];
+  const entries = (...lines: string[]) => lines.join('\n') + '\n';
+
+  it('reads glossary.yaml in file order, with anchors and nulls for missing fields', () => {
+    const result = parseContent(example);
+    expect(result.issues).toEqual([]);
+    const glossary = gitTrack(result).glossary!;
+    expect(glossary.map((e) => e.term)).toEqual(['repository', 'init', 'commit']);
+    expect(glossary[1]).toEqual({
+      term: 'init',
+      anchor: 'init',
+      expansion: 'initialize',
+      literal: 'khởi tạo',
+      meaning: 'Tạo thư mục ẩn .git để Git bắt đầu theo dõi thư mục hiện tại.',
+      example: 'git init',
+      see: ['repository'],
+    });
+    expect(glossary[0].expansion).toBeNull();
+    expect(glossary[0].example).toBeNull();
+  });
+
+  it('reads the terms of a lesson, and gives other lessons an empty list', () => {
+    const result = parseContent(example);
+    expect(firstCommit(result).terms).toEqual(['init', 'repository', 'commit']);
+    expect(gitTrack(result).modules[0].lessons[0].terms).toEqual([]);
+  });
+
+  it('is optional: a track without glossary.yaml has a null glossary', () => {
+    const sql = parseContent(example).tree.tracks.find((t) => t.slug === 'sql-sample')!;
+    expect(sql.glossary).toBeNull();
+  });
+
+  it('is not an orphan file', () => {
+    const result = parseContent(example);
+    expect(result.issues.filter((i) => i.path === GLOSSARY)).toEqual([]);
+  });
+
+  it('makes anchors from the term: lower case, punctuation and spaces become -', () => {
+    const result = parseWith((files) => {
+      files.set(
+        GLOSSARY,
+        entries(
+          '- term: Pull Request',
+          '  meaning: Đề nghị gộp.',
+          '- term: HEAD~1',
+          '  meaning: Commit ngay trước HEAD.',
+        ),
+      );
+      edit(files, FIRST_COMMIT, TERMS, 'terms: [pull request]');
+    });
+    expect(result.issues).toEqual([]);
+    expect(gitTrack(result).glossary!.map((e) => e.anchor)).toEqual(['pull-request', 'head-1']);
+  });
+
+  it('checks the schema: meaning is required, unknown fields and an empty list are rejected', () => {
+    const noMeaning = parseWith((files) => files.set(GLOSSARY, entries('- term: init')));
+    expectIssue(noMeaning, GLOSSARY, '0.meaning: Required');
+    const unknown = parseWith((files) =>
+      files.set(GLOSSARY, entries('- term: init', '  meaning: x', '  vi: khởi tạo')),
+    );
+    expectIssue(unknown, GLOSSARY, 'Unrecognized key');
+    expectIssue(
+      parseWith((files) => files.set(GLOSSARY, '[]\n')),
+      GLOSSARY,
+      'glossary is empty',
+    );
+    const spaces = parseWith((files) =>
+      files.set(GLOSSARY, entries('- term: " init"', '  meaning: x')),
+    );
+    expectIssue(spaces, GLOSSARY, 'spaces at the start or end');
+  });
+
+  it('rejects a term listed twice, also when only case or punctuation differ', () => {
+    const twice = parseWith((files) =>
+      files.set(GLOSSARY, files.get(GLOSSARY) + entries('- term: init', '  meaning: Lần hai.')),
+    );
+    expectIssue(twice, GLOSSARY, 'term "init" is listed twice');
+    const cased = parseWith((files) =>
+      files.set(GLOSSARY, files.get(GLOSSARY) + entries('- term: Commit', '  meaning: Lần hai.')),
+    );
+    expectIssue(cased, GLOSSARY, 'terms "commit" and "Commit" are the same word');
+  });
+
+  it('rejects see: entries that are not terms, or the term itself', () => {
+    const result = parseWith((files) => {
+      edit(files, GLOSSARY, 'see: [commit]', 'see: [branch]');
+      edit(
+        files,
+        GLOSSARY,
+        'example: git init\n  see: [repository]',
+        'example: git init\n  see: [init]',
+      );
+    });
+    expectIssue(result, GLOSSARY, '"repository": see "branch" is not a term');
+    expectIssue(result, GLOSSARY, '"init": see points to the term itself');
+  });
+
+  it('matches see: and terms: without caring about case', () => {
+    const result = parseWith((files) => {
+      edit(files, GLOSSARY, 'see: [commit]', 'see: [Commit]');
+      edit(files, FIRST_COMMIT, TERMS, 'terms: [INIT, Repository]');
+    });
+    expect(result.issues).toEqual([]);
+  });
+
+  it('rejects lesson terms that are not in the glossary, or listed twice', () => {
+    const result = parseWith((files) =>
+      edit(files, FIRST_COMMIT, TERMS, 'terms: [init, branch, init]'),
+    );
+    expectIssue(result, FIRST_COMMIT, `term "branch" is not in ${GLOSSARY}`);
+    expectIssue(result, FIRST_COMMIT, 'term "init" is listed twice');
+  });
+
+  it('rejects lesson terms when the track has no glossary, but not again for a broken file', () => {
+    const missing = parseWith((files) => files.delete(GLOSSARY));
+    expectIssue(missing, FIRST_COMMIT, 'the track has no glossary');
+
+    const broken = parseWith((files) => files.set(GLOSSARY, '- term: [oops\n'));
+    expectIssue(broken, GLOSSARY, 'invalid YAML');
+    expect(broken.issues.filter((i) => i.path === FIRST_COMMIT)).toEqual([]);
+  });
+
+  it('changes the track hash when the glossary changes, and the lesson hash when its terms do', () => {
+    const before = parseContent(example);
+    const glossaryEdit = parseWith((files) => edit(files, GLOSSARY, 'kho chứa', 'nhà kho'));
+    expect(gitTrack(glossaryEdit).hash).not.toBe(gitTrack(before).hash);
+    expect(firstCommit(glossaryEdit).hash).toBe(firstCommit(before).hash);
+
+    const termsEdit = parseWith((files) => edit(files, FIRST_COMMIT, TERMS, 'terms: [init]'));
+    expect(firstCommit(termsEdit).hash).not.toBe(firstCommit(before).hash);
+  });
+
+  it('keeps the hash of a lesson without terms as it was before terms existed', () => {
+    const lesson = gitTrack(parseContent(example)).modules[0].lessons[0];
+    const { hash, terms: _t, ...rest } = lesson;
+    expect(hash).toBe(contentHash(rest));
   });
 });

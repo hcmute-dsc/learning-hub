@@ -4,6 +4,7 @@ import { findCrossFileProblems } from './checks';
 import { contentHash } from './hash';
 import {
   dirOf,
+  glossaryAnchor,
   HINT_FILE,
   layout,
   LAYOUT_PATTERNS,
@@ -15,6 +16,7 @@ import {
 import { checkMarkdown, splitFrontMatter } from './markdown';
 import {
   exerciseFileSchema,
+  glossaryFileSchema,
   hintFrontMatterSchema,
   lessonFrontMatterSchema,
   moduleFileSchema,
@@ -24,6 +26,7 @@ import {
 import type {
   ContentIssue,
   ExerciseNode,
+  GlossaryEntry,
   HintNode,
   LessonNode,
   ModuleNode,
@@ -92,6 +95,7 @@ function parseTrack(ctx: Context, trackPath: string): TrackNode | null {
   const { modules: moduleNames, ...trackFields } = data;
   const trackDir = dirOf(trackPath);
   const docs = parseTrackDocs(ctx, trackDir);
+  const glossary = parseGlossary(ctx, trackDir);
   const track: TrackNode = {
     uid: data.uid,
     slug: data.slug,
@@ -109,13 +113,15 @@ function parseTrack(ctx: Context, trackPath: string): TrackNode | null {
     starterRepo: data.starterRepo ?? null,
     setupMd: docs.setup,
     resourcesMd: docs.resources,
+    glossary,
     sourcePath: trackPath,
-    // The module list is hashed in each module. Absent pages are left out, so tracks
-    // written before docs/ existed keep their hash and are not reported as changed.
+    // The module list is hashed in each module. Absent pages and glossary are left out, so
+    // tracks written before they existed keep their hash and are not reported as changed.
     hash: contentHash({
       ...trackFields,
       ...(docs.setup !== null && { setupMd: docs.setup }),
       ...(docs.resources !== null && { resourcesMd: docs.resources }),
+      ...(glossary !== null && { glossary }),
     }),
     modules: [],
   };
@@ -162,6 +168,27 @@ function parseTrackDocs(ctx: Context, trackDir: string): Record<TrackDocPage, st
     docs[page] = text.trim();
   }
   return docs;
+}
+
+/**
+ * Optional `glossary.yaml` next to track.yaml (§3.1c, learning-hub#106): a list of English
+ * words with their full form and literal Vietnamese meaning. Unique terms and the `see:` /
+ * `terms:` references are checked in checks.ts, once every lesson is parsed.
+ */
+function parseGlossary(ctx: Context, trackDir: string): GlossaryEntry[] | null {
+  const path = layout.glossaryFile(trackDir);
+  if (!ctx.files.has(path)) return null;
+  const data = readYamlFile(ctx, path, glossaryFileSchema);
+  if (!data) return null;
+  return data.map((entry) => ({
+    term: entry.term,
+    anchor: glossaryAnchor(entry.term),
+    expansion: entry.expansion ?? null,
+    literal: entry.literal ?? null,
+    meaning: entry.meaning,
+    example: entry.example ?? null,
+    see: entry.see,
+  }));
 }
 
 function parseModule(ctx: Context, moduleDir: string, position: number): ModuleNode | null {
@@ -218,7 +245,7 @@ function parseLesson(
   if (!data) return null;
   checkMarkdown(lessonPath, body, ctx.issues);
 
-  const lesson: Omit<LessonNode, 'hash'> = {
+  const { terms, ...lesson } = {
     uid: data.uid,
     slug: data.slug,
     title: data.title,
@@ -226,10 +253,14 @@ function parseLesson(
     estMinutes: data.estimatedMinutes ?? null,
     objectives: data.objectives,
     prerequisites: data.prerequisites,
+    terms: data.terms,
     position,
     sourcePath: lessonPath,
   };
-  return { ...lesson, hash: contentHash(lesson) };
+  // Empty `terms` is left out of the hash, so lessons written before the glossary existed
+  // keep their hash and are not reported as changed.
+  const hash = contentHash(terms.length > 0 ? { ...lesson, terms } : lesson);
+  return { ...lesson, terms, hash };
 }
 
 function parseExercise(
