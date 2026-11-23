@@ -49,7 +49,7 @@ Read the linked issue first, then the diff. Then read the code around the change
 - sources are credited;
 - the Vietnamese is clear and simple;
 - it meets the **teaching standard** in the track's `TEACHING.md` ([template](https://github.com/hcmute-dsc/learning-hub-track-template/blob/main/TEACHING.md), from Study Jam learner feedback). For each criterion that fails, write a `must:`:
-  - **T1 Vocabulary:** every new English command, flag or term has its full form and literal meaning, and the lesson has a "Từ mới trong bài" box.
+  - **T1 Vocabulary:** every new English command, flag or term has its full form and literal meaning, and its new words are in the track's `glossary.yaml` and the lesson's `terms:` (the hub builds the "Từ mới trong bài" box from them; a hand-written box is a `nit:`).
   - **T2 Explain before practice:** do the exercise using only its lesson and earlier ones. Anything you had to look up is missing. Every command block has "Đọc hiểu".
   - **T3 Mental model:** anything with states, or easy to confuse, has a diagram or comparison table.
   - **T4 Real-world:** each chapter has a "Ngoài thực tế" section.
