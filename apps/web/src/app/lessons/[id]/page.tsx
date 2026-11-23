@@ -77,13 +77,13 @@ export default async function LessonPage({ params }: Params) {
           </details>
         </header>
 
-        <NewWords trackSlug={lesson.track.slug} terms={lesson.terms ?? []} />
-
         <Markdown
           source={lesson.bodyMd}
           origin={lesson.source}
           glossary={{ trackSlug: lesson.track.slug, terms: lesson.terms ?? [] }}
         />
+
+        <NewWords trackSlug={lesson.track.slug} terms={lesson.terms ?? []} />
 
         <section className="surface space-y-5 rounded-xl p-5">
           <MarkLessonDone lessonId={lesson.id} status={lesson.progress} />
