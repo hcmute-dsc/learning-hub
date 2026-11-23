@@ -47,7 +47,14 @@ Read the linked issue first, then the diff. Then read the code around the change
 - answers match the questions;
 - no `uid` changed;
 - sources are credited;
-- the Vietnamese is clear and simple.
+- the Vietnamese is clear and simple;
+- it meets the **teaching standard** in the track's `TEACHING.md` ([template](https://github.com/hcmute-dsc/learning-hub-track-template/blob/main/TEACHING.md), from Study Jam learner feedback). For each criterion that fails, write a `must:`:
+  - **T1 Vocabulary:** every new English command, flag or term has its full form and literal meaning, and the lesson has a "Từ mới trong bài" box.
+  - **T2 Explain before practice:** do the exercise using only its lesson and earlier ones. Anything you had to look up is missing. Every command block has "Đọc hiểu".
+  - **T3 Mental model:** anything with states, or easy to confuse, has a diagram or comparison table.
+  - **T4 Real-world:** each chapter has a "Ngoài thực tế" section.
+  - **T5 Setup:** anything installed or configured is in `docs/setup.md`, and commands work in Windows PowerShell as well as on macOS/Linux (`curl.exe`, `python`/`python3`, `$env:`).
+  - **T6 Asking:** the error table points to the mentor, including a private DM, and `docs/setup.md` has "Hỏi ở đâu" with a real mentor handle.
 
 ## Writing the review
 
