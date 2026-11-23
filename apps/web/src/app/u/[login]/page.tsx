@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import type { CSSProperties } from 'react';
-import type { CertificateView, MemberProfile } from '@hub/shared';
+import type { CertificateView, MemberProfile, PublicThanks } from '@hub/shared';
 import { CertificateList } from '@/components/certificate/CertificateList';
 import { EnrollmentCard } from '@/components/learn/EnrollmentCard';
 import { BadgeGrid } from '@/components/achievements/BadgeGrid';
 import { badgeCards } from '@/components/achievements/achievements';
 import { ActivityGrid } from '@/components/profile/ActivityGrid';
+import { ThanksList } from '@/components/profile/ThanksList';
 import { ROLE_LABEL, formatMonth, visibleRoles } from '@/components/profile/profile';
 import { Avatar } from '@/components/ui/Avatar';
 import { api, apiOrNotFound } from '@/lib/api';
@@ -30,10 +31,14 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 export default async function ProfilePage({ params }: Params) {
   const { login } = await params;
   const profile = await loadProfile(login);
-  // Certificates the member did not hide (PRD F19); loaded after the profile, which 404s first.
-  const { data: certificates } = await api<{ data: CertificateView[] }>(
-    `/members/${encodeURIComponent(profile.githubLogin)}/certificates`,
-  );
+  // Certificates the member did not hide (PRD F19) and thank-you notes a mentor chose to
+  // show (learning-hub#41); loaded after the profile, which 404s first.
+  const [{ data: certificates }, { data: thanks }] = await Promise.all([
+    api<{ data: CertificateView[] }>(
+      `/members/${encodeURIComponent(profile.githubLogin)}/certificates`,
+    ),
+    api<{ data: PublicThanks[] }>(`/members/${encodeURIComponent(profile.githubLogin)}/thanks`),
+  ]);
   const { stats, achievements } = profile;
 
   // The streak tile is left out when the member hid achievements (F12, /settings).
@@ -174,6 +179,8 @@ export default async function ProfilePage({ params }: Params) {
           )}
         </section>
       )}
+
+      {thanks.length > 0 && <ThanksList thanks={thanks} />}
 
       <section aria-labelledby="tracks-heading">
         <h2 id="tracks-heading" className="text-lg font-semibold">

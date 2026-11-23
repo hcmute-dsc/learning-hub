@@ -157,6 +157,19 @@ export class SubmissionReviewService {
   }
 
   /**
+   * Who submitted and for which exercise: what the conversation on a review needs
+   * (learning-hub#41). 404 when the submission is gone.
+   */
+  async owner(submissionId: string): Promise<{ userId: string; exerciseId: string }> {
+    const row = await this.prisma.submission.findUnique({
+      where: { id: submissionId },
+      select: { userId: true, exerciseId: true },
+    });
+    if (!row) throw DomainError.notFound('Submission');
+    return row;
+  }
+
+  /**
    * One submission, its exercise (with the rubric of a project) and the member's
    * earlier attempts, newest first. 404 when the submission or its exercise is gone.
    */

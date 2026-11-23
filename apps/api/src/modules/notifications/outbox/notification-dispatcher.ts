@@ -1,11 +1,14 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { DomainError } from '../../../common/errors';
 import { CatalogReader } from '../../catalog/catalog.reader';
+import { messageRecipients } from '../../reviews/review-thread-rules';
 import { UsersService } from '../../users/users.service';
 import { DigestService } from '../digest/digest.service';
 import {
   reviewCompletedNotice,
+  reviewMessageNotice,
   reviewRequestedNotice,
+  reviewThanksNotice,
   trackPublishedNotice,
 } from '../inbox/inbox-messages';
 import { InboxService } from '../inbox/inbox.service';
@@ -17,6 +20,7 @@ import {
   type EmailDigestPayload,
   type ReviewCompletedPayload,
   type ReviewRequestedPayload,
+  type ReviewThreadPayload,
   type TrackPublishedPayload,
 } from './outbox';
 
@@ -60,6 +64,32 @@ export class NotificationDispatcher {
           outcome: p.outcome,
         });
         await this.inbox.deliver(eventId, [p.memberId], notice);
+        return;
+      }
+      case OutboxTypes.ReviewMessage: {
+        const p = payload as ReviewThreadPayload;
+        const exercise = await this.catalog.exercise(p.exerciseId);
+        // The member and the mentor, minus whoever wrote (review-thread-rules messageRecipients).
+        for (const userId of messageRecipients(p.authorId, p)) {
+          const notice = reviewMessageNotice({
+            forMember: userId === p.memberId,
+            exerciseId: p.exerciseId,
+            submissionId: p.submissionId,
+            exerciseTitle: exercise.title,
+          });
+          await this.inbox.deliver(eventId, [userId], notice);
+        }
+        return;
+      }
+      case OutboxTypes.ReviewThanks: {
+        const p = payload as ReviewThreadPayload;
+        const exercise = await this.catalog.exercise(p.exerciseId);
+        const notice = reviewThanksNotice({
+          exerciseId: p.exerciseId,
+          submissionId: p.submissionId,
+          exerciseTitle: exercise.title,
+        });
+        await this.inbox.deliver(eventId, [p.reviewerId], notice);
         return;
       }
       case OutboxTypes.ReviewRequested: {

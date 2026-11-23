@@ -50,6 +50,8 @@ model User {
   hintUnlocks            HintUnlock[]
   reviews                Review[]
   reviewComments         ReviewComment[]
+  thanksGiven            ReviewThanks[]          @relation("ThanksGiven")
+  thanksReceived         ReviewThanks[]          @relation("ThanksReceived")
   menteeAssignments      MentorAssignment[]      @relation("Mentee")
   mentorAssignments      MentorAssignment[]      @relation("Mentor")
   decidedAssignments     MentorAssignment[]      @relation("AssignmentDecidedBy")
@@ -453,12 +455,15 @@ model Review {
   submission Submission      @relation(fields: [submissionId], references: [id])
   reviewer   User            @relation(fields: [reviewerId], references: [id])
   comments   ReviewComment[]
+  thanks     ReviewThanks?
 
   @@index([submissionId])
   @@index([reviewerId, status], map: "reviews_reviewer_idx")
   @@map("reviews")
 }
 
+/// A message on a review. File/line fields are for inline comments (not used yet); the
+/// mentor–member conversation after a finished review leaves them NULL (learning-hub#41).
 model ReviewComment {
   id         String    @id @db.Uuid
   reviewId   String    @map("review_id") @db.Uuid
@@ -478,6 +483,27 @@ model ReviewComment {
 
   @@index([reviewId])
   @@map("review_comments")
+}
+
+/// The member's thank-you note to the mentor for one finished review (learning-hub#41).
+/// One per review. Shown on the mentor's profile only after the mentor turns isPublic on.
+model ReviewThanks {
+  id        String   @id @db.Uuid
+  reviewId  String   @unique @map("review_id") @db.Uuid
+  menteeId  String   @map("mentee_id") @db.Uuid
+  mentorId  String   @map("mentor_id") @db.Uuid
+  /// 1–280 characters, plain text (CHECK in SQL migration)
+  body      String
+  /// the mentor's consent to show it on their profile
+  isPublic  Boolean  @default(false) @map("is_public")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  mentee User   @relation("ThanksGiven", fields: [menteeId], references: [id])
+  mentor User   @relation("ThanksReceived", fields: [mentorId], references: [id])
+
+  @@index([mentorId, isPublic, createdAt(sort: Desc)])
+  @@map("review_thanks")
 }
 
 model MentorAssignment {
@@ -567,7 +593,7 @@ model LeaderboardWeekPost {
 model Notification {
   id            String    @id @db.Uuid
   userId        String    @map("user_id") @db.Uuid
-  /// review_completed | review_requested | track_published (CHECK in SQL migration)
+  /// review_completed | review_requested | track_published | review_message | review_thanks (CHECK in SQL migration)
   type          String
   /// { title, body?, link } — text is built when the row is written, so the bell needs no joins
   payload       Json

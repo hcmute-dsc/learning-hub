@@ -8,6 +8,8 @@ export const NOTIFICATION_TYPES = [
   'review_completed',
   'review_requested',
   'track_published',
+  'review_message',
+  'review_thanks',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
