@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Me } from '@hub/shared';
+import { SITE_NAME } from '@/lib/club';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { BrandLogo } from './BrandLogo';
 import { NavLink } from './NavLink';
@@ -10,7 +11,7 @@ import { REVIEW_LINK, accountLinksFor, mainLinksFor } from './nav';
 /**
  * Top bar (INFORMATION-ARCHITECTURE §1, learning-hub#97), three parts:
  *
- *   [DSC logo → home]  main links (≤ 4)          [🔔] [avatar ▾ account menu]
+ *   [HCMUTE DSC logo → home]  main links (≤ 4)          [🔔] [avatar ▾ account menu]
  *
  * Which links each role gets is decided in nav.ts (guests: none, only "Đăng nhập").
  * Below md the main links move into the account menu, so the bar never wraps or scrolls.
@@ -23,7 +24,7 @@ export function SiteHeader({ me }: { me: Me | null }) {
         aria-label="Chính"
         className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-2.5 text-sm md:gap-6"
       >
-        <Link href="/" className="shrink-0" aria-label="DSC Learning Hub — trang chủ">
+        <Link href="/" className="shrink-0" aria-label={`${SITE_NAME} — trang chủ`}>
           <BrandLogo height={30} />
         </Link>
 

@@ -1,5 +1,5 @@
 /**
- * The club's ">DSC_" mark (same files as hcmute-dsc.io.vn, copied to public/brand).
+ * The HCMUTE DSC ">DSC_" logo mark (same files as hcmute-dsc.io.vn, copied to public/brand).
  * Both versions are in the page and CSS shows one, so the logo follows the color scheme
  * picked in /settings, not only the device setting.
  */

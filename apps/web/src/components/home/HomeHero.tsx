@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { CLUB_LINKS } from '@/lib/club';
+import { CLUB_LINKS, SITE_NAME } from '@/lib/club';
 
 /** Decorative code lines, placed like the ones on the club hero. Hidden from screen readers. */
 const CODE_LINES = [
@@ -39,7 +39,7 @@ export function HomeHero() {
       </div>
 
       <div className="motion-fade-up relative mx-auto max-w-6xl px-4 py-24 sm:py-32">
-        <p className="font-mono text-sm font-semibold text-brand-500">&gt;DSC_ Learning Hub</p>
+        <p className="font-mono text-sm font-semibold text-brand-500">&gt; {SITE_NAME}</p>
         <h1 className="mt-3 max-w-3xl text-4xl font-bold tracking-tight sm:text-6xl">
           Học đi đôi với hành<span className="text-brand-500">_</span>
         </h1>
