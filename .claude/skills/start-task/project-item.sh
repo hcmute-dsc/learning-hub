@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Put an issue or PR on the org board "DSC Learning Hub" (Project #1) and fill in everything
+# Put an issue or PR on the org board "HCMUTE DSC Learning Hub" (Project #1) and fill in everything
 # the sidebar shows, so no issue is left half-described (learning-hub#10).
 #
 #   project-item.sh <issue-or-pr-url> [Key=Value ...]

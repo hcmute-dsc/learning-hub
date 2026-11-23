@@ -82,7 +82,7 @@ pnpm format && pnpm lint && pnpm typecheck && pnpm test   # lint includes the de
 
 ## Workflow: issue → branch → PR → review → merge
 
-All work is tracked on the org board [DSC Learning Hub · Project #1](https://github.com/orgs/hcmute-dsc/projects/1). The full process (fields, sprints, bug lifecycle) is in [WORKFLOW.md](https://github.com/hcmute-dsc/learning-hub-docs/blob/main/docs/ops/WORKFLOW.md). In short:
+All work is tracked on the org board [HCMUTE DSC Learning Hub · Project #1](https://github.com/orgs/hcmute-dsc/projects/1). The full process (fields, sprints, bug lifecycle) is in [WORKFLOW.md](https://github.com/hcmute-dsc/learning-hub-docs/blob/main/docs/ops/WORKFLOW.md). In short:
 
 1. **Issue first.** Every change starts from an issue (use the templates). Look for an existing one before opening a new one. Assign yourself and set Status = In progress.
 2. **Branch** from up-to-date `main`: `<type>/<issue>-<short-slug>`.
