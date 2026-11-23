@@ -863,6 +863,44 @@ describe('glossary', () => {
     expectIssue(spaces, GLOSSARY, 'spaces at the start or end');
   });
 
+  it('says to quote words that YAML reads as null, a boolean or a number (learning-hub#115)', () => {
+    const glossary = parseWith((files) =>
+      files.set(
+        GLOSSARY,
+        entries(
+          '- term: NULL',
+          '  meaning: Giá trị rỗng.',
+          '  see: [true]',
+          '- term: 1.0',
+          '  meaning: Phiên bản.',
+          '  example: ~',
+        ),
+      ),
+    );
+    expectIssue(glossary, GLOSSARY, '0.term: YAML reads a bare NULL, null, ~ or nothing');
+    expectIssue(glossary, GLOSSARY, 'write the word in double quotes, e.g. "NULL"');
+    expectIssue(glossary, GLOSSARY, '0.see.0: YAML reads a bare true as a boolean');
+    expectIssue(glossary, GLOSSARY, '1.term: YAML reads a bare 1 as a number');
+    expectIssue(glossary, GLOSSARY, '1.example: YAML reads a bare NULL');
+    expect(glossary.issues.map((i) => i.message).join('\n')).not.toContain('Expected string');
+
+    const lesson = parseWith((files) =>
+      edit(files, FIRST_COMMIT, TERMS, 'terms: [init, NULL, true, 42]'),
+    );
+    expectIssue(lesson, FIRST_COMMIT, 'terms.1: YAML reads a bare NULL');
+    expectIssue(lesson, FIRST_COMMIT, 'terms.2: YAML reads a bare true as a boolean, not text');
+    expectIssue(lesson, FIRST_COMMIT, 'terms.3: YAML reads a bare 42 as a number');
+
+    const quoted = parseWith((files) => {
+      files.set(
+        GLOSSARY,
+        files.get(GLOSSARY) + entries('- term: "NULL"', '  meaning: Giá trị rỗng.'),
+      );
+      edit(files, FIRST_COMMIT, TERMS, 'terms: [init, "NULL"]');
+    });
+    expect(quoted.issues).toEqual([]);
+  });
+
   it('rejects a term listed twice, also when only case or punctuation differ', () => {
     const twice = parseWith((files) =>
       files.set(GLOSSARY, files.get(GLOSSARY) + entries('- term: init', '  meaning: Lần hai.')),
