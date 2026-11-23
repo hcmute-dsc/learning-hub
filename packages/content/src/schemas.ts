@@ -19,6 +19,34 @@ const name = z
   .string()
   .regex(/^[A-Za-z0-9._-]+$/, 'file/folder name may use letters, digits, . _ -');
 
+/**
+ * A string that authors write unquoted in YAML: a glossary term, a lesson `terms:` entry.
+ * YAML reads some bare words as other types (`NULL`, `~` → null, `true` → boolean,
+ * `1.0` → number), and Zod's "Expected string, received null" does not say why (learning-hub#115).
+ */
+const yamlText = () =>
+  z.string({
+    errorMap: (issue, ctx) => {
+      if (issue.code !== 'invalid_type') return { message: ctx.defaultError };
+      const data: unknown = ctx.data;
+      if (data === null)
+        return {
+          message:
+            'YAML reads a bare NULL, null, ~ or nothing as an empty value; write the word in double quotes, e.g. "NULL"',
+        };
+      if (typeof data === 'boolean')
+        return {
+          message: `YAML reads a bare ${String(data)} as a boolean, not text; write it in double quotes, e.g. "${String(data)}"`,
+        };
+      if (typeof data === 'number')
+        return {
+          // YAML may already have changed it (1.0 → 1), so no "e.g." with the parsed value
+          message: `YAML reads a bare ${String(data)} as a number, not text; write it in double quotes exactly as it should show`,
+        };
+      return { message: ctx.defaultError };
+    },
+  });
+
 export const trackFileSchema = z
   .object({
     uid,
@@ -70,7 +98,7 @@ export const lessonFrontMatterSchema = z
     authors: z.array(githubHandle).default([]),
     license: z.string().optional(),
     /** Words this lesson introduces, from the track's glossary.yaml (§3.1c, learning-hub#106) */
-    terms: z.array(z.string().min(1).max(60)).max(30).default([]),
+    terms: z.array(yamlText().min(1).max(60)).max(30).default([]),
   })
   .strict();
 export type LessonFrontMatter = z.infer<typeof lessonFrontMatterSchema>;
@@ -83,22 +111,21 @@ export type LessonFrontMatter = z.infer<typeof lessonFrontMatterSchema>;
 export const glossaryEntrySchema = z
   .object({
     /** The word as learners meet it, in English: `init`, `pull request` */
-    term: z
-      .string()
+    term: yamlText()
       .min(1)
       .max(60)
       .regex(/^\S(.*\S)?$/, 'term has spaces at the start or end')
       .regex(/[\p{L}\p{N}]/u, 'term needs at least one letter or digit'),
     /** The full form when `term` is short for something: init → initialize */
-    expansion: z.string().min(1).max(120).optional(),
+    expansion: yamlText().min(1).max(120).optional(),
     /** Literal Vietnamese meaning of the word: initialize → khởi tạo */
-    literal: z.string().min(1).max(120).optional(),
+    literal: yamlText().min(1).max(120).optional(),
     /** What it means here, in a sentence or two */
-    meaning: z.string().min(1).max(500),
+    meaning: yamlText().min(1).max(500),
     /** A command or short line that uses it: git init */
-    example: z.string().min(1).max(200).optional(),
+    example: yamlText().min(1).max(200).optional(),
     /** Related terms in the same glossary */
-    see: z.array(z.string().min(1).max(60)).max(10).default([]),
+    see: z.array(yamlText().min(1).max(60)).max(10).default([]),
   })
   .strict();
 export type GlossaryEntryFile = z.infer<typeof glossaryEntrySchema>;
