@@ -49,6 +49,7 @@ export class LessonService {
         type: e.type,
         state: states.get(e.id) ?? 'not_started',
       })),
+      terms: lesson.terms,
       source: { ...lesson.source, path: lesson.sourcePath },
     };
   }

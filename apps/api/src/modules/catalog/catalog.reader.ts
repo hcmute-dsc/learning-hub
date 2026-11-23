@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { ExerciseType } from '@hub/shared';
+import type { ExerciseType, GlossaryTerm } from '@hub/shared';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { DomainError } from '../../common/errors';
 import {
@@ -46,6 +46,8 @@ export interface LessonContext {
   source: { repo: string; commitSha: string };
   /** exercises whose `lesson:` is this lesson, by position */
   exercises: { id: string; title: string; type: ExerciseType }[];
+  /** glossary entries of the words this lesson introduces (§3.1c), in `terms:` order */
+  terms: GlossaryTerm[];
 }
 
 /** A track and the content members read now: its repo and commit (certificates, F19). */

@@ -111,6 +111,40 @@ export interface TrackDocView {
   source: { repo: string; commitSha: string; path: string };
 }
 
+// ------------------------------------------------------------------ E4: glossary
+
+/**
+ * One English word of a track's `glossary.yaml` (CONTENT-SPECIFICATION §3.1c, learning-hub#106):
+ * its full form and literal Vietnamese meaning, so `init` reads as "initialize, khởi tạo".
+ */
+export interface GlossaryTerm {
+  term: string;
+  /** `#anchor` of the term on the "Từ vựng" page */
+  anchor: string;
+  /** full form when the term is short for something: init → initialize */
+  expansion: string | null;
+  /** literal Vietnamese meaning of the word */
+  literal: string | null;
+  /** what it means in this track */
+  meaning: string;
+  /** a command or line that uses it */
+  example: string | null;
+}
+
+/** GET /api/v1/tracks/:slug/glossary → { data: TrackGlossaryView } (404 when the track has none) */
+export interface TrackGlossaryView {
+  track: { slug: string; title: string };
+  /** in file order; the web sorts and groups them */
+  terms: (GlossaryTerm & {
+    /** related terms (`see:`) */
+    see: { term: string; anchor: string }[];
+    /** active lessons whose `terms:` list this term, in reading order ("Học ở bài …") */
+    lessons: ItemRef[];
+  })[];
+  /** Source of glossary.yaml, for "Sửa trên GitHub" */
+  source: { repo: string; commitSha: string; path: string };
+}
+
 // ------------------------------------------------------------------ E4: lessons
 
 /** GET /api/v1/lessons/:id → { data: LessonView } */
@@ -129,6 +163,11 @@ export interface LessonView {
   progress: LessonStatus;
   /** Exercises whose `lesson:` is this lesson */
   exercises: (ItemRef & { type: ExerciseType; state: ExerciseState })[];
+  /**
+   * Words this lesson introduces (`terms:`), in front matter order, from the track glossary:
+   * the "Từ mới trong bài" box and the notes on their first use. Empty when none.
+   */
+  terms: GlossaryTerm[];
   /** Source for "Sửa trên GitHub" links */
   source: { repo: string; commitSha: string; path: string };
 }
