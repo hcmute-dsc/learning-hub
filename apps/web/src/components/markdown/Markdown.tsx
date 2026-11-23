@@ -1,11 +1,15 @@
 import type { ComponentPropsWithoutRef } from 'react';
+import type { GlossaryTerm } from '@hub/shared';
 import ReactMarkdown, { defaultUrlTransform, type Components } from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
 import { rewriteContentUrl, type ContentOrigin } from './content-url';
+import { glossaryHref } from '@/components/track/glossary';
 import { CodeBlock } from './CodeBlock';
+import { GlossaryNote } from './GlossaryNote';
+import { rehypeGlossaryTerms } from './glossary-terms';
 import { MermaidDiagram } from './MermaidDiagram';
 import { mermaidSource } from './mermaid-source';
 import { TableWrap } from './TableWrap';
@@ -31,11 +35,20 @@ import { TableWrap } from './TableWrap';
 export function Markdown({
   source,
   origin = null,
+  glossary = null,
 }: {
   source: string;
   /** Where the file lives, to resolve its relative links; null keeps them as is */
   origin?: ContentOrigin | null;
+  /**
+   * New words of a lesson (learning-hub#106): the first use of each gets a note
+   * (glossary-terms.ts, GlossaryNote.tsx). Null or no terms: the text is left as is.
+   */
+  glossary?: { trackSlug: string; terms: GlossaryTerm[] } | null;
 }) {
+  const terms = glossary?.terms ?? [];
+  const components =
+    glossary && terms.length > 0 ? withGlossary(glossary.trackSlug, terms) : COMPONENTS;
   return (
     <div className="markdown">
       <ReactMarkdown
@@ -43,6 +56,8 @@ export function Markdown({
         rehypePlugins={[
           rehypeRaw,
           rehypeSanitize,
+          // After sanitize: the data-glossary it adds must not come from the author.
+          [rehypeGlossaryTerms, terms],
           [rehypeHighlight, { detect: false, plainText: ['mermaid'] }],
         ]}
         urlTransform={(url, key, node) => {
@@ -51,7 +66,7 @@ export function Markdown({
           const kind = key === 'src' && node.tagName === 'img' ? 'image' : 'link';
           return rewriteContentUrl(safe, kind, origin);
         }}
-        components={COMPONENTS}
+        components={components}
       >
         {source}
       </ReactMarkdown>
@@ -80,6 +95,24 @@ const COMPONENTS: Components = {
   // Wide tables scroll inside their own box instead of squeezing the columns.
   table: ({ node: _node, ...props }) => <TableWrap {...props} />,
 };
+
+/** COMPONENTS plus the notes on <dfn data-glossary> that rehypeGlossaryTerms added. */
+function withGlossary(trackSlug: string, terms: GlossaryTerm[]): Components {
+  const byAnchor = new Map(terms.map((t) => [t.anchor, t]));
+  return {
+    ...COMPONENTS,
+    dfn: ({ node, children, ...props }) => {
+      const anchor = node?.properties?.dataGlossary;
+      const term = typeof anchor === 'string' ? byAnchor.get(anchor) : undefined;
+      if (!term) return <dfn {...props}>{children}</dfn>;
+      return (
+        <GlossaryNote term={term} href={glossaryHref(trackSlug, term.anchor)}>
+          {children}
+        </GlossaryNote>
+      );
+    },
+  };
+}
 
 function MarkdownLink(props: ComponentPropsWithoutRef<'a'>) {
   const external = typeof props.href === 'string' && /^https?:\/\//.test(props.href);
