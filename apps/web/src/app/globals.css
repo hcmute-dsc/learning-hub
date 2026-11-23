@@ -15,7 +15,7 @@
 }
 
 /* Design tokens, matched to the club website hcmute-dsc.io.vn (src/css/custom.css there):
-   DSC orange #F0622D (hsl 16 86%), navy hero, system fonts.
+   HCMUTE DSC orange #F0622D (hsl 16 86%), navy hero, system fonts.
    brand-600 is the darker orange (hsl 16 86% 40%) so white button text keeps AA contrast. */
 @theme {
   --font-sans:

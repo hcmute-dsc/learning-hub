@@ -63,7 +63,7 @@ export function buildDigestEmail(input: {
 
   const subject = `Learning Hub: ${count} thông báo mới`;
   const greeting = `Chào ${input.displayName},`;
-  const intro = `Bạn có ${count} thông báo chưa đọc trên DSC Learning Hub:`;
+  const intro = `Bạn có ${count} thông báo chưa đọc trên HCMUTE DSC Learning Hub:`;
   const footer =
     'Bạn nhận email này vì đã bật "Email tóm tắt" trong phần Cài đặt của Learning Hub.';
 

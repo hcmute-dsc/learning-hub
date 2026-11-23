@@ -5,6 +5,12 @@
  */
 export const CLUB_SITE = 'https://hcmute-dsc.io.vn';
 
+/** The club's short name. Always the full "HCMUTE DSC" in text, never "DSC" alone (learning-hub#110). */
+export const CLUB_SHORT_NAME = 'HCMUTE DSC';
+
+/** Name of this site: tab titles, home page, logo label. */
+export const SITE_NAME = `${CLUB_SHORT_NAME} Learning Hub`;
+
 export const CLUB_LINKS = {
   site: CLUB_SITE,
   github: 'https://github.com/hcmute-dsc',

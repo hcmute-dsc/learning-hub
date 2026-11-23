@@ -20,7 +20,7 @@ export const POST_HOUR = 9;
 export const WEEKLY_TOP = 5;
 /** Discord snowflake: anything else must never reach a mention or allowed_mentions. */
 const SNOWFLAKE = /^[0-9]{15,21}$/;
-/** Discord orange-ish brand color of the embed (DSC orange). */
+/** Discord orange-ish brand color of the embed (HCMUTE DSC orange). */
 const EMBED_COLOR = 0xf26b1d;
 
 export type { Week };

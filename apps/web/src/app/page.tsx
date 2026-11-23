@@ -1,6 +1,6 @@
 import { CardGrid, type CardItem } from '@/components/home/CardGrid';
 import { HomeHero } from '@/components/home/HomeHero';
-import { CLUB_LINKS, CLUB_PROJECTS } from '@/lib/club';
+import { CLUB_LINKS, CLUB_PROJECTS, CLUB_SHORT_NAME } from '@/lib/club';
 
 const HOW_IT_WORKS: CardItem[] = [
   {
@@ -47,14 +47,22 @@ export default function HomePage() {
   return (
     <>
       <HomeHero />
-      <CardGrid id="how-it-works" title="Học theo cách của DSC" items={HOW_IT_WORKS} />
+      <CardGrid
+        id="how-it-works"
+        title={`Học theo cách của ${CLUB_SHORT_NAME}`}
+        items={HOW_IT_WORKS}
+      />
       <CardGrid
         id="tracks"
         title="Lộ trình"
         intro="Đăng nhập bằng GitHub để tham gia và lưu tiến độ."
         items={TRACKS}
       />
-      <CardGrid id="club-projects" title="Các dự án khác của DSC" items={PROJECTS} />
+      <CardGrid
+        id="club-projects"
+        title={`Các dự án khác của ${CLUB_SHORT_NAME}`}
+        items={PROJECTS}
+      />
     </>
   );
 }

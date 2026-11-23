@@ -74,7 +74,7 @@ export const envSchema = z.object({
   SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
   SMTP_USER: z.string().default(''),
   SMTP_PASSWORD: z.string().default(''),
-  /** Sender shown to members, e.g. "DSC Learning Hub <no-reply@example.org>" */
+  /** Sender shown to members, e.g. "HCMUTE DSC Learning Hub <no-reply@example.org>" */
   SMTP_FROM: z.string().default(''),
 });
 

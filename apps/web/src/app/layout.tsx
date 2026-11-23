@@ -3,10 +3,11 @@ import type { ReactNode } from 'react';
 import { SiteFooter } from '@/components/site/SiteFooter';
 import { SiteHeader } from '@/components/site/SiteHeader';
 import { getMe } from '@/lib/api';
+import { SITE_NAME } from '@/lib/club';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: { default: 'DSC Learning Hub', template: '%s · DSC Learning Hub' },
+  title: { default: SITE_NAME, template: `%s · ${SITE_NAME}` },
   description: 'Học đi đôi với hành cùng HCMUTE Developer Student Club',
   icons: { apple: '/brand/apple-touch-icon.png' },
 };

@@ -160,7 +160,7 @@ Không dùng lại OAuth app của localhost. Vào https://github.com/organizati
 
 | Ô                          | Giá trị                                                      |
 | -------------------------- | ------------------------------------------------------------ |
-| Application name           | `DSC Learning Hub`                                           |
+| Application name           | `HCMUTE DSC Learning Hub`                                    |
 | Homepage URL               | `https://learn.hcmute-dsc.io.vn`                             |
 | Authorization callback URL | `https://learn.hcmute-dsc.io.vn/api/v1/auth/github/callback` |
 
@@ -370,7 +370,7 @@ Chuông thông báo trên header luôn chạy, không cần cấu hình gì. Ema
 | Gmail/Google Workspace của CLB                   | `smtp.gmail.com` / `465`                       | địa chỉ Gmail đó / **App password** (Google Account → Security → 2-Step → App passwords) | cần bật xác minh 2 bước; giới hạn khoảng 500 email/ngày, đủ cho CLB                |
 | Dịch vụ gửi email (Brevo, Resend, Mailgun, SES…) | theo trang SMTP của dịch vụ, thường cổng `587` | SMTP login / SMTP key mà dịch vụ cấp                                                     | phải xác minh tên miền gửi (bản ghi SPF/DKIM trong DNS) theo hướng dẫn của dịch vụ |
 
-- `SMTP_FROM`: tên và địa chỉ người gửi, ví dụ `DSC Learning Hub <dia-chi-gui@ten-mien-cua-clb>`. Với Gmail phải là chính địa chỉ Gmail đó.
+- `SMTP_FROM`: tên và địa chỉ người gửi, ví dụ `HCMUTE DSC Learning Hub <dia-chi-gui@ten-mien-cua-clb>`. Với Gmail phải là chính địa chỉ Gmail đó.
 - Cổng `587` bắt buộc STARTTLS, cổng `465` dùng TLS ngay; API không bao giờ gửi mật khẩu qua kết nối không mã hoá. Nhiều VPS chặn cổng `25`, nên đừng dùng cổng đó.
 - `SMTP_PASSWORD` là mật khẩu: không dán vào chat, issue, PR hay code. Lộ thì thu hồi App password/SMTP key cũ và tạo cái mới.
 
@@ -412,7 +412,7 @@ Hai phần độc lập:
 
 **Tạo Discord application** (người quản lý server Discord của CLB làm, một lần):
 
-1. Vào https://discord.com/developers/applications → **New Application**, tên `DSC Learning Hub`, đồng ý điều khoản của Discord.
+1. Vào https://discord.com/developers/applications → **New Application**, tên `HCMUTE DSC Learning Hub`, đồng ý điều khoản của Discord.
 2. Tab **OAuth2** → **Redirects** → **Add Redirect**: `https://learn.hcmute-dsc.io.vn/api/v1/me/discord/callback` → **Save Changes**. Khi chạy local thêm `http://localhost:3000/api/v1/me/discord/callback`, tốt nhất là một application riêng cho local.
 3. Cũng ở tab **OAuth2**: chép **Client ID**; bấm **Reset Secret** để lấy **Client Secret** (chỉ hiện một lần).
 4. Không cần tạo bot, không cần mời application vào server. App chỉ dùng scope `identify` (đọc id và tên Discord), không đọc tin nhắn hay danh sách server.

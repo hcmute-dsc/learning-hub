@@ -49,6 +49,7 @@ describe('buildDigestEmail', () => {
       items: [{ title: 'Bài "Todo" đã đạt', body: 'Backend', link: '/exercises/1' }],
     });
     expect(email?.subject).toBe('Learning Hub: 1 thông báo mới');
+    expect(email?.text).toContain('trên HCMUTE DSC Learning Hub:');
     expect(email?.text).toContain('https://learn.example.org/exercises/1');
     expect(email?.text).toContain('Tắt email này: https://learn.example.org/unsubscribe?token=abc');
     expect(email?.html).toContain('href="https://learn.example.org/exercises/1"');
