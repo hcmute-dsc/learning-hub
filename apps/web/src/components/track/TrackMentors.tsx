@@ -13,7 +13,7 @@ export function TrackMentors({ mentors }: { mentors: PersonRef[] }) {
       <h2 id="track-mentors-title" className="font-semibold">
         Mentor phụ trách
       </h2>
-      <p className="muted mt-1 text-sm">Những người theo dõi lộ trình này và review bài của bạn.</p>
+      <p className="muted mt-1 text-sm">Những mentor được giao theo dõi lộ trình này.</p>
       <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
         {mentors.map((m) => (
           <li key={m.id}>
