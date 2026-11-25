@@ -136,9 +136,15 @@ describe('issueContent', () => {
     expect(body).toContain('HCMUTE DSC');
   });
 
-  it('fences the member text, so mentions and HTML stay plain text', () => {
+  it('posts the description as Markdown without mentions or HTML (learning-hub#125)', () => {
     const { body } = issueContent(source);
-    expect(body).toContain('~~~text\nLệnh `SELECT *` báo lỗi @someone <script>\n~~~');
+    expect(body).toContain('**Mô tả**\n\nLệnh `SELECT *` báo lỗi @​someone &lt;script>\n');
+    expect(body).not.toContain('@someone');
+  });
+
+  it('keeps the quote fenced, so mentions and HTML in it stay plain text', () => {
+    const { body } = issueContent({ ...source, quote: '@someone <script>' });
+    expect(body).toContain('~~~text\n@someone <script>\n~~~');
   });
 
   it('never names the reporter, and leaves out what is missing', () => {

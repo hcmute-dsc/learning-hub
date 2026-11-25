@@ -8,6 +8,7 @@ import {
   type ContentReportTarget,
 } from '@hub/shared';
 import { DomainError } from '../../common/errors';
+import { issueMarkdown } from './issue-markdown';
 
 /**
  * Rules of "Báo lỗi nội dung" (learning-hub#121). Pure functions, tested in
@@ -138,7 +139,7 @@ export interface IssueSource {
   repo: string;
 }
 
-/** Fence a member's text so Markdown, mentions and HTML in it stay plain text on GitHub. */
+/** Fence the quote so Markdown, mentions and HTML in it stay plain text on GitHub. */
 export function quoted(text: string): string {
   // A fence longer than any run of ~ in the text, so the text cannot close it early.
   const longest = Math.max(0, ...(text.match(/~+/g) ?? []).map((run) => run.length));
@@ -149,6 +150,8 @@ export function quoted(text: string): string {
 /**
  * The issue created in the track repo. On purpose there is nothing about the reporter (no
  * login, no email): the issue is public, and the member did not choose to appear there.
+ * The description is Markdown (code blocks keep their formatting) made harmless by
+ * issueMarkdown (learning-hub#125); the quote is copied from the page, so it stays fenced.
  */
 export function issueContent(r: IssueSource): { title: string; body: string } {
   const category = CONTENT_REPORT_CATEGORY_LABEL[r.category];
@@ -164,7 +167,7 @@ export function issueContent(r: IssueSource): { title: string; body: string } {
       `- **Commit nội dung lúc báo:** [\`${r.commitSha.slice(0, 7)}\`](https://github.com/${r.repo}/tree/${r.commitSha})`,
     );
   }
-  lines.push('', '**Mô tả**', '', quoted(r.description));
+  lines.push('', '**Mô tả**', '', issueMarkdown(r.description));
   if (r.quote) lines.push('', '**Đoạn trích**', '', quoted(r.quote));
   return { title, body: lines.join('\n') };
 }
