@@ -7,8 +7,32 @@ import { z } from 'zod';
  * the totals match that report for the same track and the same 14 days.
  */
 
-/** "Đang học": marked a lesson or submitted in the last this many days (Vietnam days). */
-export const TRACK_STATS_ACTIVE_DAYS = 14;
+/**
+ * Periods a viewer can pick (`?days=`, learning-hub#126): the last this many Vietnam days,
+ * today included. "Đang học" and the review numbers count inside the period, and the totals
+ * are compared with the same number of days just before it.
+ */
+export const TRACK_STATS_DAYS_OPTIONS = [7, 14, 30, 90] as const;
+export type TrackStatsDays = (typeof TRACK_STATS_DAYS_OPTIONS)[number];
+
+/** The period without `?days=`: two weeks, like the stats page before #126. */
+export const TRACK_STATS_ACTIVE_DAYS: TrackStatsDays = 14;
+
+/** `?days=` as a period length; anything else (missing, "abc", "8") is the default. */
+export function trackStatsDays(raw: unknown): TrackStatsDays {
+  const n = typeof raw === 'string' && /^\d+$/.test(raw) ? Number(raw) : NaN;
+  return (TRACK_STATS_DAYS_OPTIONS as readonly number[]).includes(n)
+    ? (n as TrackStatsDays)
+    : TRACK_STATS_ACTIVE_DAYS;
+}
+
+/** Query of GET /tracks/:slug/stats: `days` must be one of TRACK_STATS_DAYS_OPTIONS. */
+export const trackStatsQuerySchema = z.object({
+  days: z
+    .enum(TRACK_STATS_DAYS_OPTIONS.map(String) as [string, ...string[]])
+    .optional()
+    .transform((d) => trackStatsDays(d)),
+});
 
 /**
  * "Lâu không hoạt động": no lesson mark or submission for at least this many days, counted
@@ -32,15 +56,18 @@ const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 export const trackStatsTotalsSchema = z.object({
   /** learners enrolled in the track */
   enrolled: count,
-  /** learners who marked a lesson or submitted in the last TRACK_STATS_ACTIVE_DAYS days */
+  /** learners who marked a lesson or submitted during the period */
   active: count,
   /** learners who completed the track */
   completed: count,
   /** completed / enrolled, 0–100 */
   completionRate: rate,
-  /** learners' submissions waiting for a mentor right now */
+  /**
+   * learners' submissions waiting for a mentor right now (lúc xem trang), not at the end of
+   * the period; in `previous`, only of learners enrolled by its end
+   */
   awaitingReview: count,
-  /** reviews concluded in the last TRACK_STATS_ACTIVE_DAYS days */
+  /** reviews concluded during the period */
   reviewsDone: count,
   /** hours from submission to conclusion of those reviews; null without reviews */
   reviewHoursMedian: z.number().nullable(),
@@ -59,6 +86,8 @@ export const trackFunnelModuleSchema = z.object({
   title: z.string(),
   /** learners who completed every lesson and exercise of the module (0 for an empty one) */
   completed: count,
+  /** learners who completed at least one lesson or exercise of the module */
+  started: count,
   /** lessons first, then exercises, in content order (like the track page) */
   items: z.array(trackFunnelItemSchema),
 });
@@ -94,6 +123,21 @@ export const trackStatsWeekSchema = z.object({
   active: count,
 });
 
+/**
+ * Learners by share of the track's lessons and exercises done: [from, to) percent, and the
+ * last bucket (from = to = 100) is everyone who did every item or completed the track.
+ */
+export const progressBucketSchema = z.object({
+  from: rate,
+  to: rate,
+  learners: count,
+});
+
+/** Bucket edges of the progress histogram, in percent (see progressBucketSchema). */
+export const TRACK_STATS_PROGRESS_EDGES = [0, 25, 50, 75, 100] as const;
+
+const periodSchema = z.object({ from: day, to: day });
+
 export const inactiveLearnerSchema = z.object({
   githubLogin: z.string(),
   enrolledAt: z.string(),
@@ -110,9 +154,18 @@ export const inactiveLearnerSchema = z.object({
 export const trackStatsSchema = z.object({
   track: z.object({ slug: z.string(), title: z.string() }),
   generatedAt: z.string(),
-  /** the TRACK_STATS_ACTIVE_DAYS Vietnam days behind `active` and the review numbers */
-  period: z.object({ from: day, to: day }),
+  /** the `days` Vietnam days behind `active` and the review numbers, today last */
+  period: periodSchema.extend({ days: z.number().int().positive() }),
   totals: trackStatsTotalsSchema,
+  /**
+   * the same number of days just before `period`, for "+3 so với kỳ trước". Its
+   * `awaitingReview` is still "lúc xem trang, như kỳ này" (the report counts what waits now),
+   * so the page does not compare it.
+   * (Learners and reviews do follow the previous period.)
+   */
+  previous: z.object({ period: periodSchema, totals: trackStatsTotalsSchema }),
+  /** every enrolled learner by progress, now; TRACK_STATS_PROGRESS_EDGES buckets */
+  progress: z.array(progressBucketSchema),
   funnel: z.array(trackFunnelModuleSchema),
   hardest: z.object({
     /** highest first-attempt fail rate first */
@@ -136,4 +189,5 @@ export type HardExercise = z.infer<typeof hardExerciseSchema>;
 export type WaitingReview = z.infer<typeof waitingReviewSchema>;
 export type TrackStatsWeek = z.infer<typeof trackStatsWeekSchema>;
 export type InactiveLearner = z.infer<typeof inactiveLearnerSchema>;
+export type ProgressBucket = z.infer<typeof progressBucketSchema>;
 export type TrackStats = z.infer<typeof trackStatsSchema>;

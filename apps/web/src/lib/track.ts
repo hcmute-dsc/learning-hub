@@ -65,10 +65,13 @@ export async function canSeeTrackStats(): Promise<boolean> {
 }
 
 /** Statistics of a track; null when the viewer may not see them (403). 404 page for a bad slug. */
-export async function loadTrackStats(slug: string): Promise<TrackStats | null> {
+export async function loadTrackStats(slug: string, days: number): Promise<TrackStats | null> {
   try {
-    return (await apiOrNotFound<{ data: TrackStats }>(`/tracks/${encodeURIComponent(slug)}/stats`))
-      .data;
+    return (
+      await apiOrNotFound<{ data: TrackStats }>(
+        `/tracks/${encodeURIComponent(slug)}/stats?days=${days}`,
+      )
+    ).data;
   } catch (e) {
     if (e instanceof ApiError && e.problem.status === 403) return null;
     throw e;

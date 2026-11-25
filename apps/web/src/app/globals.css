@@ -38,6 +38,11 @@
   --text: #121826;
   --muted: #5b6475;
   --border: #e3e7ef;
+  /* Chart series (learning-hub#126). Two categorical slots, checked for colour-blind
+     separation and 3:1 against --surface in both themes: 1 = blue, 2 = HCMUTE DSC orange.
+     A single-series chart uses slot 2. Text never takes these colours. */
+  --chart-1: #2a78d6;
+  --chart-2: #f0622d;
 }
 
 /* Orange text on a dark background needs a lighter tone to stay readable.
@@ -61,6 +66,8 @@
     --text: #e6edf3;
     --muted: #9aa4b2;
     --border: #2a313c;
+    --chart-1: #3987e5;
+    --chart-2: #d95926;
   }
 }
 
