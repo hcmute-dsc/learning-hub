@@ -72,6 +72,13 @@ describe('Markdown from="member"', () => {
     expect(html).toContain(`href="https://example.com" rel="${MEMBER_LINK_REL}"`);
   });
 
+  it('shows an image inside a link as a label, never a link in a link', () => {
+    const html = render('[![badge](https://x.dev/b.png)](https://x.dev)');
+    expect(html.match(/<a /g)).toHaveLength(1);
+    expect(html).toContain('badge');
+    expect(html).not.toContain('<img');
+  });
+
   it('shows an image as a link instead of loading it', () => {
     const html = render('![ảnh lỗi](https://tracker.example/p.png) ![](data:image/png;base64,AA)');
     expect(html).not.toContain('<img');

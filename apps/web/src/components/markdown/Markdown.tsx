@@ -12,7 +12,7 @@ import { GlossaryNote } from './GlossaryNote';
 import { rehypeGlossaryTerms } from './glossary-terms';
 import { MermaidDiagram } from './MermaidDiagram';
 import { mermaidSource } from './mermaid-source';
-import { MEMBER_LINK_REL, remarkMemberText } from './member-text';
+import { MEMBER_LINK_REL, rehypeMarkImagesInLinks, remarkMemberText } from './member-text';
 import { TableWrap } from './TableWrap';
 
 /**
@@ -130,7 +130,11 @@ function MemberMarkdown({ source }: { source: string }) {
     <div className="markdown">
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMemberText]}
-        rehypePlugins={[rehypeSanitize, [rehypeHighlight, { detect: false }]]}
+        rehypePlugins={[
+          rehypeSanitize,
+          rehypeMarkImagesInLinks,
+          [rehypeHighlight, { detect: false }],
+        ]}
         components={MEMBER_COMPONENTS}
       >
         {source}
@@ -144,14 +148,16 @@ const MEMBER_COMPONENTS: Components = {
   a: ({ node: _node, ...props }) => <a {...props} rel={MEMBER_LINK_REL} />,
   // An image is a link to it: loading it would tell whoever chose the URL that a staff
   // member opened the report (a tracking pixel), and from which IP.
-  img: ({ node: _node, src, alt }) => {
+  // Inside a link it is only a label (no link in a link).
+  img: ({ node, src, alt }) => {
     const label = (
       <>
         <span aria-hidden>🖼 </span>
         {alt || 'Ảnh'}
       </>
     );
-    if (typeof src !== 'string' || src === '') return label;
+    const inLink = node?.properties?.dataInLink === true;
+    if (inLink || typeof src !== 'string' || src === '') return label;
     return (
       <a href={src} rel={MEMBER_LINK_REL}>
         {label}

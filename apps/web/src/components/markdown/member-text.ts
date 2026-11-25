@@ -52,3 +52,29 @@ export function memberText(node: MdNode): void {
   node.children = children;
   for (const child of children) memberText(child);
 }
+
+export interface HastNode {
+  type: string;
+  tagName?: string;
+  properties?: Record<string, unknown>;
+  children?: HastNode[];
+}
+
+/**
+ * rehype plugin: marks an <img> inside a link with `data-in-link`, so Markdown from="member"
+ * shows it as a plain label there instead of nesting a link to the image inside the link.
+ * Runs after rehype-sanitize, so the mark never comes from the member.
+ */
+export function rehypeMarkImagesInLinks() {
+  return (tree: HastNode) => {
+    markImages(tree, false);
+  };
+}
+
+export function markImages(node: HastNode, inLink: boolean): void {
+  if (node.type === 'element' && node.tagName === 'img' && inLink) {
+    node.properties = { ...node.properties, dataInLink: true };
+  }
+  const nowInLink = inLink || (node.type === 'element' && node.tagName === 'a');
+  for (const child of node.children ?? []) markImages(child, nowInLink);
+}

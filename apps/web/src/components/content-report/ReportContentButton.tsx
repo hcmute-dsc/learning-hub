@@ -80,6 +80,7 @@ export function ReportContentButton({
     writePanel: useId(),
     previewPanel: useId(),
     quote: useId(),
+    error: useId(),
   };
   const [open, setOpen] = useState(false);
   const [category, setCategory] = useState<ContentReportCategory | ''>('');
@@ -88,6 +89,8 @@ export function ReportContentButton({
   const [tab, setTab] = useState<Tab>('write');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** The field the error is about, marked aria-invalid until it is fixed */
+  const [invalid, setInvalid] = useState<'category' | 'description' | null>(null);
   const [sent, setSent] = useState(false);
 
   useEffect(() => {
@@ -108,8 +111,11 @@ export function ReportContentButton({
   }, [sent]);
 
   function start() {
-    setQuote(quoteFromSelection(window.getSelection()?.toString()));
+    // A new selection replaces the quote; without one, the draft's quote stays.
+    const selected = quoteFromSelection(window.getSelection()?.toString());
+    if (selected) setQuote(selected);
     setError(null);
+    setInvalid(null);
     setSent(false);
     setTab('write');
     setOpen(true);
@@ -131,13 +137,28 @@ export function ReportContentButton({
     const edit = make(description, el.selectionStart, el.selectionEnd);
     if (!edit) {
       setError(`Mô tả tối đa ${CONTENT_REPORT_DESCRIPTION_MAX} ký tự.`);
+      setInvalid('description');
       return;
     }
-    setDescription(edit.value);
+    changeDescription(edit.value);
     requestAnimationFrame(() => {
       el.focus();
       el.setSelectionRange(edit.selectionStart, edit.selectionEnd);
     });
+  }
+
+  /** An error about a field goes away once that field is fixed. */
+  function clearErrorFor(field: 'category' | 'description') {
+    if (invalid !== field) return;
+    setInvalid(null);
+    setError(null);
+  }
+
+  function changeDescription(value: string) {
+    setDescription(value);
+    if (value.trim() && value.length <= CONTENT_REPORT_DESCRIPTION_MAX) {
+      clearErrorFor('description');
+    }
   }
 
   function showTab(next: Tab) {
@@ -168,6 +189,7 @@ export function ReportContentButton({
     const missing = missingField(category, description);
     if (missing) {
       setError(missing.message);
+      setInvalid(missing.field);
       if (missing.field === 'category') firstChip.current?.focus();
       else {
         setTab('write');
@@ -177,6 +199,7 @@ export function ReportContentButton({
     }
     setSending(true);
     setError(null);
+    setInvalid(null);
     const result = await sendJson<{ id: string }>('/content-reports', 'POST', {
       target,
       category,
@@ -200,6 +223,10 @@ export function ReportContentButton({
       <dialog
         ref={dialog}
         onClose={close}
+        // Esc must not close the dialog while the report is being sent.
+        onCancel={(e) => {
+          if (sending) e.preventDefault();
+        }}
         aria-labelledby={ids.title}
         className="surface m-auto max-h-[calc(100dvh-2rem)] w-[min(40rem,calc(100vw-2rem))] overflow-y-auto rounded-xl p-0 text-[var(--text)] shadow-xl backdrop:bg-black/40"
       >
@@ -240,7 +267,7 @@ export function ReportContentButton({
               </p>
             </div>
 
-            <fieldset>
+            <fieldset aria-describedby={invalid === 'category' ? ids.error : undefined}>
               <legend className="text-sm font-medium">
                 Loại lỗi <Required />
               </legend>
@@ -257,7 +284,11 @@ export function ReportContentButton({
                       value={c}
                       required
                       checked={category === c}
-                      onChange={() => setCategory(c)}
+                      aria-invalid={invalid === 'category' || undefined}
+                      onChange={() => {
+                        setCategory(c);
+                        clearErrorFor('category');
+                      }}
                       className="sr-only"
                     />
                     <span aria-hidden className="text-xs">
@@ -327,11 +358,16 @@ export function ReportContentButton({
                   id={ids.description}
                   required
                   aria-required
-                  aria-describedby={ids.descriptionHelp}
+                  aria-invalid={invalid === 'description' || undefined}
+                  aria-describedby={
+                    invalid === 'description'
+                      ? `${ids.error} ${ids.descriptionHelp}`
+                      : ids.descriptionHelp
+                  }
                   rows={6}
                   maxLength={CONTENT_REPORT_DESCRIPTION_MAX}
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={(e) => changeDescription(e.target.value)}
                   placeholder={DESCRIPTION_PLACEHOLDER}
                   className={`${FIELD} min-h-32 resize-y`}
                 />
@@ -380,7 +416,7 @@ export function ReportContentButton({
             </div>
 
             {error && (
-              <p role="alert" className="text-sm text-red-700 dark:text-red-300">
+              <p id={ids.error} role="alert" className="text-sm text-red-700 dark:text-red-300">
                 {error}
               </p>
             )}
