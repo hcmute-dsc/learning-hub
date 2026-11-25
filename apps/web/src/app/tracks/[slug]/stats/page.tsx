@@ -3,14 +3,12 @@ import Link from 'next/link';
 import { TRACK_STATS_INACTIVE_DAYS, TRACK_STATS_WEEKS } from '@hub/shared';
 import { formatDay } from '@/components/admin/report-format';
 import { Breadcrumbs } from '@/components/learn/Breadcrumbs';
+import { Funnel, SummaryCards, WeeklyChart } from '@/components/track/TrackStatsSections';
 import {
   FirstAttemptTable,
-  Funnel,
   InactiveTable,
-  SummaryCards,
   WaitingReviewTable,
-  WeeklyChart,
-} from '@/components/track/TrackStatsSections';
+} from '@/components/track/TrackStatsTables';
 import { TrackTabs } from '@/components/track/TrackTabs';
 import { STATS_LABEL, trackTabs } from '@/components/track/track-docs';
 import { adminReportsHref } from '@/components/track/track-stats-format';
@@ -27,8 +25,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 }
 
 /**
- * "Thống kê" of one track (/tracks/:slug/stats, learning-hub#118): for admins and the
- * track's mentors. Totals, where learners stop (funnel), the hardest exercises, the last
+ * "Thống kê" of one track (/tracks/:slug/stats, learning-hub#118): for admins and mentors,
+ * every track. Totals, where learners stop (funnel), the hardest exercises, the last
  * weeks, and who has gone quiet. The API decides who may see it; this page only shows a
  * message when it says no.
  */
@@ -132,7 +130,8 @@ export default async function TrackStatsPage({ params }: Params) {
         </h2>
         <p className="muted text-sm">
           Chưa xong track và không đánh dấu bài học hay nộp bài từ {TRACK_STATS_INACTIVE_DAYS} ngày
-          trở lên. Hỏi thăm họ xem có bị kẹt không.
+          trở lên, hoặc chưa từng hoạt động sau {TRACK_STATS_INACTIVE_DAYS} ngày ghi danh. Hỏi thăm
+          họ xem có bị kẹt không.
         </p>
         <InactiveTable learners={stats.inactive.learners} total={stats.inactive.total} now={now} />
       </section>

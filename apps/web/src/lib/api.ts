@@ -1,4 +1,5 @@
 import 'server-only';
+import { cache } from 'react';
 import { cookies, headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import type { Me, ProblemDetails } from '@hub/shared';
@@ -65,8 +66,12 @@ export async function apiOrNotFound<T>(path: string): Promise<T> {
   }
 }
 
-/** Current user or null (never redirects). */
-export async function getMe(): Promise<Me | null> {
+/**
+ * Current user or null (never redirects). Wrapped in React `cache`, so the layout, the page
+ * and helpers such as `canSeeTrackStats` share one /auth/me call per request (the cache
+ * lives for one server render, and the cookies are that request's own).
+ */
+export const getMe = cache(async (): Promise<Me | null> => {
   const member = await memberHeaders();
   if (!member.cookie) return null;
   const res = await fetch(`${API}/api/v1/auth/me`, {
@@ -75,4 +80,4 @@ export async function getMe(): Promise<Me | null> {
   }).catch(() => null);
   if (!res?.ok) return null;
   return ((await res.json()) as { data: Me }).data;
-}
+});
