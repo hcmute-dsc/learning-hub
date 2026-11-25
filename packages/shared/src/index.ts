@@ -131,3 +131,4 @@ export * from './certificate';
 export * from './leaderboard';
 export * from './report';
 export * from './track-stats';
+export * from './access';

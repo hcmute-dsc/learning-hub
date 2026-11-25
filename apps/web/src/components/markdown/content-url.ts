@@ -1,4 +1,4 @@
-import type { Role } from '@hub/shared';
+import { canEditOnGitHub, type Role } from '@hub/shared';
 
 /**
  * Lessons are Markdown files inside a Git content repo, so their relative links and
@@ -27,16 +27,7 @@ export function isGithubRepo(repo: string): boolean {
   return GITHUB_REPO.test(repo);
 }
 
-/**
- * Who sees "✎ Sửa trên GitHub" (learning-hub#122): staff who edit or review content, that is
- * admins, mentors and content maintainers ("Biên tập nội dung"). Members report mistakes
- * with the "Báo lỗi nội dung" button instead, or open a pull request from the track repo.
- */
-export function canEditOnGitHub(roles: readonly Role[]): boolean {
-  return roles.some((r) => r === 'admin' || r === 'mentor' || r === 'content_maintainer');
-}
-
-/** The "Sửa trên GitHub" link for this viewer, or null (not staff, or not on GitHub). */
+/** The "Sửa trên GitHub" link for this viewer (`canEditOnGitHub`, @hub/shared), or null (not staff, or not on GitHub). */
 export function editOnGitHubUrl(
   origin: ContentOrigin,
   roles: readonly Role[] | undefined,
