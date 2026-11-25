@@ -24,19 +24,20 @@ content-example/               small content repo used for local dev and tests
 checker-example/               stand-in for the private checker repo: reference solutions (dev, tests)
 ```
 
-| API module      | Owns                                                                                                                                                           | Read first                                     |
-| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| `identity`      | GitHub sign-in, sessions, the global auth guard                                                                                                                | `auth.controller.ts`, `auth.guard.ts`          |
-| `users`         | users, roles, approving `pending` accounts, linking a Discord account (`discord-link.service.ts`)                                                              | `users.service.ts`                             |
-| `catalog`       | reading published tracks/modules/lessons/exercises; `CatalogWriter` is the only code that writes them                                                          | `catalog.service.ts`, `catalog.writer.ts`      |
-| `content`       | sync a content repo → draft version → publish                                                                                                                  | `content.service.ts`, `domain/plan.ts`         |
-| `learning`      | enrollments, lesson progress, track progress and completion; depends on `submissions` and `catalog`                                                            | `progress.ts`, `enrollment.service.ts`         |
-| `submissions`   | submissions and each exercise's state for a member, including prerequisite locks (`exercise-state.ts`); depends on `catalog`, never on `learning`              | `exercise-state.ts`, `submission-writer.ts`    |
-| `reviews`       | mentor review: queue (filters, mentor numbers), claim/release, complete; depends on `submissions` (owns the status change), `catalog`, `learning`, `users`     | `review-rules.ts`, `reviews.service.ts`        |
-| `audit`         | writes `audit_logs` from domain events; `AuditReader` serves the admin "Nhật ký" page (names via `UsersService.refsByIds`)                                     | `audit.listener.ts`, `audit.reader.ts`         |
-| `overview`      | admin `/admin` overview: asks `users`, `content`, `submissions` and `audit` for counts only (no names or emails)                                               | `overview.ts`, `overview.service.ts`           |
-| `notifications` | Discord messages and server-error alerts; the in-app bell and the email digest: domain events → `outbox_events` → `OutboxWorker` → `notifications` rows / SMTP | `inbox.listener.ts`, `outbox/outbox.worker.ts` |
-| `leaderboard`   | opt-in term leaderboard (ADR-08): counts completed exercises on the fly (`ranking.ts`, `term.ts`), stores nothing; imports no business module                  | `ranking.ts`, `leaderboard.repository.ts`      |
+| API module        | Owns                                                                                                                                                           | Read first                                              |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `identity`        | GitHub sign-in, sessions, the global auth guard                                                                                                                | `auth.controller.ts`, `auth.guard.ts`                   |
+| `users`           | users, roles, approving `pending` accounts, linking a Discord account (`discord-link.service.ts`)                                                              | `users.service.ts`                                      |
+| `catalog`         | reading published tracks/modules/lessons/exercises; `CatalogWriter` is the only code that writes them                                                          | `catalog.service.ts`, `catalog.writer.ts`               |
+| `content`         | sync a content repo → draft version → publish                                                                                                                  | `content.service.ts`, `domain/plan.ts`                  |
+| `learning`        | enrollments, lesson progress, track progress and completion; depends on `submissions` and `catalog`                                                            | `progress.ts`, `enrollment.service.ts`                  |
+| `submissions`     | submissions and each exercise's state for a member, including prerequisite locks (`exercise-state.ts`); depends on `catalog`, never on `learning`              | `exercise-state.ts`, `submission-writer.ts`             |
+| `reviews`         | mentor review: queue (filters, mentor numbers), claim/release, complete; depends on `submissions` (owns the status change), `catalog`, `learning`, `users`     | `review-rules.ts`, `reviews.service.ts`                 |
+| `audit`           | writes `audit_logs` from domain events; `AuditReader` serves the admin "Nhật ký" page (names via `UsersService.refsByIds`)                                     | `audit.listener.ts`, `audit.reader.ts`                  |
+| `overview`        | admin `/admin` overview: asks `users`, `content`, `submissions` and `audit` for counts only (no names or emails)                                               | `overview.ts`, `overview.service.ts`                    |
+| `notifications`   | Discord messages and server-error alerts; the in-app bell and the email digest: domain events → `outbox_events` → `OutboxWorker` → `notifications` rows / SMTP | `inbox.listener.ts`, `outbox/outbox.worker.ts`          |
+| `leaderboard`     | opt-in term leaderboard (ADR-08): counts completed exercises on the fly (`ranking.ts`, `term.ts`), stores nothing; imports no business module                  | `ranking.ts`, `leaderboard.repository.ts`               |
+| `content-reports` | "Báo lỗi nội dung" (learning-hub#121): members report, admins and mentors handle; GitHub issues through the `IssueTracker` port; depends on `catalog`          | `content-report-rules.ts`, `content-reports.service.ts` |
 
 ## Rules that keep the code maintainable
 
