@@ -5,10 +5,11 @@ import type {
   TrackGlossaryView,
   TrackItemsProgress,
   TrackLevel,
+  TrackStats,
 } from '@hub/shared';
 import type { ModuleOutlineData } from '@/components/learn/ModuleOutline';
-import type { TrackDocFlags } from '@/components/track/track-docs';
-import { api, apiOrNotFound } from './api';
+import { canSeeStats, type TrackDocFlags } from '@/components/track/track-docs';
+import { api, ApiError, apiOrNotFound, getMe } from './api';
 
 /** GET /tracks/:slug (catalog module; the type is not in @hub/shared yet). */
 export interface TrackDetail {
@@ -52,4 +53,24 @@ export async function loadTrackGlossary(slug: string): Promise<TrackGlossaryView
   return (
     await apiOrNotFound<{ data: TrackGlossaryView }>(`/tracks/${encodeURIComponent(slug)}/glossary`)
   ).data;
+}
+
+/**
+ * Whether the signed-in viewer may open "Thống kê" of a track (learning-hub#118): admins and
+ * mentors, for every track (`canSeeStats`). The API checks the same rule again.
+ */
+export async function canSeeTrackStats(): Promise<boolean> {
+  const me = await getMe();
+  return me ? canSeeStats(me.roles) : false;
+}
+
+/** Statistics of a track; null when the viewer may not see them (403). 404 page for a bad slug. */
+export async function loadTrackStats(slug: string): Promise<TrackStats | null> {
+  try {
+    return (await apiOrNotFound<{ data: TrackStats }>(`/tracks/${encodeURIComponent(slug)}/stats`))
+      .data;
+  } catch (e) {
+    if (e instanceof ApiError && e.problem.status === 403) return null;
+    throw e;
+  }
 }

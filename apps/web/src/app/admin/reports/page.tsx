@@ -10,6 +10,7 @@ import {
   reportSearch,
 } from '@/components/admin/report-format';
 import { GroupTable, MemberTable, ReportTotals } from '@/components/admin/ReportTables';
+import { trackStatsHref } from '@/components/track/track-docs';
 import { api, ApiError } from '@/lib/api';
 
 export const metadata: Metadata = { title: 'Báo cáo tiến độ' };
@@ -121,6 +122,16 @@ export default async function AdminReportsPage({
               {formatDay(shown.period.from)} – {formatDay(shown.period.to)}
             </h2>
             <ReportTotals total={shown.total} />
+            {shown.filters.track && (
+              <p className="text-sm">
+                <Link
+                  href={trackStatsHref(shown.filters.track)}
+                  className="text-brand-600 hover:underline"
+                >
+                  Thống kê theo chương, bài và tuần của track này →
+                </Link>
+              </p>
+            )}
           </section>
 
           <section className="surface space-y-3 rounded-xl p-5">

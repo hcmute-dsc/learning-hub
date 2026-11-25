@@ -9,7 +9,7 @@ import { TrackHeader } from '@/components/track/TrackHeader';
 import { TrackTabs } from '@/components/track/TrackTabs';
 import { trackTabs } from '@/components/track/track-docs';
 import { countByKind, listTrackItems } from '@/components/track/track-items';
-import { loadTrack, loadTrackProgress } from '@/lib/track';
+import { canSeeTrackStats, loadTrack, loadTrackProgress } from '@/lib/track';
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -25,7 +25,7 @@ export default async function TrackPage({ params }: Params) {
   // Load the track first: a bad slug (422) or an archived track (404) becomes notFound()
   // there. loadTrackProgress has no such mapping, so it must not fail first.
   const track = await loadTrack(slug);
-  const progress = await loadTrackProgress(slug);
+  const [progress, canSeeStats] = await Promise.all([loadTrackProgress(slug), canSeeTrackStats()]);
 
   const items = listTrackItems(track.modules, progress);
   const byKind = countByKind(items);
@@ -52,7 +52,7 @@ export default async function TrackPage({ params }: Params) {
         }
       />
 
-      <TrackTabs tabs={trackTabs(track.slug, track, 'overview')} />
+      <TrackTabs tabs={trackTabs(track.slug, { ...track, canSeeStats }, 'overview')} />
 
       <ProgressPanel items={items} percent={overall.percent} enrolled={progress.enrolled} />
 

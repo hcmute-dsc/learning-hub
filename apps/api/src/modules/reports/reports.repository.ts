@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { REPORT_NO_COHORT } from '@hub/shared';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { COMPLETES_EXERCISE, NOT_STAFF } from './learner-sql';
 import type { MemberFact, ReviewFact } from './report-stats';
 
 export interface ReportFilter {
@@ -64,8 +65,7 @@ export class ReportsRepository {
          WHERE e.enrolled_at < ${endsAt}
            ${this.trackFilter(filter)}
            ${this.cohortFilter(filter)}
-           AND NOT EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id
-                            WHERE ur.user_id = e.user_id AND r.code IN ('admin', 'mentor'))),
+           AND ${NOT_STAFF}),
       track_lessons AS (
         SELECT l.id, m.track_id FROM lessons l JOIN modules m ON m.id = l.module_id
          WHERE l.status = 'active' AND m.status = 'active'),
@@ -89,7 +89,7 @@ export class ReportsRepository {
           LEFT JOIN LATERAL (
                 SELECT MIN(rv.submitted_at) AS approved_at FROM reviews rv
                  WHERE rv.submission_id = s.id AND rv.status = 'approved') r ON true
-         WHERE s.status = 'approved' OR (s.status = 'passed' AND NOT x.requires_review)
+         WHERE ${COMPLETES_EXERCISE}
          GROUP BY s.user_id, x.track_id, s.exercise_id),
       exercises AS (
         SELECT user_id, track_id,
