@@ -31,26 +31,26 @@ beforeEach(() => {
 describe('loadTrackStats', () => {
   it('returns the stats', async () => {
     mocks.apiOrNotFound.mockResolvedValue({ data: { track: { slug: 'sql' } } });
-    await expect(loadTrackStats('sql')).resolves.toEqual({ track: { slug: 'sql' } });
-    expect(mocks.apiOrNotFound).toHaveBeenCalledWith('/tracks/sql/stats');
+    await expect(loadTrackStats('sql', 14)).resolves.toEqual({ track: { slug: 'sql' } });
+    expect(mocks.apiOrNotFound).toHaveBeenCalledWith('/tracks/sql/stats?days=14');
   });
 
   it('returns null when the API says 403 (not an admin or mentor)', async () => {
     mocks.apiOrNotFound.mockRejectedValue(new mocks.ApiError({ status: 403, code: 'FORBIDDEN' }));
-    await expect(loadTrackStats('sql')).resolves.toBeNull();
+    await expect(loadTrackStats('sql', 14)).resolves.toBeNull();
   });
 
   it('lets the sign-in redirect of a 401 through', async () => {
     // `api` calls redirect('/login') on 401, which throws Next's redirect error.
     const redirect = Object.assign(new Error('NEXT_REDIRECT'), { digest: 'NEXT_REDIRECT;/login' });
     mocks.apiOrNotFound.mockRejectedValue(redirect);
-    await expect(loadTrackStats('sql')).rejects.toBe(redirect);
+    await expect(loadTrackStats('sql', 14)).rejects.toBe(redirect);
   });
 
   it('rethrows other API errors for the error page', async () => {
     const failure = new mocks.ApiError({ status: 500, code: 'INTERNAL_ERROR' });
     mocks.apiOrNotFound.mockRejectedValue(failure);
-    await expect(loadTrackStats('sql')).rejects.toBe(failure);
+    await expect(loadTrackStats('sql', 14)).rejects.toBe(failure);
   });
 });
 
