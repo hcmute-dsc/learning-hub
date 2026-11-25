@@ -42,6 +42,14 @@ export const envSchema = z.object({
   SOLUTIONS_BRANCH: z.string().default('main'),
   /** Read-only token that can read the private checker repo. Falls back to CONTENT_GITHUB_TOKEN. */
   SOLUTIONS_GITHUB_TOKEN: z.string().optional(),
+  /**
+   * "Tạo issue trên GitHub" for content reports (learning-hub#121): a token with
+   * "Issues: read and write" on the track repos. Empty = the button is hidden.
+   */
+  CONTENT_ISSUES_GITHUB_TOKEN: z
+    .string()
+    .optional()
+    .transform((v) => v || undefined),
   /** Target time for a mentor review, shown in the queue (E7; per semester, BACKEND-DESIGN). */
   REVIEW_TARGET_HOURS: z.coerce.number().int().min(1).max(720).default(72),
   /**

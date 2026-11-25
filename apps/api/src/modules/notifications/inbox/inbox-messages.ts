@@ -125,6 +125,33 @@ export function trackPublishedNotice(info: { slug: string; title: string }): Inb
   };
 }
 
+/**
+ * To the member whose content report was closed (learning-hub#121). Links to the page they
+ * reported, so they see the fix; no staff note, which is for staff only.
+ */
+export function contentReportClosedNotice(info: {
+  status: 'resolved' | 'dismissed';
+  targetTitle: string;
+  targetLink: string;
+}): InboxNotice {
+  const target = oneLine(info.targetTitle);
+  return {
+    type: 'content_report',
+    payload:
+      info.status === 'resolved'
+        ? {
+            title: `Lỗi bạn báo ở "${target}" đã được sửa`,
+            body: 'Cảm ơn bạn đã báo. Bản sửa có trên trang sau lần cập nhật nội dung tới.',
+            link: info.targetLink,
+          }
+        : {
+            title: `Mentor đã xem lỗi bạn báo ở "${target}"`,
+            body: 'Lần này nội dung được giữ nguyên. Nếu vẫn thấy sai, hỏi mentor trên Discord nhé.',
+            link: info.targetLink,
+          },
+  };
+}
+
 /** Read a stored payload back; tolerant of rows written by an older version. */
 export function readPayload(value: unknown): InboxPayload {
   const v = (value ?? {}) as Partial<Record<keyof InboxPayload, unknown>>;

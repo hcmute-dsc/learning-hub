@@ -459,6 +459,21 @@ docker compose -f docker-compose.prod.yml exec -T db psql -U hub -d learning_hub
 
 ---
 
+## Bước 15. Tạo issue GitHub từ báo lỗi nội dung (không bắt buộc)
+
+Trang **Quản trị → Báo lỗi** (`/admin/content-reports`, learning-hub#121) có nút **Tạo issue trên GitHub**: API mở issue trong repo của lộ trình (repo trong `tracks.yaml`) với loại lỗi, mô tả, đoạn trích, link bài và commit. Issue **không** có tên hay email người báo. Thiếu token thì nút bị ẩn; mentor vẫn xử lý báo lỗi bình thường và tạo issue bằng tay.
+
+1. Một chủ sở hữu org `hcmute-dsc` tạo **fine-grained personal access token** (của tài khoản bot nếu có): GitHub → Settings → Developer settings → Fine-grained tokens → Generate new token.
+   - Resource owner: `hcmute-dsc`; Repository access: chọn các repo `learning-hub-track-*` (hoặc All repositories).
+   - Permissions → Repository → **Issues: Read and write**. Không cần quyền nào khác.
+   - Hạn dùng: tối đa 1 năm; ghi ngày hết hạn vào mục "Hiện trạng production".
+2. Trên VPS, thêm vào `.env` (tự gõ, không dán vào chat hay issue): `CONTENT_ISSUES_GITHUB_TOKEN=<token>`.
+3. `docker compose -f docker-compose.prod.yml up -d api`, rồi mở một báo lỗi thử và bấm nút. Lỗi 502 "không có quyền Issues: write" nghĩa là token thiếu repo hoặc thiếu quyền.
+
+Khi org chuyển sang GitHub App (SECURITY §10), chỉ cần đổi adapter `apps/api/src/integrations/github/github-issue.tracker.ts`; App cần quyền **Issues: Read and write** trên các repo track.
+
+---
+
 ## Việc thường ngày
 
 | Việc                            | Cách làm                                                    |

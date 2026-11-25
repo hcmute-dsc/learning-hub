@@ -10,6 +10,8 @@ export const NOTIFICATION_TYPES = [
   'track_published',
   'review_message',
   'review_thanks',
+  /** a content report the member sent was resolved or dismissed (learning-hub#121) */
+  'content_report',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

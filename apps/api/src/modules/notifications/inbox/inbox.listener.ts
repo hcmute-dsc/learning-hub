@@ -3,6 +3,10 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { ContentEvents, type ContentPublishedEvent } from '../../content/content.events';
 import {
+  ContentReportEvents,
+  type ContentReportStatusChangedEvent,
+} from '../../content-reports/content-reports.events';
+import {
   ReviewEvents,
   type ReviewCompletedEvent,
   type ReviewThreadEvent,
@@ -10,6 +14,7 @@ import {
 import { SubmissionEvents, type SubmissionEvent } from '../../submissions/submissions.events';
 import {
   OutboxTypes,
+  type ContentReportClosedPayload,
   type OutboxType,
   type ReviewCompletedPayload,
   type ReviewRequestedPayload,
@@ -60,6 +65,19 @@ export class InboxListener {
       memberId: e.userId,
     };
     return this.enqueue(OutboxTypes.ReviewRequested, payload);
+  }
+
+  /** The reporter hears back once their content report is resolved or dismissed (#121). */
+  @OnEvent(ContentReportEvents.StatusChanged)
+  onContentReportStatusChanged(e: ContentReportStatusChangedEvent) {
+    if (!e.notifyReporter || (e.to !== 'resolved' && e.to !== 'dismissed')) return;
+    const payload: ContentReportClosedPayload = {
+      reporterId: e.reporterId,
+      status: e.to,
+      targetTitle: e.targetTitle,
+      targetLink: e.targetLink,
+    };
+    return this.enqueue(OutboxTypes.ContentReportClosed, payload);
   }
 
   /** Only whole new tracks reach everyone's bell; lesson edits stay on Discord. */

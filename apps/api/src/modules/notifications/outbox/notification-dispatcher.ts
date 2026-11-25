@@ -5,6 +5,7 @@ import { messageRecipients } from '../../reviews/review-thread-rules';
 import { UsersService } from '../../users/users.service';
 import { DigestService } from '../digest/digest.service';
 import {
+  contentReportClosedNotice,
   reviewCompletedNotice,
   reviewMessageNotice,
   reviewRequestedNotice,
@@ -17,6 +18,7 @@ import { WeeklyLeaderboardService } from '../weekly-leaderboard/weekly-leaderboa
 import type { WeeklyPost } from '../weekly-leaderboard/weekly-post';
 import {
   OutboxTypes,
+  type ContentReportClosedPayload,
   type EmailDigestPayload,
   type ReviewCompletedPayload,
   type ReviewRequestedPayload,
@@ -112,6 +114,11 @@ export class NotificationDispatcher {
         const p = payload as TrackPublishedPayload;
         const members = await this.users.activeIds();
         await this.inbox.deliver(eventId, members, trackPublishedNotice(p));
+        return;
+      }
+      case OutboxTypes.ContentReportClosed: {
+        const p = payload as ContentReportClosedPayload;
+        await this.inbox.deliver(eventId, [p.reporterId], contentReportClosedNotice(p));
         return;
       }
       case OutboxTypes.EmailDigest:

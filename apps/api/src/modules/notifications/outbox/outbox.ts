@@ -16,6 +16,8 @@ export const OutboxTypes = {
   ReviewMessage: 'inbox.review_message',
   /** payload: ReviewThreadPayload → one bell row for the mentor (#41) */
   ReviewThanks: 'inbox.review_thanks',
+  /** payload: ContentReportClosedPayload → one bell row for the reporter (#121) */
+  ContentReportClosed: 'inbox.content_report_closed',
   /** payload: EmailDigestPayload → one email */
   EmailDigest: 'email.digest',
   /** payload: WeeklyPost (weekly-post.ts) → one embed on the club channel (learning-hub#76) */
@@ -46,6 +48,15 @@ export interface ReviewThreadPayload {
   reviewerId: string;
   /** who wrote it: never notified about their own words */
   authorId: string;
+}
+
+/** A report the member sent was resolved or dismissed (learning-hub#121). */
+export interface ContentReportClosedPayload {
+  reporterId: string;
+  status: 'resolved' | 'dismissed';
+  targetTitle: string;
+  /** path inside the web app */
+  targetLink: string;
 }
 
 export interface TrackPublishedPayload {

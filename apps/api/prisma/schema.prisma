@@ -64,6 +64,8 @@ model User {
   notificationPreference NotificationPreference?
   certificates           Certificate[]           @relation("CertificateOwner")
   revokedCertificates    Certificate[]           @relation("CertificateRevokedBy")
+  contentReports         ContentReport[]         @relation("ContentReportReporter")
+  handledContentReports  ContentReport[]         @relation("ContentReportHandler")
 
   @@index([githubLogin])
   @@map("users")
@@ -184,6 +186,7 @@ model Track {
   enrollments       Enrollment[]
   mentorAssignments MentorAssignment[]
   certificates      Certificate[]
+  contentReports    ContentReport[]
 
   @@index([status, position])
   @@map("tracks")
@@ -533,6 +536,48 @@ model MentorAssignment {
   @@map("mentor_assignments")
 }
 
+/// "Báo lỗi nội dung" (learning-hub#121): a member reports a mistake in a lesson, an exercise
+/// or a track page; admins and mentors handle it. CHECKs in the SQL migration.
+model ContentReport {
+  id             String    @id @db.Uuid
+  reporterId     String    @map("reporter_id") @db.Uuid
+  trackId        String    @map("track_id") @db.Uuid
+  /// lesson | exercise | track_page | glossary
+  targetKind     String    @map("target_kind")
+  /// lesson or exercise id; setup | resources for a track page; glossary
+  targetRef      String    @map("target_ref")
+  /// title of the target when reported (kept if the content is renamed or archived)
+  targetTitle    String    @map("target_title")
+  /// content commit the member was reading (the track's own repo for registry versions)
+  commitSha      String?   @map("commit_sha") @db.Char(40)
+  /// typo | wrong_knowledge | broken_code | wrong_answer | broken_media | other
+  category       String
+  /// 1–2000 characters
+  description    String
+  /// the wrong text copied from the page, up to 500 characters
+  quote          String?
+  /// open | in_progress | resolved | dismissed
+  status         String    @default("open")
+  /// last admin or mentor who changed the status
+  handledBy      String?   @map("handled_by") @db.Uuid
+  /// for staff only, up to 2000 characters
+  staffNote      String?   @map("staff_note")
+  githubIssueUrl String?   @map("github_issue_url")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  /// when it became resolved or dismissed; null while open or in progress
+  closedAt       DateTime? @map("closed_at") @db.Timestamptz
+
+  reporter User  @relation("ContentReportReporter", fields: [reporterId], references: [id])
+  handler  User? @relation("ContentReportHandler", fields: [handledBy], references: [id])
+  track    Track @relation(fields: [trackId], references: [id], onDelete: Restrict)
+
+  @@index([trackId, status, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+  @@index([reporterId, createdAt(sort: Desc)])
+  @@map("content_reports")
+}
+
 // ---------------------------------------------------------------- operations
 
 model AuditLog {
@@ -598,7 +643,7 @@ model LeaderboardWeekPost {
 model Notification {
   id            String    @id @db.Uuid
   userId        String    @map("user_id") @db.Uuid
-  /// review_completed | review_requested | track_published | review_message | review_thanks (CHECK in SQL migration)
+  /// review_completed | review_requested | track_published | review_message | review_thanks | content_report (CHECK in SQL migration)
   type          String
   /// { title, body?, link } — text is built when the row is written, so the bell needs no joins
   payload       Json
