@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { canEditOnGitHub } from '@hub/shared';
 import {
+  editOnGitHubUrl,
   githubBlobUrl,
   isGithubRepo,
   resolvePosix,
@@ -77,5 +79,31 @@ describe('githubBlobUrl / isGithubRepo', () => {
     );
     expect(githubBlobUrl({ ...origin, repo: 'local:content-example' })).toBeNull();
     expect(isGithubRepo('owner/repo/extra')).toBe(false);
+  });
+});
+
+describe('canEditOnGitHub (learning-hub#122)', () => {
+  it('shows the edit link to admins, mentors and content maintainers only', () => {
+    expect(canEditOnGitHub(['member', 'admin'])).toBe(true);
+    expect(canEditOnGitHub(['member', 'mentor'])).toBe(true);
+    expect(canEditOnGitHub(['member', 'content_maintainer'])).toBe(true);
+    expect(canEditOnGitHub(['member'])).toBe(false);
+    expect(canEditOnGitHub([])).toBe(false);
+  });
+});
+
+describe('editOnGitHubUrl', () => {
+  const origin = { repo: 'hcmute-dsc/learning-hub-track-sql', commitSha: 'abc123', path: 'a/b.md' };
+
+  it('links staff to the file at the published commit', () => {
+    expect(editOnGitHubUrl(origin, ['member', 'mentor'])).toBe(
+      'https://github.com/hcmute-dsc/learning-hub-track-sql/blob/abc123/a/b.md',
+    );
+  });
+
+  it('gives nothing to members, guests and local content', () => {
+    expect(editOnGitHubUrl(origin, ['member'])).toBeNull();
+    expect(editOnGitHubUrl(origin, undefined)).toBeNull();
+    expect(editOnGitHubUrl({ ...origin, repo: 'local:content-example' }, ['admin'])).toBeNull();
   });
 });

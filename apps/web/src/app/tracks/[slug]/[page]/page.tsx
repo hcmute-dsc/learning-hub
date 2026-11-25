@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Breadcrumbs } from '@/components/learn/Breadcrumbs';
-import { githubBlobUrl } from '@/components/markdown/content-url';
+import { editOnGitHubUrl } from '@/components/markdown/content-url';
+import { getMe } from '@/lib/api';
 import { Markdown } from '@/components/markdown/Markdown';
 import { TrackTabs } from '@/components/track/TrackTabs';
 import {
@@ -30,12 +31,13 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 export default async function TrackDocPage({ params }: Params) {
   const { slug, page } = await params;
   if (!isTrackDocPage(page)) notFound();
-  const [track, doc, canSeeStats] = await Promise.all([
+  const [track, doc, canSeeStats, me] = await Promise.all([
     loadTrack(slug),
     loadTrackDoc(slug, page),
     canSeeTrackStats(),
+    getMe(),
   ]);
-  const editUrl = githubBlobUrl(doc.source);
+  const editUrl = editOnGitHubUrl(doc.source, me?.roles);
 
   return (
     <article className="space-y-6 sm:space-y-8">

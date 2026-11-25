@@ -8,9 +8,9 @@ import { MarkLessonDone } from '@/components/learn/MarkLessonDone';
 import { NewWords } from '@/components/learn/NewWords';
 import { RelatedExercises } from '@/components/learn/RelatedExercises';
 import { TrackSidebar } from '@/components/learn/TrackSidebar';
-import { githubBlobUrl } from '@/components/markdown/content-url';
+import { editOnGitHubUrl } from '@/components/markdown/content-url';
 import { Markdown } from '@/components/markdown/Markdown';
-import { apiOrNotFound } from '@/lib/api';
+import { apiOrNotFound, getMe } from '@/lib/api';
 import { loadTrack, loadTrackProgress } from '@/lib/track';
 
 type Params = { params: Promise<{ id: string }> };
@@ -32,11 +32,12 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 export default async function LessonPage({ params }: Params) {
   const { id } = await params;
   const lesson = await loadLesson(id);
-  const [track, progress] = await Promise.all([
+  const [track, progress, me] = await Promise.all([
     loadTrack(lesson.track.slug),
     loadTrackProgress(lesson.track.slug),
+    getMe(),
   ]);
-  const editUrl = githubBlobUrl(lesson.source);
+  const editUrl = editOnGitHubUrl(lesson.source, me?.roles);
   const sidebar = <TrackSidebar track={track} progress={progress} currentId={lesson.id} />;
 
   return (

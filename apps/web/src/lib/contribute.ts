@@ -46,6 +46,8 @@ export const CONTRIBUTE_LINKS = {
   newTrackGuide: docUrl(REPOS.docs, 'docs/ops/NEW-TRACK.md'),
   contentSpec: docUrl(REPOS.docs, 'docs/product/CONTENT-SPECIFICATION.md'),
   template: repoUrl(REPOS.template),
+  /** every track repo is made from the template, so its CONTRIBUTING.md is the same */
+  trackContributing: docUrl(REPOS.template, 'CONTRIBUTING.md'),
   appContributing: docUrl(REPOS.app, 'CONTRIBUTING.md'),
   appBug: newIssueUrl(REPOS.app, 'bug_report.yml'),
   goodFirstIssues: labelledIssuesUrl(REPOS.app, 'good first issue'),
