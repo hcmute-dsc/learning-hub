@@ -1,11 +1,13 @@
 import {
   TRACK_STATS_INACTIVE_DAYS,
+  TRACK_STATS_PROGRESS_EDGES,
   TRACK_STATS_INACTIVE_LIMIT,
   TRACK_STATS_TOP,
   TRACK_STATS_WEEKS,
   type ExerciseType,
   type HardExercise,
   type InactiveLearner,
+  type ProgressBucket,
   type Role,
   type SubmissionStatus,
   type TrackFunnelModule,
@@ -13,7 +15,7 @@ import {
   type TrackStatsWeek,
   type WaitingReview,
 } from '@hub/shared';
-import { dayStart, mondayOf } from './period';
+import { dayStart, mondayOf, vietnamDay } from './period';
 import { percent, stats, type MemberFact, type ReviewFact } from './report-stats';
 
 /**
@@ -31,6 +33,25 @@ const HOUR_MS = 60 * 60 * 1000;
  */
 export function canViewTrackStats(roles: Role[]): boolean {
   return roles.includes('admin') || roles.includes('mentor');
+}
+
+/** Whole Vietnam days, both ends included ("YYYY-MM-DD"). */
+export interface DayRange {
+  from: string;
+  to: string;
+}
+
+/**
+ * The last `days` Vietnam days, today last, and the `days` days just before them (to compare
+ * with, learning-hub#126). 7 days on Wednesday 25/11 → 19/11–25/11, previous 12/11–18/11.
+ */
+export function statsPeriods(now: Date, days: number): { current: DayRange; previous: DayRange } {
+  const today = dayStart(vietnamDay(now))!.getTime();
+  const day = (back: number) => vietnamDay(new Date(today - back * DAY_MS));
+  return {
+    current: { from: day(days - 1), to: day(0) },
+    previous: { from: day(2 * days - 1), to: day(days) },
+  };
 }
 
 /** The totals, from the same facts and reviews as the progress report (`stats`). */
@@ -86,10 +107,12 @@ export function funnel(outline: OutlineModule[], done: DoneItem[]): TrackFunnelM
         if (items.every((item) => usersOf(item.id).has(user))) completed++;
       }
     }
+    const started = new Set(items.flatMap((item) => [...usersOf(item.id)])).size;
     return {
       slug: m.slug,
       title: m.title,
       completed,
+      started,
       items: items.map((item) => ({ ...item, completed: usersOf(item.id).size })),
     };
   });
@@ -255,4 +278,35 @@ export function inactiveLearners(
       };
     }),
   };
+}
+
+/**
+ * Learners by share of the track's lessons and exercises done (learning-hub#126): one bucket
+ * per [from, to) step of TRACK_STATS_PROGRESS_EDGES, then 100% for those who did every item
+ * or completed the track.
+ * A track without items puts everyone in the first bucket. Same facts as the totals, so the
+ * buckets add up to `enrolled` (one fact per learner when the facts are of one track).
+ */
+export function progressHistogram(facts: MemberFact[]): ProgressBucket[] {
+  const edges = TRACK_STATS_PROGRESS_EDGES;
+  const buckets: ProgressBucket[] = edges.slice(0, -1).map((from, i) => ({
+    from,
+    to: edges[i + 1],
+    learners: 0,
+  }));
+  const full: ProgressBucket = { from: 100, to: 100, learners: 0 };
+  for (const f of facts) {
+    const done = f.lessonsDone + f.exercisesDone;
+    const total = f.lessonsTotal + f.exercisesTotal;
+    // A completed track counts as 100% even if an item was added after, like the totals.
+    if (f.completedAt || (total > 0 && done >= total)) {
+      full.learners++;
+      continue;
+    }
+    // Exact share, not the rounded percent: 74.6% stays below 75.
+    const share = total === 0 ? 0 : (done / total) * 100;
+    const index = buckets.filter((b) => share >= b.from).length - 1;
+    buckets[Math.max(0, index)].learners++;
+  }
+  return [...buckets, full];
 }

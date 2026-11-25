@@ -5,7 +5,9 @@ import {
   funnel,
   hardestByFirstAttempt,
   inactiveLearners,
+  progressHistogram,
   recentWeeks,
+  statsPeriods,
   trackTotals,
   waitingReviews,
   weekly,
@@ -109,10 +111,10 @@ describe('funnel', () => {
     ];
     const result = funnel(OUTLINE, done);
 
-    expect(result.map((m) => [m.slug, m.completed])).toEqual([
-      ['select', 1],
-      ['join', 0],
-      ['empty', 0],
+    expect(result.map((m) => [m.slug, m.completed, m.started])).toEqual([
+      ['select', 1, 3],
+      ['join', 0, 1],
+      ['empty', 0, 0],
     ]);
     expect(result[0].items).toEqual([
       { kind: 'lesson', id: 'l1', title: 'Bảng là gì', completed: 3 },
@@ -127,6 +129,67 @@ describe('funnel', () => {
   it('shows the outline with zeros when nobody has done anything', () => {
     const result = funnel(OUTLINE, []);
     expect(result.flatMap((m) => m.items.map((i) => i.completed))).toEqual([0, 0, 0, 0, 0, 0]);
+    expect(result.map((m) => m.started)).toEqual([0, 0, 0]);
+  });
+});
+
+describe('statsPeriods', () => {
+  it('ends today (Vietnam) and compares with the same number of days just before', () => {
+    expect(statsPeriods(NOW, 7)).toEqual({
+      current: { from: '2026-11-19', to: '2026-11-25' },
+      previous: { from: '2026-11-12', to: '2026-11-18' },
+    });
+    expect(statsPeriods(NOW, 14)).toEqual({
+      current: { from: '2026-11-12', to: '2026-11-25' },
+      previous: { from: '2026-10-29', to: '2026-11-11' },
+    });
+  });
+
+  it('crosses months and uses the Vietnam day near midnight', () => {
+    // 01/12 00:30 in Vietnam, still 30/11 in UTC
+    expect(statsPeriods(new Date('2026-11-30T17:30:00Z'), 90)).toEqual({
+      current: { from: '2026-09-03', to: '2026-12-01' },
+      previous: { from: '2026-06-05', to: '2026-09-02' },
+    });
+  });
+});
+
+describe('progressHistogram', () => {
+  const learner = (done: number, total = 8) =>
+    fact({ lessonsDone: done, lessonsTotal: total, exercisesTotal: 0 });
+
+  it('buckets learners by the exact share of items done, 100% apart', () => {
+    const result = progressHistogram([
+      learner(0),
+      learner(1), // 12.5%
+      learner(2), // 25%: second bucket
+      learner(5), // 62.5%
+      learner(7), // 87.5%
+      learner(8),
+      learner(8),
+      fact({ lessonsDone: 2, lessonsTotal: 3, exercisesDone: 3, exercisesTotal: 3 }),
+    ]);
+    expect(result).toEqual([
+      { from: 0, to: 25, learners: 2 },
+      { from: 25, to: 50, learners: 1 },
+      { from: 50, to: 75, learners: 1 },
+      { from: 75, to: 100, learners: 2 },
+      { from: 100, to: 100, learners: 2 },
+    ]);
+  });
+
+  it('keeps 74.6% under 75 (no rounding) and puts an item-less track in the first bucket', () => {
+    const result = progressHistogram([learner(373, 500), learner(0, 0)]);
+    expect(result.map((b) => b.learners)).toEqual([1, 0, 1, 0, 0]);
+  });
+
+  it('counts a completed track as 100%, like "Hoàn thành track"', () => {
+    const result = progressHistogram([fact({ completedAt: daysAgo(1), lessonsDone: 7 })]);
+    expect(result.map((b) => b.learners)).toEqual([0, 0, 0, 0, 1]);
+  });
+
+  it('has every bucket, all zero, without learners', () => {
+    expect(progressHistogram([]).map((b) => b.learners)).toEqual([0, 0, 0, 0, 0]);
   });
 });
 

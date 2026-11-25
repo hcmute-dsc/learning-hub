@@ -1,27 +1,33 @@
 import { Injectable } from '@nestjs/common';
-import { TRACK_STATS_ACTIVE_DAYS, TRACK_STATS_TOP, type TrackStats } from '@hub/shared';
+import {
+  TRACK_STATS_ACTIVE_DAYS,
+  TRACK_STATS_TOP,
+  type TrackStats,
+  type TrackStatsDays,
+} from '@hub/shared';
 import type { AuthUser } from '../../common/auth.decorators';
 import { DomainError } from '../../common/errors';
 import { Clock } from '../../infrastructure/clock';
-import { dayStart, resolvePeriod, vietnamDay } from './period';
+import { dayStart, resolvePeriod } from './period';
 import { ReportsRepository } from './reports.repository';
 import {
   canViewTrackStats,
   funnel,
   hardestByFirstAttempt,
   inactiveLearners,
+  progressHistogram,
   recentWeeks,
+  statsPeriods,
   trackTotals,
   waitingReviews,
   weekly,
 } from './track-stats';
 import { TrackStatsRepository } from './track-stats.repository';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
 /**
- * Statistics of one track (learning-hub#118) for admins and mentors, every track. The totals
- * reuse the progress report's facts for the last 14 Vietnam days, so they equal
+ * Statistics of one track (learning-hub#118, #126) for admins and mentors, every track. The
+ * totals reuse the progress report's facts for the last `days` Vietnam days (and the `days`
+ * before them, for the comparison), so they equal
  * `/admin/reports?track=<slug>&from=<period.from>&to=<period.to>`.
  */
 @Injectable()
@@ -32,7 +38,11 @@ export class TrackStatsService {
     private readonly clock: Clock,
   ) {}
 
-  async stats(viewer: AuthUser, slug: string): Promise<TrackStats> {
+  async stats(
+    viewer: AuthUser,
+    slug: string,
+    days: TrackStatsDays = TRACK_STATS_ACTIVE_DAYS,
+  ): Promise<TrackStats> {
     // The controller's @Roles('mentor') already stops members; checked again here so the
     // rule does not depend on a decorator alone. Before the lookup: members learn nothing.
     if (!canViewTrackStats(viewer.roles)) {
@@ -42,17 +52,29 @@ export class TrackStatsService {
     if (!track) throw DomainError.notFound('Track');
 
     const now = this.clock.now();
-    const today = vietnamDay(now);
-    const from = vietnamDay(
-      new Date(dayStart(today)!.getTime() - (TRACK_STATS_ACTIVE_DAYS - 1) * DAY_MS),
-    );
-    const period = resolvePeriod({ from, to: today }, now)!;
+    const ranges = statsPeriods(now, days);
+    // Both fit in REPORT_MAX_DAYS (the longest option is 90 days), so never null.
+    const period = resolvePeriod(ranges.current, now)!;
+    const before = resolvePeriod(ranges.previous, now)!;
     const weeks = recentWeeks(now);
     const filter = { startsAt: period.startsAt, endsAt: period.endsAt, trackId: track.id };
+    const previousFilter = { startsAt: before.startsAt, endsAt: before.endsAt, trackId: track.id };
 
-    const [facts, reviews, outline, done, attempts, waiting, activity] = await Promise.all([
+    const [
+      facts,
+      reviews,
+      previousFacts,
+      previousReviews,
+      outline,
+      done,
+      attempts,
+      waiting,
+      activity,
+    ] = await Promise.all([
       this.reports.memberFacts(filter),
       this.reports.reviewFacts(filter),
+      this.reports.memberFacts(previousFilter),
+      this.reports.reviewFacts(previousFilter),
       this.repo.outline(track.id),
       this.repo.doneItems(track.id),
       this.repo.firstAttempts(track.id),
@@ -63,8 +85,13 @@ export class TrackStatsService {
     return {
       track: { slug: track.slug, title: track.title },
       generatedAt: now.toISOString(),
-      period: { from: period.from, to: period.to },
+      period: { from: period.from, to: period.to, days },
       totals: trackTotals(facts, reviews),
+      previous: {
+        period: { from: before.from, to: before.to },
+        totals: trackTotals(previousFacts, previousReviews),
+      },
+      progress: progressHistogram(facts),
       funnel: funnel(outline, done),
       hardest: {
         firstAttempt: hardestByFirstAttempt(outline, attempts),

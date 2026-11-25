@@ -1,6 +1,7 @@
 import type { AuthUser } from '../../common/auth.decorators';
 import { DomainError } from '../../common/errors';
 import type { Clock } from '../../infrastructure/clock';
+import type { MemberFact } from './report-stats';
 import type { ReportFilter, ReportsRepository } from './reports.repository';
 import type { TrackStatsRepository } from './track-stats.repository';
 import { TrackStatsService } from './track-stats.service';
@@ -18,7 +19,7 @@ const user = (id: string, ...roles: AuthUser['roles']): AuthUser => ({
 function setup() {
   const filters: ReportFilter[] = [];
   const reports = {
-    memberFacts: jest.fn(async (f: ReportFilter) => {
+    memberFacts: jest.fn(async (f: ReportFilter): Promise<MemberFact[]> => {
       filters.push(f);
       return [];
     }),
@@ -87,14 +88,21 @@ describe('TrackStatsService access', () => {
 });
 
 describe('TrackStatsService numbers', () => {
-  it('reads the report facts of this track for the last 14 Vietnam days', async () => {
+  it('reads the report facts of this track for the last 14 Vietnam days by default', async () => {
     const { service, filters, repo } = setup();
     const stats = await service.stats(user('admin-1', 'admin'), SQL.slug);
-    expect(stats.period).toEqual({ from: '2026-11-12', to: '2026-11-25' });
+    expect(stats.period).toEqual({ from: '2026-11-12', to: '2026-11-25', days: 14 });
+    expect(stats.previous.period).toEqual({ from: '2026-10-29', to: '2026-11-11' });
     expect(filters).toEqual([
       {
         startsAt: new Date('2026-11-11T17:00:00Z'),
         endsAt: new Date('2026-11-25T17:00:00Z'),
+        trackId: SQL.id,
+      },
+      // the 14 days before, for the comparison
+      {
+        startsAt: new Date('2026-10-28T17:00:00Z'),
+        endsAt: new Date('2026-11-11T17:00:00Z'),
         trackId: SQL.id,
       },
     ]);
@@ -103,5 +111,45 @@ describe('TrackStatsService numbers', () => {
     expect(stats.weekly).toHaveLength(12);
     expect(stats.generatedAt).toBe(NOW.toISOString());
     expect(stats.inactive).toEqual({ total: 0, learners: [] });
+    expect(stats.progress.map((b) => b.learners)).toEqual([0, 0, 0, 0, 0]);
+  });
+
+  it('uses the picked period and computes the previous totals from their own facts', async () => {
+    const { service, filters, reports } = setup();
+    const learner: MemberFact = {
+      userId: 'an',
+      githubLogin: 'an',
+      trackId: SQL.id,
+      trackSlug: SQL.slug,
+      trackTitle: SQL.title,
+      cohort: null,
+      enrolledAt: new Date('2026-11-01T00:00:00Z'),
+      completedAt: null,
+      lessonsInPeriod: 1,
+      lessonsDone: 1,
+      lessonsTotal: 4,
+      exercisesInPeriod: 0,
+      exercisesDone: 0,
+      exercisesTotal: 0,
+      awaitingReview: 0,
+      activeInPeriod: true,
+      lastActiveAt: new Date('2026-11-24T00:00:00Z'),
+    };
+    // the current period has one active learner; the week before has nobody yet
+    reports.memberFacts.mockImplementationOnce(async (f: ReportFilter) => {
+      filters.push(f);
+      return [learner];
+    });
+    const stats = await service.stats(user('admin-1', 'admin'), SQL.slug, 7);
+    expect(stats.period).toEqual({ from: '2026-11-19', to: '2026-11-25', days: 7 });
+    expect(stats.previous.period).toEqual({ from: '2026-11-12', to: '2026-11-18' });
+    expect(filters.map((f) => f.startsAt)).toEqual([
+      new Date('2026-11-18T17:00:00Z'),
+      new Date('2026-11-11T17:00:00Z'),
+    ]);
+    expect(stats.totals).toMatchObject({ enrolled: 1, active: 1 });
+    expect(stats.previous.totals).toMatchObject({ enrolled: 0, active: 0 });
+    // 1 of 4 lessons = 25%: second bucket
+    expect(stats.progress.map((b) => b.learners)).toEqual([0, 1, 0, 0, 0]);
   });
 });
