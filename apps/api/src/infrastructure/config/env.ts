@@ -43,13 +43,20 @@ export const envSchema = z.object({
   /** Read-only token that can read the private checker repo. Falls back to CONTENT_GITHUB_TOKEN. */
   SOLUTIONS_GITHUB_TOKEN: z.string().optional(),
   /**
-   * "Tạo issue trên GitHub" for content reports (learning-hub#121): a token with
-   * "Issues: read and write" on the track repos. Empty = the button is hidden.
+   * The organization's GitHub App (`hcmute-dsc-learning-hub`, SECURITY §10), used by
+   * "Tạo issue trên GitHub" for content reports (learning-hub#121). It needs
+   * "Issues: Read and write" on the track repos. Client ID, and the private key (.pem) with
+   * newlines written as `
+`. Either empty = the button is hidden.
    */
-  CONTENT_ISSUES_GITHUB_TOKEN: z
+  GITHUB_APP_CLIENT_ID: z
     .string()
     .optional()
-    .transform((v) => v || undefined),
+    .transform((v) => v?.trim() || undefined),
+  GITHUB_APP_PRIVATE_KEY: z
+    .string()
+    .optional()
+    .transform((v) => v?.trim() || undefined),
   /** Target time for a mentor review, shown in the queue (E7; per semester, BACKEND-DESIGN). */
   REVIEW_TARGET_HOURS: z.coerce.number().int().min(1).max(720).default(72),
   /**

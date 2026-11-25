@@ -1,11 +1,13 @@
 import { DomainError } from '../../common/errors';
 import {
+  assertCanCreateIssue,
   assertStatusChange,
   assertUnderDailyLimit,
   canHandleContentReports,
   canMoveTo,
   closedAtAfter,
   dailyLimitSince,
+  issueClaimCutoff,
   issueContent,
   notifiesReporter,
   quoted,
@@ -79,6 +81,20 @@ describe('status changes', () => {
     expect(closedAtAfter('dismissed', earlier, NOW)).toEqual(earlier);
     expect(closedAtAfter('open', earlier, NOW)).toBeNull();
     expect(closedAtAfter('in_progress', null, NOW)).toBeNull();
+  });
+});
+
+describe('GitHub issue rules', () => {
+  it('allows one issue per report, only while it is open or in progress', () => {
+    expect(() => assertCanCreateIssue('open', null)).not.toThrow();
+    expect(() => assertCanCreateIssue('in_progress', null)).not.toThrow();
+    expect(errorOf(() => assertCanCreateIssue('open', 'https://x/1')).status).toBe(409);
+    expect(errorOf(() => assertCanCreateIssue('resolved', null)).status).toBe(409);
+    expect(errorOf(() => assertCanCreateIssue('dismissed', null)).status).toBe(409);
+  });
+
+  it('lets a claim older than 5 minutes be taken again', () => {
+    expect(issueClaimCutoff(NOW)).toEqual(new Date('2026-11-25T04:55:00Z'));
   });
 });
 

@@ -105,6 +105,8 @@ export const updateContentReportSchema = z
     status: z.enum(CONTENT_REPORT_STATUSES).optional(),
     /** empty string clears the note */
     staffNote: z.string().trim().max(CONTENT_REPORT_NOTE_MAX).optional(),
+    /** `updatedAt` of the row the staff member saw; another change since then → 409 */
+    updatedAt: z.string().datetime(),
   })
   .strict()
   .refine((v) => v.status !== undefined || v.staffNote !== undefined, {
@@ -142,7 +144,8 @@ export interface ContentReportRow {
 /** GET /api/v1/content-reports → { data: ContentReportList } */
 export interface ContentReportList {
   filters: { track: string | null; status: ContentReportStatus | null };
-  options: { tracks: { slug: string; title: string }[] };
+  /** every track, archived ones last (their old reports stay reachable) */
+  options: { tracks: { slug: string; title: string; archived: boolean }[] };
   /** for the filters' track (all tracks when none), every status */
   counts: ContentReportCounts;
   /** "Tạo issue trên GitHub" works (the API has a token for it) */

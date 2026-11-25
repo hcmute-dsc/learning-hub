@@ -539,34 +539,37 @@ model MentorAssignment {
 /// "Báo lỗi nội dung" (learning-hub#121): a member reports a mistake in a lesson, an exercise
 /// or a track page; admins and mentors handle it. CHECKs in the SQL migration.
 model ContentReport {
-  id             String    @id @db.Uuid
-  reporterId     String    @map("reporter_id") @db.Uuid
-  trackId        String    @map("track_id") @db.Uuid
+  id                     String    @id @db.Uuid
+  reporterId             String    @map("reporter_id") @db.Uuid
+  trackId                String    @map("track_id") @db.Uuid
   /// lesson | exercise | track_page | glossary
-  targetKind     String    @map("target_kind")
+  targetKind             String    @map("target_kind")
   /// lesson or exercise id; setup | resources for a track page; glossary
-  targetRef      String    @map("target_ref")
+  targetRef              String    @map("target_ref")
   /// title of the target when reported (kept if the content is renamed or archived)
-  targetTitle    String    @map("target_title")
+  targetTitle            String    @map("target_title")
   /// content commit the member was reading (the track's own repo for registry versions)
-  commitSha      String?   @map("commit_sha") @db.Char(40)
+  commitSha              String?   @map("commit_sha") @db.Char(40)
   /// typo | wrong_knowledge | broken_code | wrong_answer | broken_media | other
-  category       String
+  category               String
   /// 1–2000 characters
-  description    String
+  description            String
   /// the wrong text copied from the page, up to 500 characters
-  quote          String?
+  quote                  String?
   /// open | in_progress | resolved | dismissed
-  status         String    @default("open")
+  status                 String    @default("open")
   /// last admin or mentor who changed the status
-  handledBy      String?   @map("handled_by") @db.Uuid
+  handledBy              String?   @map("handled_by") @db.Uuid
   /// for staff only, up to 2000 characters
-  staffNote      String?   @map("staff_note")
-  githubIssueUrl String?   @map("github_issue_url")
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  staffNote              String?   @map("staff_note")
+  githubIssueUrl         String?   @map("github_issue_url")
+  /// set while "Tạo issue trên GitHub" is running, so two clicks make one issue; cleared on
+  /// failure, and a claim older than 5 minutes may be taken again
+  githubIssueRequestedAt DateTime? @map("github_issue_requested_at") @db.Timestamptz
+  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt              DateTime  @updatedAt @map("updated_at") @db.Timestamptz
   /// when it became resolved or dismissed; null while open or in progress
-  closedAt       DateTime? @map("closed_at") @db.Timestamptz
+  closedAt               DateTime? @map("closed_at") @db.Timestamptz
 
   reporter User  @relation("ContentReportReporter", fields: [reporterId], references: [id])
   handler  User? @relation("ContentReportHandler", fields: [handledBy], references: [id])
@@ -575,6 +578,7 @@ model ContentReport {
   @@index([trackId, status, createdAt(sort: Desc)])
   @@index([status, createdAt(sort: Desc)])
   @@index([reporterId, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
   @@map("content_reports")
 }
 

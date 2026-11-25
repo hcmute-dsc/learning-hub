@@ -1,11 +1,11 @@
 import {
+  canHandleContentReports,
   CONTENT_REPORT_CATEGORY_LABEL,
   CONTENT_REPORT_DAILY_LIMIT,
   CONTENT_REPORT_STATUS_LABEL,
   type ContentReportCategory,
   type ContentReportStatus,
   type ContentReportTarget,
-  type Role,
 } from '@hub/shared';
 import { DomainError } from '../../common/errors';
 
@@ -17,13 +17,8 @@ import { DomainError } from '../../common/errors';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const SHA = /^[0-9a-f]{40}$/;
 
-/**
- * Who handles reports: admins and every mentor, for every track, the same rule as the
- * review queue (#30) and the track statistics (#118).
- */
-export function canHandleContentReports(roles: readonly Role[]): boolean {
-  return roles.includes('admin') || roles.includes('mentor');
-}
+/** Who handles reports: the shared rule (admins and every mentor), re-exported for the API. */
+export { canHandleContentReports };
 
 /** Start of the 24 hours counted by the daily limit. */
 export function dailyLimitSince(now: Date): Date {
@@ -76,6 +71,21 @@ export function isClosed(status: ContentReportStatus): boolean {
   return status === 'resolved' || status === 'dismissed';
 }
 
+/** A "Tạo issue trên GitHub" claim older than this may be taken again (the API stopped). */
+export const ISSUE_CLAIM_MINUTES = 5;
+
+export function issueClaimCutoff(now: Date): Date {
+  return new Date(now.getTime() - ISSUE_CLAIM_MINUTES * 60 * 1000);
+}
+
+/** One issue per report, and only while the report is still being handled. */
+export function assertCanCreateIssue(status: ContentReportStatus, issueUrl: string | null): void {
+  if (issueUrl) throw DomainError.conflict('Báo cáo này đã có issue trên GitHub.');
+  if (isClosed(status)) {
+    throw DomainError.conflict('Báo cáo đã đóng. Mở lại báo cáo trước khi tạo issue.');
+  }
+}
+
 /** The reporter hears back when their report is closed (resolved or dismissed), not before. */
 export function notifiesReporter(from: ContentReportStatus, to: ContentReportStatus): boolean {
   return !isClosed(from) && isClosed(to);
@@ -114,11 +124,6 @@ export function targetLink(kind: ContentReportTarget, ref: string, trackSlug: st
     case 'glossary':
       return `/tracks/${trackSlug}/glossary`;
   }
-}
-
-/** True for an "owner/repo" on GitHub (not a `local:` folder used in development). */
-export function isGithubRepo(repo: string): boolean {
-  return /^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+$/.test(repo);
 }
 
 export interface IssueSource {

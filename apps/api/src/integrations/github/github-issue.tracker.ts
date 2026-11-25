@@ -1,22 +1,20 @@
 import { DomainError } from '../../common/errors';
 import type { IssueTracker } from '../../modules/content-reports/ports/issue-tracker';
+import type { Fetch, GithubAppTokens } from './github-app.auth';
 
 const API = 'https://api.github.com';
 const TIMEOUT_MS = 20_000;
 
-type Fetch = (url: string, init: RequestInit) => Promise<Response>;
-
 /**
- * Opens issues in track repos for "Tạo issue trên GitHub" (learning-hub#121), with a token
- * that has "Issues: read and write" on the track repos: a fine-grained personal access token
- * of a bot account, or later a GitHub App installation token (SECURITY §10). Not retried:
- * a POST that timed out may have created the issue already.
+ * Opens issues in track repos for "Tạo issue trên GitHub" (learning-hub#121), as the
+ * organization's GitHub App (SECURITY §10): an installation token limited to the one repo
+ * and to "Issues: write". Not retried: a POST that timed out may have created the issue.
  */
 export class GithubIssueTracker implements IssueTracker {
   readonly enabled = true;
 
   constructor(
-    private readonly token: string,
+    private readonly tokens: Pick<GithubAppTokens, 'issuesToken'>,
     /** For tests: the HTTP client. */
     private readonly http: Fetch = fetch,
   ) {}
@@ -25,6 +23,7 @@ export class GithubIssueTracker implements IssueTracker {
     repo: string,
     issue: { title: string; body: string },
   ): Promise<{ url: string }> {
+    const token = await this.tokens.issuesToken(repo);
     let res: Response;
     try {
       res = await this.http(`${API}/repos/${repo}/issues`, {
@@ -34,7 +33,7 @@ export class GithubIssueTracker implements IssueTracker {
           'X-GitHub-Api-Version': '2022-11-28',
           'User-Agent': 'learning-hub',
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ title: issue.title, body: issue.body }),
         signal: AbortSignal.timeout(TIMEOUT_MS),
@@ -59,10 +58,9 @@ export class GithubIssueTracker implements IssueTracker {
 export function failureMessage(status: number, repo: string): string {
   switch (status) {
     case 401:
-      return 'Token GitHub để tạo issue không hợp lệ hoặc đã hết hạn (CONTENT_ISSUES_GITHUB_TOKEN).';
     case 403:
     case 404:
-      return `Token GitHub không có quyền "Issues: write" trên ${repo} (hoặc repo không tồn tại).`;
+      return `GitHub App của CLB không có quyền "Issues: write" trên ${repo} (hoặc repo không tồn tại).`;
     case 410:
       return `Repo ${repo} đã tắt Issues.`;
     case 422:

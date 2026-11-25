@@ -18,6 +18,7 @@ CREATE TABLE "content_reports" (
     "handled_by" UUID,
     "staff_note" TEXT,
     "github_issue_url" TEXT,
+    "github_issue_requested_at" TIMESTAMPTZ,
     "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ NOT NULL,
     "closed_at" TIMESTAMPTZ,
@@ -30,6 +31,9 @@ CREATE INDEX "content_reports_track_id_status_created_at_idx" ON "content_report
 
 -- CreateIndex
 CREATE INDEX "content_reports_status_created_at_idx" ON "content_reports"("status", "created_at" DESC);
+
+-- CreateIndex
+CREATE INDEX "content_reports_created_at_idx" ON "content_reports"("created_at" DESC);
 
 -- CreateIndex
 CREATE INDEX "content_reports_reporter_id_created_at_idx" ON "content_reports"("reporter_id", "created_at" DESC);
