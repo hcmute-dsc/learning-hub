@@ -133,3 +133,4 @@ export * from './report';
 export * from './track-stats';
 export * from './content-report';
 export * from './access';
+export * from './mentoring';

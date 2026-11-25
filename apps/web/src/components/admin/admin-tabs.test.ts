@@ -14,6 +14,7 @@ describe('adminTabsFor', () => {
     expect(hrefs(['member', 'admin'])).toEqual([
       '/admin',
       '/admin/members',
+      '/admin/mentors',
       '/admin/content',
       '/admin/content-reports',
       '/admin/certificates',
@@ -49,7 +50,7 @@ describe('adminHomeFor', () => {
 
 describe('isTabActive', () => {
   it('matches the tab and its sub-pages, not a lookalike prefix', () => {
-    const content = ADMIN_TABS[2];
+    const content = ADMIN_TABS.find((t) => t.href === '/admin/content')!;
     expect(isTabActive(content, '/admin/content')).toBe(true);
     expect(isTabActive(content, '/admin/content/versions/abc')).toBe(true);
     expect(isTabActive(content, '/admin/contentx')).toBe(false);

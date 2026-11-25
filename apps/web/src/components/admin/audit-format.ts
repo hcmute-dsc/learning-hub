@@ -34,6 +34,8 @@ const ACTION_LABEL: Record<string, string> = {
   'report.export': 'Xuất báo cáo CSV',
   'content_report.status': 'Xử lý báo lỗi nội dung',
   'content_report.issue': 'Tạo issue từ báo lỗi',
+  'mentor.track_assign': 'Giao mentor phụ trách track',
+  'mentor.track_end': 'Thôi giao mentor phụ trách track',
 };
 
 /** Mentor review outcomes (E7, written by AuditListener.onReviewCompleted). */
@@ -107,6 +109,9 @@ export function describeAudit(row: Pick<AuditLogRow, 'action' | 'metadata'>): st
       return `${str(m.trackSlug) || '—'}: ${reportStatus(m.from)} → ${reportStatus(m.to)}`;
     case 'content_report.issue':
       return `${str(m.trackSlug) || '—'}: ${str(m.issueUrl) || '—'}`;
+    case 'mentor.track_assign':
+    case 'mentor.track_end':
+      return `@${str(m.mentorLogin) || '—'} · ${str(m.track) || '—'}`;
     default:
       return Object.keys(m).length ? JSON.stringify(m) : '';
   }
