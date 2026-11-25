@@ -52,29 +52,39 @@ export function statsHref(trackSlug: string, days: number, defaultDays: number):
   return days === defaultDays ? base : `${base}?days=${days}`;
 }
 
-/** How a number moved against the previous period, and whether that is good news. */
-export interface Change {
-  diff: number;
-  tone: 'good' | 'bad' | 'same';
-}
-
 /**
- * current − previous, rounded to one decimal (hours). Null when either side is missing
- * (no review in one of the periods). `higherIsBetter` is false for waiting times.
+ * How a number moved against the previous period, and whether that is good news; or which
+ * side has no number (no review in that period), so the text can say which.
  */
+export type Change =
+  | { diff: number; tone: 'good' | 'bad' | 'same' }
+  | { diff: null; missing: 'current' | 'previous' | 'both' };
+
+/** current − previous, rounded to one decimal (hours). `higherIsBetter` false for waiting times. */
 export function change(
   current: number | null,
   previous: number | null,
   higherIsBetter = true,
-): Change | null {
-  if (current === null || previous === null) return null;
+): Change {
+  if (current === null || previous === null) {
+    const missing = current !== null ? 'previous' : previous !== null ? 'current' : 'both';
+    return { diff: null, missing };
+  }
   const diff = Math.round((current - previous) * 10) / 10;
   if (diff === 0) return { diff, tone: 'same' };
   return { diff, tone: diff > 0 === higherIsBetter ? 'good' : 'bad' };
 }
 
-/** "+3 so với kỳ trước", "−1,5 giờ so với kỳ trước", "Bằng kỳ trước". */
-export function changeText(c: Change, unit = ''): string {
+/**
+ * "+3 so với kỳ trước", "−1,5 giờ so với kỳ trước", "Bằng kỳ trước"; with one side missing,
+ * "Kỳ này chưa có review" (`what` names what is missing, "số liệu" by default).
+ */
+export function changeText(c: Change, unit = '', what = 'số liệu'): string {
+  if (c.diff === null) {
+    if (c.missing === 'current') return `Kỳ này chưa có ${what}`;
+    if (c.missing === 'previous') return `Kỳ trước chưa có ${what}`;
+    return `Cả hai kỳ chưa có ${what}`;
+  }
   if (c.diff === 0) return 'Bằng kỳ trước';
   const sign = c.diff > 0 ? '+' : '−';
   const value = Math.abs(c.diff).toLocaleString('vi-VN');
@@ -107,14 +117,17 @@ export interface Drop {
 }
 
 /**
- * The step that loses the most people, comparing each count with the one before it (the
- * first with `start`, e.g. the enrolled learners). Ties: the earliest. Null when no step
- * loses anyone.
+ * The step that loses the most people, each count against the one just before it (so the
+ * first count is never a drop). Ties: the earliest. Null when no step loses anyone.
+ *
+ * The chapter funnel passes how many learners STARTED each chapter, so the drop says where
+ * people stop arriving ("24 started chapter 2, 11 started chapter 3"). Finished counts are
+ * not used: against the enrolled count, chapter 1 was the biggest drop on nearly every track.
  */
-export function biggestDrop(counts: number[], start: number): Drop | null {
+export function biggestDrop(counts: number[]): Drop | null {
   let best: Drop | null = null;
-  for (let index = 0; index < counts.length; index++) {
-    const before = index === 0 ? start : counts[index - 1];
+  for (let index = 1; index < counts.length; index++) {
+    const before = counts[index - 1];
     const after = counts[index];
     const lost = before - after;
     if (lost > 0 && (!best || lost > best.lost)) best = { index, before, after, lost };
@@ -134,38 +147,50 @@ interface FunnelItemLike {
   completed: number;
 }
 
-/** A lesson or exercise of the detail list, against the item just before it. */
+/** A lesson or exercise of the detail list, against the one before it of the same kind. */
 export interface ItemStep extends FunnelItemLike {
-  /** the item before it in reading order (across chapters); `enrolled` for the first item */
-  previous: number;
-  /** completed / previous as a whole percent; null when previous is 0 */
+  /**
+   * done count of the previous lesson (for a lesson) or exercise (for an exercise) in the
+   * same chapter; null for the first of its kind in the chapter
+   */
+  previous: number | null;
+  /**
+   * completed / previous as a whole percent; null without a previous one or when it is 0.
+   * Above 100 when more people did this one: shown as "tăng", never as a drop.
+   */
   keptPercent: number | null;
   /** see HIGH_DROP_KEEP and HIGH_DROP_MIN */
   highDrop: boolean;
 }
 
 /**
- * Every item of every chapter against the item before it, in reading order (the first item
- * against the enrolled learners), grouped by chapter again.
+ * Every item against the previous item OF THE SAME KIND in its chapter: lessons against
+ * lessons, exercises against exercises. Marking a lesson as read is optional, so comparing
+ * an exercise with the lesson before it would show gains and losses that only say who
+ * bothers to tick lessons.
  */
 export function itemSteps<M extends { items: FunnelItemLike[] }>(
   modules: M[],
-  enrolled: number,
 ): (Omit<M, 'items'> & { items: ItemStep[] })[] {
-  let previous = enrolled;
-  return modules.map((m) => ({
-    ...m,
-    items: m.items.map((item) => {
-      const step: ItemStep = {
-        ...item,
-        previous,
-        keptPercent: previous === 0 ? null : Math.round((item.completed / previous) * 100),
-        highDrop: previous >= HIGH_DROP_MIN && item.completed < previous * HIGH_DROP_KEEP,
-      };
-      previous = item.completed;
-      return step;
-    }),
-  }));
+  return modules.map((m) => {
+    const last: Partial<Record<FunnelItemLike['kind'], number>> = {};
+    return {
+      ...m,
+      items: m.items.map((item): ItemStep => {
+        const previous = last[item.kind] ?? null;
+        last[item.kind] = item.completed;
+        return {
+          ...item,
+          previous,
+          keptPercent: previous ? Math.round((item.completed / previous) * 100) : null,
+          highDrop:
+            previous !== null &&
+            previous >= HIGH_DROP_MIN &&
+            item.completed < previous * HIGH_DROP_KEEP,
+        };
+      }),
+    };
+  });
 }
 
 /** "0–25%", …, "100%" for a bucket of the progress histogram. */

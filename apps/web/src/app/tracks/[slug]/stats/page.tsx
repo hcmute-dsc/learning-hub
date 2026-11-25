@@ -27,6 +27,7 @@ import { TrackTabs } from '@/components/track/TrackTabs';
 import { STATS_LABEL, trackTabs } from '@/components/track/track-docs';
 import {
   HIGH_DROP_KEEP,
+  HIGH_DROP_MIN,
   adminReportsHref,
   bucketLabel,
   weekLabel,
@@ -152,7 +153,7 @@ export default async function TrackStatsPage({ params, searchParams }: Props) {
               Tổng quan {period.days} ngày
             </h2>
             <p className="muted max-w-2xl text-sm">
-              {formatDay(period.from)} – {formatDay(period.to)}, so với{' '}
+              {formatDay(period.from)} – {formatDay(period.to)} (tới lúc xem trang), so với{' '}
               {formatDay(previous.period.from)} – {formatDay(previous.period.to)}. Người học là tài
               khoản đã ghi danh, không tính admin và mentor. Số liệu lúc{' '}
               {formatDateTime(stats.generatedAt)}.
@@ -192,7 +193,6 @@ export default async function TrackStatsPage({ params, searchParams }: Props) {
         >
           <ColumnChart
             label={`Ghi danh và đang học theo tuần, ${TRACK_STATS_WEEKS} tuần gần nhất`}
-            columnHeader="Tuần"
             series={[
               { label: 'Ghi danh', color: '--chart-1' },
               { label: 'Đang học', color: '--chart-2' },
@@ -209,7 +209,7 @@ export default async function TrackStatsPage({ params, searchParams }: Props) {
         <Panel
           id="stats-funnel"
           title="Học viên dừng ở chương nào"
-          description={`Số người xong cả chương và đã bắt đầu chương, trên ${totals.enrolled} người ghi danh.`}
+          description={`Số người xong cả chương và đã bắt đầu chương, trên ${totals.enrolled} người ghi danh. Chỗ tụt mạnh nhất: chương mất nhiều người nhất, tính bằng số người bắt đầu chương so với chương ngay trước.`}
         >
           <ChapterFunnel modules={stats.funnel} enrolled={totals.enrolled} />
         </Panel>
@@ -217,11 +217,10 @@ export default async function TrackStatsPage({ params, searchParams }: Props) {
         <Panel
           id="stats-progress"
           title="Phân bố tiến độ"
-          description="Số người theo phần bài học và bài tập đã xong của track, lúc xem trang."
+          description="Số người theo phần bài học và bài tập đã xong của track, lúc xem trang. Cột 100% gồm người đã xong mọi bài hoặc đã được ghi nhận hoàn thành track."
         >
           <ColumnChart
             label="Số người học theo tiến độ"
-            columnHeader="Tiến độ"
             series={[{ label: 'Người học', color: '--chart-2' }]}
             valueLabels
             columns={stats.progress.map((b) => ({
@@ -245,7 +244,7 @@ export default async function TrackStatsPage({ params, searchParams }: Props) {
       <Panel
         id="stats-lessons"
         title="Chi tiết từng bài"
-        description={`Mở một chương để xem số người xong từng bài học và bài tập, và phần còn lại so với bài ngay trước. Bài có nhãn “Rời đi nhiều” mất trên ${Math.round((1 - HIGH_DROP_KEEP) * 100)}% người so với bài trước.`}
+        description={`Mở một chương để xem số người xong từng bài học và bài tập. Bài học so với bài học trước, bài tập so với bài tập trước trong cùng chương (đánh dấu đã đọc bài học là tùy ý, nên không so bài tập với bài học). Nhãn “Rời đi nhiều”: mất trên ${Math.round((1 - HIGH_DROP_KEEP) * 100)}% người so với bài trước (bài trước có ít nhất ${HIGH_DROP_MIN} người).`}
       >
         <LessonDetail modules={stats.funnel} enrolled={totals.enrolled} />
       </Panel>

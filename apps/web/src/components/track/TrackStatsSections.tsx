@@ -53,15 +53,20 @@ export function PeriodPicker({ trackSlug, days }: { trackSlug: string; days: num
   );
 }
 
-const CHANGE_CLASS: Record<Change['tone'], string> = {
+const CHANGE_CLASS = {
   good: 'text-emerald-700 dark:text-emerald-400',
   bad: 'text-red-700 dark:text-red-400',
   same: 'muted',
 };
 
-/** "▲ +3 so với kỳ trước": arrow for the direction, colour for good or bad news, sign in text. */
-function ChangeLine({ value, unit }: { value: Change | null; unit?: string }) {
-  if (!value) return <p className="muted mt-1 text-xs">Kỳ trước chưa có số liệu</p>;
+/**
+ * "▲ +3 so với kỳ trước": arrow for the direction, colour for good or bad news, sign in text.
+ * Without a number on one side: "Kỳ này chưa có review" or "Kỳ trước chưa có review".
+ */
+function ChangeLine({ value, unit, what }: { value: Change; unit?: string; what?: string }) {
+  if (value.diff === null) {
+    return <p className="muted mt-1 text-xs">{changeText(value, unit, what)}</p>;
+  }
   return (
     <p className={`mt-1 flex items-center gap-1 text-xs font-medium ${CHANGE_CLASS[value.tone]}`}>
       {value.diff !== 0 && (
@@ -86,7 +91,7 @@ function Kpi({
   value: string | number;
   detail?: string;
   /** undefined = this number is not compared (a snapshot) */
-  delta?: { value: Change | null; unit?: string };
+  delta?: { value: Change; unit?: string; what?: string };
   hint: string;
   className?: string;
 }) {
@@ -97,7 +102,7 @@ function Kpi({
         {value}
         {detail && <span className="muted ml-1.5 text-sm font-normal">{detail}</span>}
       </p>
-      {delta && <ChangeLine value={delta.value} unit={delta.unit} />}
+      {delta && <ChangeLine {...delta} />}
       <p className="muted mt-1 text-xs">{hint}</p>
     </div>
   );
@@ -145,6 +150,7 @@ export function KpiRow({
         delta={{
           value: change(totals.reviewHoursMedian, previous.reviewHoursMedian, false),
           unit: 'giờ',
+          what: 'review',
         }}
         hint={`từ lúc nộp tới lúc review xong; ${totals.reviewsDone} review trong ${days} ngày`}
         // five tiles in two columns on a phone: the last one takes the whole row
@@ -189,8 +195,8 @@ function numbered<M extends { items: unknown[] }>(modules: M[]) {
 
 /**
  * One bar per chapter on the scale of the enrolled learners: solid = finished the whole
- * chapter, light = did at least one item of it. The chapter that loses the most people
- * against the one before (the first against the enrolled) is marked.
+ * chapter, light = did at least one item of it. The chapter that the fewest learners of the
+ * chapter before went on to start is marked (see `biggestDrop`).
  */
 export function ChapterFunnel({
   modules,
@@ -203,10 +209,7 @@ export function ChapterFunnel({
   if (chapters.length === 0) {
     return <p className="muted text-sm italic">Track chưa có chương nào.</p>;
   }
-  const drop = biggestDrop(
-    chapters.map((m) => m.completed),
-    enrolled,
-  );
+  const drop = biggestDrop(chapters.map((m) => m.started));
   return (
     <div className="space-y-3">
       <ul className="muted flex flex-wrap gap-x-4 gap-y-1 text-xs" aria-hidden>
@@ -253,9 +256,8 @@ export function ChapterFunnel({
               {isDrop && drop && (
                 <p className="flex items-center gap-1 text-xs font-medium text-amber-900 dark:text-amber-200">
                   <WarningIcon />
-                  Tụt mạnh nhất: {drop.before} → {drop.after} người (mất{' '}
-                  {shareText(drop.lost, drop.before)})
-                  {i === 0 ? ' so với số ghi danh' : ' so với chương trước'}
+                  Tụt mạnh nhất: {drop.before} người bắt đầu chương trước, {drop.after} bắt đầu
+                  chương này (mất {shareText(drop.lost, drop.before)})
                 </p>
               )}
             </li>
@@ -298,13 +300,13 @@ export function LessonDetail({
   modules: TrackFunnelModule[];
   enrolled: number;
 }) {
-  const chapters = itemSteps(numbered(modules), enrolled);
+  const chapters = itemSteps(numbered(modules));
   if (chapters.length === 0) {
     return <p className="muted text-sm italic">Track chưa có bài học nào.</p>;
   }
   return (
     <div className="divide-y divide-[var(--border)]">
-      {chapters.map((m, chapterIndex) => {
+      {chapters.map((m) => {
         const highDrops = m.items.filter((item) => item.highDrop).length;
         return (
           <details key={m.slug} className="group/chapter py-1">
@@ -319,7 +321,7 @@ export function LessonDetail({
               </span>
             </summary>
             <ol className="space-y-3 pb-3 pl-6 pt-1">
-              {m.items.map((item, i) => (
+              {m.items.map((item) => (
                 <li key={item.id} className="space-y-1">
                   <div className="flex items-baseline justify-between gap-3 text-sm">
                     <Link href={itemHref(item)} className="min-w-0 truncate hover:underline">
@@ -334,9 +336,11 @@ export function LessonDetail({
                       {item.keptPercent !== null && (
                         <span className="muted">
                           {' '}
-                          · {item.keptPercent}%
+                          · {item.keptPercent > 100 ? 'tăng' : `${item.keptPercent}%`}
                           <span className="sr-only sm:not-sr-only">
-                            {chapterIndex === 0 && i === 0 ? ' số ghi danh' : ' so với bài trước'}
+                            {item.kind === 'lesson'
+                              ? ' so với bài học trước'
+                              : ' so với bài tập trước'}
                           </span>
                         </span>
                       )}

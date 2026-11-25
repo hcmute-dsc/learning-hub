@@ -62,7 +62,10 @@ export const trackStatsTotalsSchema = z.object({
   completed: count,
   /** completed / enrolled, 0–100 */
   completionRate: rate,
-  /** learners' submissions waiting for a mentor at the end of the period (now, for the current one) */
+  /**
+   * learners' submissions waiting for a mentor right now (lúc xem trang), not at the end of
+   * the period; in `previous`, only of learners enrolled by its end
+   */
   awaitingReview: count,
   /** reviews concluded during the period */
   reviewsDone: count,
@@ -154,7 +157,12 @@ export const trackStatsSchema = z.object({
   /** the `days` Vietnam days behind `active` and the review numbers, today last */
   period: periodSchema.extend({ days: z.number().int().positive() }),
   totals: trackStatsTotalsSchema,
-  /** the same number of days just before `period`, for "+3 so với kỳ trước" */
+  /**
+   * the same number of days just before `period`, for "+3 so với kỳ trước". Its
+   * `awaitingReview` is still "lúc xem trang, như kỳ này" (the report counts what waits now),
+   * so the page does not compare it.
+   * (Learners and reviews do follow the previous period.)
+   */
   previous: z.object({ period: periodSchema, totals: trackStatsTotalsSchema }),
   /** every enrolled learner by progress, now; TRACK_STATS_PROGRESS_EDGES buckets */
   progress: z.array(progressBucketSchema),

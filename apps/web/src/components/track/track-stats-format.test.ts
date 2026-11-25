@@ -39,8 +39,15 @@ describe('change and changeText', () => {
     expect(change(4, 4)).toEqual({ diff: 0, tone: 'same' });
     // waiting times: shorter is better
     expect(change(10.2, 12, false)).toEqual({ diff: -1.8, tone: 'good' });
-    expect(change(null, 12)).toBeNull();
-    expect(change(3, null)).toBeNull();
+  });
+
+  it('says which period has no number (no review in it)', () => {
+    expect(change(null, 12, false)).toEqual({ diff: null, missing: 'current' });
+    expect(change(3, null, false)).toEqual({ diff: null, missing: 'previous' });
+    expect(change(null, null)).toEqual({ diff: null, missing: 'both' });
+    expect(changeText(change(null, 12), 'giờ', 'review')).toBe('Kỳ này chưa có review');
+    expect(changeText(change(3, null), 'giờ', 'review')).toBe('Kỳ trước chưa có review');
+    expect(changeText(change(null, null))).toBe('Cả hai kỳ chưa có số liệu');
   });
 
   it('writes the sign, the Vietnamese decimal comma and the unit', () => {
@@ -66,49 +73,66 @@ describe('niceTicks', () => {
 });
 
 describe('biggestDrop', () => {
-  it('finds the step that loses the most people, the first one against the start', () => {
-    expect(biggestDrop([18, 10, 9], 20)).toEqual({ index: 1, before: 18, after: 10, lost: 8 });
-    expect(biggestDrop([5, 4], 20)).toEqual({ index: 0, before: 20, after: 5, lost: 15 });
+  it('compares each count with the one just before it, never the first one', () => {
+    // started chapter 1..4: 30 → 24 → 11 → 9
+    expect(biggestDrop([30, 24, 11, 9])).toEqual({ index: 2, before: 24, after: 11, lost: 13 });
+    expect(biggestDrop([5])).toBeNull();
   });
 
   it('keeps the earliest of equal drops and ignores steps that gain people', () => {
-    expect(biggestDrop([8, 6, 7, 5], 10)?.index).toBe(0);
-    expect(biggestDrop([10, 12], 10)).toBeNull();
-    expect(biggestDrop([], 0)).toBeNull();
+    expect(biggestDrop([8, 6, 7, 5])?.index).toBe(1);
+    expect(biggestDrop([10, 12])).toBeNull();
+    expect(biggestDrop([])).toBeNull();
   });
 });
 
 describe('itemSteps', () => {
-  const item = (id: string, completed: number) => ({
+  const lesson = (id: string, completed: number) => ({
     kind: 'lesson' as const,
     id,
     title: id,
     completed,
   });
+  const exercise = (id: string, completed: number) => ({
+    ...lesson(id, completed),
+    kind: 'exercise' as const,
+  });
+  const steps = (m: {
+    items: { previous: number | null; keptPercent: number | null; highDrop: boolean }[];
+  }) => m.items.map((i) => [i.previous, i.keptPercent, i.highDrop]);
 
-  it('compares each item with the one before it, across chapters', () => {
-    const [first, second] = itemSteps(
-      [
-        { slug: 'a', items: [item('l1', 10), item('l2', 6)] },
-        { slug: 'b', items: [item('l3', 6), item('l4', 1)] },
-      ],
-      12,
-    );
-    expect(first.slug).toBe('a');
-    expect(first.items.map((i) => [i.previous, i.keptPercent, i.highDrop])).toEqual([
-      [12, 83, false],
-      [10, 60, true], // lost 40%
+  it('compares lessons with lessons and exercises with exercises, inside a chapter', () => {
+    const [first, second] = itemSteps([
+      // few people tick lessons, many do the exercises: no fake "gain" or "drop" between kinds
+      {
+        slug: 'a',
+        items: [lesson('l1', 10), lesson('l2', 6), exercise('x1', 20), exercise('x2', 12)],
+      },
+      { slug: 'b', items: [lesson('l3', 6), lesson('l4', 1)] },
     ]);
-    expect(second.items.map((i) => [i.previous, i.keptPercent, i.highDrop])).toEqual([
-      [6, 100, false],
+    expect(first.slug).toBe('a');
+    expect(steps(first)).toEqual([
+      [null, null, false], // first lesson of the chapter
+      [10, 60, true], // lost 40%
+      [null, null, false], // first exercise: not against lesson l2
+      [20, 60, true],
+    ]);
+    // a new chapter starts over
+    expect(steps(second)).toEqual([
+      [null, null, false],
       [6, 17, true],
     ]);
   });
 
+  it('keeps a share above 100% (more people) and never flags it as a drop', () => {
+    const [m] = itemSteps([{ items: [lesson('l1', 4), lesson('l2', 9)] }]);
+    expect(steps(m)[1]).toEqual([4, 225, false]);
+  });
+
   it('does not flag small numbers or divide by zero', () => {
-    const [m] = itemSteps([{ items: [item('l1', 2), item('l2', 0), item('l3', 0)] }], 2);
+    const [m] = itemSteps([{ items: [lesson('l1', 2), lesson('l2', 0), lesson('l3', 0)] }]);
     expect(m.items.map((i) => [i.keptPercent, i.highDrop])).toEqual([
-      [100, false],
+      [null, false],
       [0, false], // 2 → 0 is below HIGH_DROP_MIN
       [null, false],
     ]);
