@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Breadcrumbs } from '@/components/learn/Breadcrumbs';
-import { githubBlobUrl } from '@/components/markdown/content-url';
+import { editOnGitHubUrl } from '@/components/markdown/content-url';
+import { getMe } from '@/lib/api';
 import { GlossaryList } from '@/components/track/GlossaryList';
 import { TrackTabs } from '@/components/track/TrackTabs';
 import { GLOSSARY_LABEL, trackTabs } from '@/components/track/track-docs';
@@ -22,12 +23,13 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
  */
 export default async function TrackGlossaryPage({ params }: Params) {
   const { slug } = await params;
-  const [track, glossary, canSeeStats] = await Promise.all([
+  const [track, glossary, canSeeStats, me] = await Promise.all([
     loadTrack(slug),
     loadTrackGlossary(slug),
     canSeeTrackStats(),
+    getMe(),
   ]);
-  const editUrl = githubBlobUrl(glossary.source);
+  const editUrl = editOnGitHubUrl(glossary.source, me?.roles);
 
   return (
     <article className="space-y-6 sm:space-y-8">

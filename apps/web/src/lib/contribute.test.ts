@@ -27,6 +27,9 @@ describe('contribute links', () => {
     expect(CONTRIBUTE_LINKS.proposeTrack).toBe(
       'https://github.com/hcmute-dsc/learning-hub-content/issues/new?template=content_proposal.yml',
     );
+    expect(CONTRIBUTE_LINKS.trackContributing).toBe(
+      'https://github.com/hcmute-dsc/learning-hub-track-template/blob/main/CONTRIBUTING.md',
+    );
     expect(CONTRIBUTE_LINKS.appContributing).toBe(
       'https://github.com/hcmute-dsc/learning-hub/blob/main/CONTRIBUTING.md',
     );

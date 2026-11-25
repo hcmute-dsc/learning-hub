@@ -1,3 +1,5 @@
+import type { Role } from '@hub/shared';
+
 /**
  * Lessons are Markdown files inside a Git content repo, so their relative links and
  * images point at other files of that repo. The web app has no copy of those files,
@@ -23,6 +25,23 @@ const LOCAL_IMAGE_BASE = '/api/v1/local-content/';
 /** True when `repo` is a real GitHub "owner/repo", not a local folder. */
 export function isGithubRepo(repo: string): boolean {
   return GITHUB_REPO.test(repo);
+}
+
+/**
+ * Who sees "✎ Sửa trên GitHub" (learning-hub#122): staff who edit or review content, that is
+ * admins, mentors and content maintainers ("Biên tập nội dung"). Members report mistakes
+ * with the "Báo lỗi nội dung" button instead, or open a pull request from the track repo.
+ */
+export function canEditOnGitHub(roles: readonly Role[]): boolean {
+  return roles.some((r) => r === 'admin' || r === 'mentor' || r === 'content_maintainer');
+}
+
+/** The "Sửa trên GitHub" link for this viewer, or null (not staff, or not on GitHub). */
+export function editOnGitHubUrl(
+  origin: ContentOrigin,
+  roles: readonly Role[] | undefined,
+): string | null {
+  return roles && canEditOnGitHub(roles) ? githubBlobUrl(origin) : null;
 }
 
 /** "Sửa trên GitHub" target, or null when the content is not on GitHub. */

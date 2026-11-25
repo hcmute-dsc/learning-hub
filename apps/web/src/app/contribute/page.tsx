@@ -7,16 +7,22 @@ export const metadata: Metadata = { title: 'Đóng góp' };
 const WAYS: CardItem[] = [
   {
     icon: '✏️',
-    title: 'Sửa một bài đang học',
+    title: 'Báo lỗi nội dung',
     description:
-      'Thấy lỗi chính tả, câu lệnh chạy sai hay đáp án nhầm? Mở bài đó, bấm "Sửa trên GitHub" trên trang bài, sửa rồi mở pull request.',
+      'Thấy lỗi chính tả, câu lệnh chạy sai hay đáp án nhầm? Bấm "Báo lỗi nội dung" ngay trên trang bài: chọn loại lỗi, ghi sai ở đâu. Mentor sẽ xem và báo lại cho bạn khi sửa xong.',
     link: { href: '/tracks', label: 'Chọn lộ trình' },
   },
   {
-    icon: '🐞',
-    title: 'Báo lỗi nội dung',
+    icon: '✏️',
+    title: 'Tự sửa bằng pull request',
     description:
-      'Chưa quen pull request thì mở issue "Lỗi nội dung" trong repo của lộ trình đó: ghi bài nào, sai ở đâu, nên sửa thành gì.',
+      'Quen Git rồi thì sửa thẳng trong repo của lộ trình: fork, sửa bài, rồi mở pull request theo hướng dẫn trong CONTRIBUTING.md của repo đó.',
+    link: { href: CONTRIBUTE_LINKS.trackContributing, label: 'Hướng dẫn đóng góp bài' },
+  },
+  {
+    icon: '🗂️',
+    title: 'Tìm repo của lộ trình',
+    description: 'Mỗi lộ trình có một repo riêng. Danh sách repo nằm trong tracks.yaml.',
     link: { href: CONTRIBUTE_LINKS.registryFile, label: 'Danh sách repo các lộ trình' },
   },
   {
