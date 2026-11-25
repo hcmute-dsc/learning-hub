@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { canEditOnGitHub } from '@hub/shared';
 import {
-  canEditOnGitHub,
   editOnGitHubUrl,
   githubBlobUrl,
   isGithubRepo,

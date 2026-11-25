@@ -13,7 +13,7 @@ const WAYS: CardItem[] = [
     link: { href: '/tracks', label: 'Chọn lộ trình' },
   },
   {
-    icon: '✏️',
+    icon: '🔀',
     title: 'Tự sửa bằng pull request',
     description:
       'Quen Git rồi thì sửa thẳng trong repo của lộ trình: fork, sửa bài, rồi mở pull request theo hướng dẫn trong CONTRIBUTING.md của repo đó.',
@@ -22,7 +22,7 @@ const WAYS: CardItem[] = [
   {
     icon: '🗂️',
     title: 'Tìm repo của lộ trình',
-    description: 'Mỗi lộ trình có một repo riêng. Danh sách repo nằm trong tracks.yaml.',
+    description: 'Mỗi lộ trình có một repo riêng trên GitHub. Xem danh sách repo của các lộ trình.',
     link: { href: CONTRIBUTE_LINKS.registryFile, label: 'Danh sách repo các lộ trình' },
   },
   {
