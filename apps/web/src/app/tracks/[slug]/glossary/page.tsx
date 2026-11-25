@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { ReportContentButton } from '@/components/content-report/ReportContentButton';
 import { Breadcrumbs } from '@/components/learn/Breadcrumbs';
 import { editOnGitHubUrl } from '@/components/markdown/content-url';
 import { getMe } from '@/lib/api';
@@ -46,13 +47,14 @@ export default async function TrackGlossaryPage({ params }: Params) {
           Chữ tiếng Anh của lộ trình này: viết đầy đủ là gì, nghĩa đen là gì, và dùng để làm gì.
           Hiểu chữ thì nhớ lệnh lâu hơn.
         </p>
-        {editUrl && (
-          <p className="muted mt-3 text-sm">
+        <p className="muted mt-3 flex flex-wrap gap-4 text-sm">
+          {editUrl && (
             <a href={editUrl} rel="noopener noreferrer" className="hover:underline">
               ✎ Sửa trên GitHub
             </a>
-          </p>
-        )}
+          )}
+          <ReportContentButton target={{ kind: 'glossary', track: track.slug }} />
+        </p>
       </header>
 
       <TrackTabs tabs={trackTabs(track.slug, { ...track, canSeeStats }, 'glossary')} />

@@ -37,4 +37,5 @@ export const TYPE_ICON: Record<NotificationItem['type'], string> = {
   track_published: '🆕',
   review_message: '💬',
   review_thanks: '💛',
+  content_report: '🛠️',
 };

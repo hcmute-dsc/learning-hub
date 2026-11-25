@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import type { LessonView } from '@hub/shared';
+import { ReportContentButton } from '@/components/content-report/ReportContentButton';
 import { Breadcrumbs } from '@/components/learn/Breadcrumbs';
 import { LessonNav } from '@/components/learn/LessonNav';
 import { LessonStatusBadge } from '@/components/learn/LessonStatusBadge';
@@ -71,6 +72,7 @@ export default async function LessonPage({ params }: Params) {
                 ✎ Sửa trên GitHub
               </a>
             )}
+            <ReportContentButton target={{ kind: 'lesson', id: lesson.id }} />
           </p>
           <details className="surface mt-5 rounded-xl p-4 lg:hidden">
             <summary className="cursor-pointer font-medium">Mục lục lộ trình</summary>

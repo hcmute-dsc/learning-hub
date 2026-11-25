@@ -15,6 +15,7 @@ describe('adminTabsFor', () => {
       '/admin',
       '/admin/members',
       '/admin/content',
+      '/admin/content-reports',
       '/admin/certificates',
       '/admin/leaderboard',
       '/admin/reports',
@@ -23,11 +24,12 @@ describe('adminTabsFor', () => {
   });
 
   it('shows members to mentors and content to content maintainers only', () => {
-    expect(hrefs(['member', 'mentor'])).toEqual(['/admin/members']);
+    expect(hrefs(['member', 'mentor'])).toEqual(['/admin/members', '/admin/content-reports']);
     expect(hrefs(['member', 'content_maintainer'])).toEqual(['/admin/content']);
     expect(hrefs(['member', 'mentor', 'content_maintainer'])).toEqual([
       '/admin/members',
       '/admin/content',
+      '/admin/content-reports',
     ]);
   });
 

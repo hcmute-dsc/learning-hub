@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import type { CompletedReview, Difficulty, ExerciseType, ExerciseView } from '@hub/shared';
+import { ReportContentButton } from '@/components/content-report/ReportContentButton';
 import { Breadcrumbs } from '@/components/learn/Breadcrumbs';
 import { lessonHref, moduleHref } from '@/components/learn/links';
 import { HexIcon } from '@/components/ui/HexIcon';
@@ -101,6 +102,9 @@ export function ExerciseHeader({
               </Link>
             </p>
           )}
+          <p className="muted mt-2 text-sm">
+            <ReportContentButton target={{ kind: 'exercise', id: exercise.id }} />
+          </p>
         </div>
       </div>
 

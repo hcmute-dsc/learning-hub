@@ -104,3 +104,21 @@ describe('describeAudit', () => {
     ).toBe('Bảng tổng hợp, 2026-11-23 → 2026-11-29, track tất cả, chưa gắn đợt, 21 dòng');
   });
 });
+
+describe('content report audit lines (learning-hub#121)', () => {
+  it('names the action and says what changed, without the report text', () => {
+    expect(actionLabel('content_report.status')).toBe('Xử lý báo lỗi nội dung');
+    expect(
+      describeAudit({
+        action: 'content_report.status',
+        metadata: { trackSlug: 'sql', from: 'open', to: 'resolved' },
+      }),
+    ).toBe('sql: Mới → Đã sửa');
+    expect(
+      describeAudit({
+        action: 'content_report.issue',
+        metadata: { trackSlug: 'sql', issueUrl: 'https://github.com/o/r/issues/1' },
+      }),
+    ).toBe('sql: https://github.com/o/r/issues/1');
+  });
+});
