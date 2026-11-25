@@ -60,7 +60,11 @@ export default async function TrackDocPage({ params }: Params) {
               ✎ Sửa trên GitHub
             </a>
           )}
-          <ReportContentButton target={{ kind: 'track_page', track: track.slug, page }} />
+          <ReportContentButton
+            target={{ kind: 'track_page', track: track.slug, page }}
+            title={TRACK_DOC_LABEL[page]}
+            trackTitle={track.title}
+          />
         </div>
       </header>
 

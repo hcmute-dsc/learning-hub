@@ -103,7 +103,11 @@ export function ExerciseHeader({
             </p>
           )}
           <div className="muted mt-2 text-sm">
-            <ReportContentButton target={{ kind: 'exercise', id: exercise.id }} />
+            <ReportContentButton
+              target={{ kind: 'exercise', id: exercise.id }}
+              title={exercise.title}
+              trackTitle={exercise.track.title}
+            />
           </div>
         </div>
       </div>

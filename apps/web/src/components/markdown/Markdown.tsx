@@ -12,6 +12,7 @@ import { GlossaryNote } from './GlossaryNote';
 import { rehypeGlossaryTerms } from './glossary-terms';
 import { MermaidDiagram } from './MermaidDiagram';
 import { mermaidSource } from './mermaid-source';
+import { MEMBER_LINK_REL, rehypeMarkImagesInLinks, remarkMemberText } from './member-text';
 import { TableWrap } from './TableWrap';
 
 /**
@@ -30,14 +31,22 @@ import { TableWrap } from './TableWrap';
  * ```mermaid fences are not highlighted: the `pre` component hands them to
  * MermaidDiagram, which draws them in the browser.
  *
+ * `from="member"` is for text a member typed (a content report, learning-hub#125): HTML is
+ * shown as text instead of parsed, line breaks are kept (as in a GitHub issue), images
+ * become links (no request leaves the staff's browser for a URL a member chose) and links
+ * get rel="nofollow ugc".
+ *
  * Works in Server and Client Components (no hooks).
  */
 export function Markdown({
   source,
   origin = null,
   glossary = null,
+  from = 'content',
 }: {
   source: string;
+  /** Who wrote it: a content repo, or a member in a form */
+  from?: 'content' | 'member';
   /** Where the file lives, to resolve its relative links; null keeps them as is */
   origin?: ContentOrigin | null;
   /**
@@ -46,6 +55,7 @@ export function Markdown({
    */
   glossary?: { trackSlug: string; terms: GlossaryTerm[] } | null;
 }) {
+  if (from === 'member') return <MemberMarkdown source={source} />;
   const terms = glossary?.terms ?? [];
   const components =
     glossary && terms.length > 0 ? withGlossary(glossary.trackSlug, terms) : COMPONENTS;
@@ -113,6 +123,49 @@ function withGlossary(trackSlug: string, terms: GlossaryTerm[]): Components {
     },
   };
 }
+
+/** Text a member typed: no raw HTML, no images loaded, no glossary, no diagrams. */
+function MemberMarkdown({ source }: { source: string }) {
+  return (
+    <div className="markdown">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkMemberText]}
+        rehypePlugins={[
+          rehypeSanitize,
+          rehypeMarkImagesInLinks,
+          [rehypeHighlight, { detect: false }],
+        ]}
+        components={MEMBER_COMPONENTS}
+      >
+        {source}
+      </ReactMarkdown>
+    </div>
+  );
+}
+
+const MEMBER_COMPONENTS: Components = {
+  ...COMPONENTS,
+  a: ({ node: _node, ...props }) => <a {...props} rel={MEMBER_LINK_REL} />,
+  // An image is a link to it: loading it would tell whoever chose the URL that a staff
+  // member opened the report (a tracking pixel), and from which IP.
+  // Inside a link it is only a label (no link in a link).
+  img: ({ node, src, alt }) => {
+    const label = (
+      <>
+        <span aria-hidden>🖼 </span>
+        {alt || 'Ảnh'}
+      </>
+    );
+    const inLink = node?.properties?.dataInLink === true;
+    if (inLink || typeof src !== 'string' || src === '') return label;
+    return (
+      <a href={src} rel={MEMBER_LINK_REL}>
+        {label}
+      </a>
+    );
+  },
+  pre: ({ node: _node, ...props }) => <CodeBlock {...props} />,
+};
 
 function MarkdownLink(props: ComponentPropsWithoutRef<'a'>) {
   const external = typeof props.href === 'string' && /^https?:\/\//.test(props.href);
