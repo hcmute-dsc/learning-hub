@@ -26,6 +26,9 @@ describe('sendErrorText', () => {
       'Bạn đã gửi 10 báo lỗi trong 24 giờ qua.',
     );
     expect(sendErrorText({ status: 429, title: 'Too many requests' })).toContain('Đợi một phút');
+    expect(sendErrorText({ status: 401, title: 'x' })).toBe(
+      'Phiên đăng nhập đã hết, hãy đăng nhập lại.',
+    );
     expect(sendErrorText({ status: 422, title: 'x' })).toContain('mô tả');
     expect(sendErrorText({ status: 404, title: 'x' })).toContain('Tải lại');
     expect(sendErrorText({ status: 0, title: 'Không kết nối được máy chủ.' })).toBe(

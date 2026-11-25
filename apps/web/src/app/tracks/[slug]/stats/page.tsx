@@ -41,7 +41,9 @@ export default async function TrackStatsPage({ params }: Params) {
   const reports = stats
     ? await api<{ data: ContentReportCounts }>(
         `/content-reports/counts?track=${encodeURIComponent(slug)}`,
-      ).then((r) => r.data)
+      )
+        .then((r) => r.data)
+        .catch(() => null)
     : null;
 
   const header = (

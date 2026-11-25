@@ -30,6 +30,7 @@ export function sendErrorText(problem: Pick<ProblemDetails, 'status' | 'title'>)
       ? problem.title
       : 'Bạn gửi quá nhanh. Đợi một phút rồi thử lại.';
   }
+  if (problem.status === 401) return 'Phiên đăng nhập đã hết, hãy đăng nhập lại.';
   if (problem.status === 422) return 'Hãy chọn loại lỗi và ghi mô tả (tối đa 2000 ký tự).';
   if (problem.status === 404) return 'Không tìm thấy bài này nữa. Tải lại trang rồi thử lại.';
   if (problem.status === 0) return problem.title;

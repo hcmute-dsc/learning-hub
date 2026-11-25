@@ -102,9 +102,9 @@ export function ExerciseHeader({
               </Link>
             </p>
           )}
-          <p className="muted mt-2 text-sm">
+          <div className="muted mt-2 text-sm">
             <ReportContentButton target={{ kind: 'exercise', id: exercise.id }} />
-          </p>
+          </div>
         </div>
       </div>
 

@@ -64,7 +64,7 @@ export default async function LessonPage({ params }: Params) {
             ]}
           />
           <h1 className="mt-3 text-3xl font-bold leading-tight sm:text-4xl">{lesson.title}</h1>
-          <p className="muted mt-3 flex flex-wrap items-center gap-3 text-sm">
+          <div className="muted mt-3 flex flex-wrap items-center gap-3 text-sm">
             <LessonStatusBadge status={lesson.progress} />
             {lesson.estMinutes && <span>⏱ {lesson.estMinutes} phút đọc</span>}
             {editUrl && (
@@ -73,7 +73,7 @@ export default async function LessonPage({ params }: Params) {
               </a>
             )}
             <ReportContentButton target={{ kind: 'lesson', id: lesson.id }} />
-          </p>
+          </div>
           <details className="surface mt-5 rounded-xl p-4 lg:hidden">
             <summary className="cursor-pointer font-medium">Mục lục lộ trình</summary>
             <div className="mt-3">{sidebar}</div>

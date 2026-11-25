@@ -86,7 +86,7 @@ export function ReportContentButton({ target }: { target: ContentReportTargetInp
         ref={dialog}
         onClose={close}
         aria-labelledby={titleId}
-        className="surface m-auto w-[min(34rem,calc(100vw-2rem))] rounded-xl p-0 text-[var(--text)] shadow-xl backdrop:bg-black/40"
+        className="surface m-auto max-h-[calc(100dvh-2rem)] w-[min(34rem,calc(100vw-2rem))] overflow-y-auto rounded-xl p-0 text-[var(--text)] shadow-xl backdrop:bg-black/40"
       >
         {sent ? (
           <div className="space-y-3 p-5">
@@ -114,6 +114,10 @@ export function ReportContentButton({ target }: { target: ContentReportTargetInp
               </h2>
               <p className="muted mt-1 text-sm">
                 Bài, lộ trình và phiên bản nội dung được gắn tự động. Không ghi thông tin cá nhân.
+              </p>
+              <p className="muted mt-1 text-sm">
+                Mô tả và đoạn trích có thể được đăng công khai trong issue GitHub của lộ trình
+                (không kèm tên bạn).
               </p>
             </div>
             <label className="block space-y-1 text-sm">

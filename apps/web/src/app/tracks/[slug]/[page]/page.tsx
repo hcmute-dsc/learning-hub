@@ -54,14 +54,14 @@ export default async function TrackDocPage({ params }: Params) {
           {TRACK_DOC_LABEL[page]}
         </h1>
         <p className="muted mt-2 max-w-2xl">{TRACK_DOC_INTRO[page]}</p>
-        <p className="muted mt-3 flex flex-wrap gap-4 text-sm">
+        <div className="muted mt-3 flex flex-wrap gap-4 text-sm">
           {editUrl && (
             <a href={editUrl} rel="noopener noreferrer" className="hover:underline">
               ✎ Sửa trên GitHub
             </a>
           )}
           <ReportContentButton target={{ kind: 'track_page', track: track.slug, page }} />
-        </p>
+        </div>
       </header>
 
       <TrackTabs tabs={trackTabs(track.slug, { ...track, canSeeStats }, page)} />

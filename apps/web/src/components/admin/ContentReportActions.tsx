@@ -34,6 +34,7 @@ export function ContentReportActions({
   const save = () =>
     run(() =>
       sendJson<ContentReportRow>(`/content-reports/${report.id}`, 'PATCH', {
+        updatedAt: report.updatedAt,
         ...(status ? { status } : {}),
         ...(note !== (report.staffNote ?? '') ? { staffNote: note } : {}),
       }),
@@ -87,12 +88,13 @@ export function ContentReportActions({
           >
             Issue trên GitHub ↗
           </a>
-        ) : canCreateIssue ? (
+        ) : report.status === 'resolved' ||
+          report.status === 'dismissed' ? null : canCreateIssue ? (
           <button type="button" onClick={createIssue} disabled={busy} className={BUTTON}>
             Tạo issue trên GitHub
           </button>
         ) : (
-          <span className="muted text-xs">Chưa cấu hình tạo issue GitHub.</span>
+          <span className="muted text-xs">Chưa cấu hình GitHub App để tạo issue.</span>
         )}
       </div>
       {problem && (

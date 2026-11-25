@@ -5,6 +5,7 @@ import {
   CONTENT_REPORT_CATEGORY_LABEL,
   CONTENT_REPORT_STATUS_LABEL,
   CONTENT_REPORT_STATUSES,
+  canHandleContentReports,
   type ContentReportList,
   type ContentReportRow,
 } from '@hub/shared';
@@ -33,7 +34,7 @@ export default async function ContentReportsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const me = await getMe();
-  if (!me || !(me.roles.includes('admin') || me.roles.includes('mentor'))) notFound();
+  if (!me || !canHandleContentReports(me.roles)) notFound();
 
   const query = reportFiltersFromParams(await searchParams);
   const { data } = await api<{ data: ContentReportList }>(
@@ -77,6 +78,7 @@ export default async function ContentReportsPage({
             {data.options.tracks.map((t) => (
               <option key={t.slug} value={t.slug}>
                 {t.title}
+                {t.archived ? ' (đã lưu trữ)' : ''}
               </option>
             ))}
           </select>

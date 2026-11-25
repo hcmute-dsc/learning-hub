@@ -47,14 +47,14 @@ export default async function TrackGlossaryPage({ params }: Params) {
           Chữ tiếng Anh của lộ trình này: viết đầy đủ là gì, nghĩa đen là gì, và dùng để làm gì.
           Hiểu chữ thì nhớ lệnh lâu hơn.
         </p>
-        <p className="muted mt-3 flex flex-wrap gap-4 text-sm">
+        <div className="muted mt-3 flex flex-wrap gap-4 text-sm">
           {editUrl && (
             <a href={editUrl} rel="noopener noreferrer" className="hover:underline">
               ✎ Sửa trên GitHub
             </a>
           )}
           <ReportContentButton target={{ kind: 'glossary', track: track.slug }} />
-        </p>
+        </div>
       </header>
 
       <TrackTabs tabs={trackTabs(track.slug, { ...track, canSeeStats }, 'glossary')} />

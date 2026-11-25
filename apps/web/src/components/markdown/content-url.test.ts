@@ -79,6 +79,11 @@ describe('githubBlobUrl / isGithubRepo', () => {
     );
     expect(githubBlobUrl({ ...origin, repo: 'local:content-example' })).toBeNull();
     expect(isGithubRepo('owner/repo/extra')).toBe(false);
+    // `.` and `..` would walk up a URL path (learning-hub#124 review)
+    expect(isGithubRepo('owner/..')).toBe(false);
+    expect(isGithubRepo('owner/.')).toBe(false);
+    expect(isGithubRepo('-owner/repo')).toBe(false);
+    expect(isGithubRepo('hcmute-dsc/learning-hub-track-sql.v2')).toBe(true);
   });
 });
 
