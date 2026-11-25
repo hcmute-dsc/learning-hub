@@ -7,6 +7,11 @@ import {
 } from '../certificates/certificates.events';
 import { ContentEvents, type ContentVersionEvent } from '../content/content.events';
 import {
+  ContentReportEvents,
+  type ContentReportIssueCreatedEvent,
+  type ContentReportStatusChangedEvent,
+} from '../content-reports/content-reports.events';
+import {
   LeaderboardPostEvents,
   type LeaderboardPostEvent,
 } from '../notifications/weekly-leaderboard/weekly-leaderboard.events';
@@ -123,6 +128,25 @@ export class AuditListener {
   onReportExported(e: ReportExportedEvent) {
     const { actorId, ...details } = e;
     return this.write('report.export', 'report', e.table, actorId, details);
+  }
+
+  /** Statuses and the track only: the report text stays in content_reports. */
+  @OnEvent(ContentReportEvents.StatusChanged)
+  onContentReportStatusChanged(e: ContentReportStatusChangedEvent) {
+    return this.write('content_report.status', 'content_report', e.reportId, e.actorId, {
+      trackSlug: e.trackSlug,
+      from: e.from,
+      to: e.to,
+    });
+  }
+
+  @OnEvent(ContentReportEvents.IssueCreated)
+  onContentReportIssueCreated(e: ContentReportIssueCreatedEvent) {
+    return this.write('content_report.issue', 'content_report', e.reportId, e.actorId, {
+      trackSlug: e.trackSlug,
+      repo: e.repo,
+      issueUrl: e.issueUrl,
+    });
   }
 
   @OnEvent(UserEvents.DiscordUnlinked)

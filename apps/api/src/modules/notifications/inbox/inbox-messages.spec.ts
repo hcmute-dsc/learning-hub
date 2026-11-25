@@ -1,4 +1,5 @@
 import {
+  contentReportClosedNotice,
   oneLine,
   readPayload,
   reviewCompletedNotice,
@@ -9,6 +10,17 @@ import {
 } from './inbox-messages';
 
 describe('bell notification text', () => {
+  it('tells the reporter their content report was fixed or kept, and links the page', () => {
+    const base = { targetTitle: 'SELECT cơ bản', targetLink: '/lessons/l-1' };
+    const fixed = contentReportClosedNotice({ ...base, status: 'resolved' });
+    expect(fixed.type).toBe('content_report');
+    expect(fixed.payload.title).toBe('Lỗi bạn báo ở "SELECT cơ bản" đã được sửa');
+    expect(fixed.payload.link).toBe('/lessons/l-1');
+    const kept = contentReportClosedNotice({ ...base, status: 'dismissed' });
+    expect(kept.payload.title).toContain('đã xem');
+    expect(kept.payload.body).toContain('giữ nguyên');
+  });
+
   it('tells the member the review outcome and links the exercise', () => {
     const base = { exerciseId: 'ex-1', exerciseTitle: 'Todo API', trackTitle: 'Backend' };
     const approved = reviewCompletedNotice({ ...base, outcome: 'approved' });

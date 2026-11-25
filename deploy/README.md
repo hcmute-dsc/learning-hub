@@ -459,6 +459,36 @@ docker compose -f docker-compose.prod.yml exec -T db psql -U hub -d learning_hub
 
 ---
 
+## Bước 15. Tạo issue GitHub từ báo lỗi nội dung (không bắt buộc)
+
+Trang **Quản trị → Báo lỗi** (`/admin/content-reports`, learning-hub#121) có nút **Tạo issue trên GitHub**: API mở issue trong repo của lộ trình (repo trong `tracks.yaml`) với loại lỗi, mô tả, đoạn trích, link bài và commit. Issue **không** có tên hay email người báo. API dùng **GitHub App của org** `hcmute-dsc-learning-hub` (SECURITY §10), không dùng token cá nhân. Thiếu cấu hình thì nút bị ẩn; mentor vẫn xử lý báo lỗi và tạo issue bằng tay.
+
+App này đã được cài cho mọi repo của org (để tự thêm issue vào Project #1, WORKFLOW §4). Secret `PROJECT_APP_PRIVATE_KEY` của GitHub Actions **không** dùng được trên VPS, nên cần một khóa riêng cho VPS.
+
+**Owner của org `hcmute-dsc` làm (một lần, trên web GitHub):**
+
+1. **Cấp quyền:** Org Settings → Developer settings → GitHub Apps → `hcmute-dsc-learning-hub` → **Permissions & events** → Repository permissions → **Issues: Read and write** → **Save changes**.
+2. **Chấp nhận quyền mới:** Org Settings → Third-party Access → GitHub Apps → `hcmute-dsc-learning-hub` → **Configure** → bấm **Review request** / **Accept new permissions**. Chưa chấp nhận thì API báo "chưa có quyền Issues: Read and write".
+3. **Kiểm tra cài đặt:** ở trang Configure, Repository access phải gồm các repo `learning-hub-track-*` (đang là All repositories).
+4. **Khóa cho VPS:** trang App → **Private keys → Generate a private key** (tải về file `.pem`). Dùng một khóa riêng cho VPS, để thu hồi được mà không ảnh hưởng GitHub Actions. Ghi lại **Client ID** ở đầu trang App.
+
+**Trên VPS** (tự gõ, không dán khóa vào chat hay issue):
+
+```bash
+# đổi file .pem thành một dòng (xuống dòng viết thành \n), rồi thêm vào .env
+echo "GITHUB_APP_PRIVATE_KEY=$(sed -z 's/\n/\\n/g' hcmute-dsc-learning-hub.pem)" >> .env
+grep -c '^GITHUB_APP_PRIVATE_KEY=-----BEGIN' .env   # phải ra 1 (cả khóa nằm trên một dòng)
+echo 'GITHUB_APP_CLIENT_ID=<Client ID>' >> .env
+shred -u hcmute-dsc-learning-hub.pem
+docker compose -f docker-compose.prod.yml up -d api
+```
+
+Thử: mở một báo lỗi đang mở và bấm nút. Thông báo lỗi nói rõ thiếu gì: App chưa cài trên repo, chưa có quyền Issues, hoặc khóa sai. Mỗi lần tạo issue, API xin một token chỉ cho đúng repo đó và chỉ quyền `issues: write` (hết hạn sau 1 giờ).
+
+Nghi lộ khóa: xóa khóa đó ở trang App (Private keys → Delete), tạo khóa mới và làm lại bước trên VPS.
+
+---
+
 ## Việc thường ngày
 
 | Việc                            | Cách làm                                                    |

@@ -1,4 +1,10 @@
-import { REPORT_NO_COHORT, type AuditLogRow, type Role } from '@hub/shared';
+import {
+  CONTENT_REPORT_STATUS_LABEL,
+  REPORT_NO_COHORT,
+  type AuditLogRow,
+  type ContentReportStatus,
+  type Role,
+} from '@hub/shared';
 import { ROLE_LABEL } from '@/components/profile/profile';
 import { STATUS_LABEL } from './account-filter';
 import { shortSha, VERSION_STATUS_LABEL } from './content-version';
@@ -26,6 +32,8 @@ const ACTION_LABEL: Record<string, string> = {
   'review.complete': 'Hoàn thành review',
   'certificate.revoke': 'Thu hồi chứng nhận',
   'report.export': 'Xuất báo cáo CSV',
+  'content_report.status': 'Xử lý báo lỗi nội dung',
+  'content_report.issue': 'Tạo issue từ báo lỗi',
 };
 
 /** Mentor review outcomes (E7, written by AuditListener.onReviewCompleted). */
@@ -95,10 +103,17 @@ export function describeAudit(row: Pick<AuditLogRow, 'action' | 'metadata'>): st
       return `Lộ trình ${str(m.trackSlug) || '—'}: ${str(m.reason) || 'không ghi lý do'}`;
     case 'report.export':
       return describeReportExport(m);
+    case 'content_report.status':
+      return `${str(m.trackSlug) || '—'}: ${reportStatus(m.from)} → ${reportStatus(m.to)}`;
+    case 'content_report.issue':
+      return `${str(m.trackSlug) || '—'}: ${str(m.issueUrl) || '—'}`;
     default:
       return Object.keys(m).length ? JSON.stringify(m) : '';
   }
 }
+
+const reportStatus = (v: unknown) =>
+  CONTENT_REPORT_STATUS_LABEL[str(v) as ContentReportStatus] ?? (str(v) || '—');
 
 /** "Bảng thành viên, 2026-11-23 → 2026-11-29, track sql-30-days, đợt sql-2026, 21 dòng, ẩn danh" */
 function describeReportExport(m: Record<string, unknown>): string {

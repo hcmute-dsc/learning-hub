@@ -30,6 +30,41 @@ describe('InboxListener', () => {
     ]);
   });
 
+  it('queues a bell row for the reporter only when a content report closes (#121)', async () => {
+    const { listener, queued } = setup();
+    const base = {
+      actorId: 'mentor-1',
+      reportId: 'cr-1',
+      reporterId: 'an',
+      trackSlug: 'sql',
+      targetTitle: 'SELECT cơ bản',
+      targetLink: '/lessons/l-1',
+    };
+    await listener.onContentReportStatusChanged({
+      ...base,
+      from: 'open',
+      to: 'in_progress',
+      notifyReporter: false,
+    });
+    await listener.onContentReportStatusChanged({
+      ...base,
+      from: 'open',
+      to: 'resolved',
+      notifyReporter: true,
+    });
+    expect(queued()).toEqual([
+      {
+        type: OutboxTypes.ContentReportClosed,
+        payload: {
+          reporterId: 'an',
+          status: 'resolved',
+          targetTitle: 'SELECT cơ bản',
+          targetLink: '/lessons/l-1',
+        },
+      },
+    ]);
+  });
+
   it('queues a review request for mentors', async () => {
     const { listener, queued } = setup();
     await listener.onAwaitingReview({

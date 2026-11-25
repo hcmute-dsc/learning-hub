@@ -12,7 +12,9 @@ import {
 import { TrackTabs } from '@/components/track/TrackTabs';
 import { STATS_LABEL, trackTabs } from '@/components/track/track-docs';
 import { adminReportsHref } from '@/components/track/track-stats-format';
-import { getMe } from '@/lib/api';
+import type { ContentReportCounts } from '@hub/shared';
+import { openReportsHref } from '@/components/content-report/content-report-format';
+import { api, getMe } from '@/lib/api';
 import { formatDateTime } from '@/lib/format';
 import { loadTrack, loadTrackStats } from '@/lib/track';
 
@@ -35,6 +37,14 @@ export default async function TrackStatsPage({ params }: Params) {
   // Load the track first: a bad slug or an archived track becomes the 404 page there.
   const track = await loadTrack(slug);
   const [stats, me] = await Promise.all([loadTrackStats(slug), getMe()]);
+  // Reports members sent about this track (learning-hub#121); same audience as this page.
+  const reports = stats
+    ? await api<{ data: ContentReportCounts }>(
+        `/content-reports/counts?track=${encodeURIComponent(slug)}`,
+      )
+        .then((r) => r.data)
+        .catch(() => null)
+    : null;
 
   const header = (
     <header>
@@ -90,6 +100,17 @@ export default async function TrackStatsPage({ params }: Params) {
           )}
         </div>
         <SummaryCards totals={stats.totals} />
+        {reports && (
+          <p className="text-sm">
+            <Link
+              href={openReportsHref(stats.track.slug)}
+              className="text-brand-600 hover:underline"
+            >
+              Báo lỗi nội dung đang mở: {reports.open}
+              {reports.in_progress > 0 && ` (và ${reports.in_progress} đang xử lý)`} →
+            </Link>
+          </p>
+        )}
       </section>
 
       <section className="surface space-y-3 rounded-xl p-4 sm:p-5" aria-labelledby="stats-funnel">

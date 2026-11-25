@@ -1,4 +1,4 @@
-import { canEditOnGitHub, type Role } from '@hub/shared';
+import { canEditOnGitHub, isGithubRepo, type Role } from '@hub/shared';
 
 /**
  * Lessons are Markdown files inside a Git content repo, so their relative links and
@@ -17,15 +17,12 @@ export interface ContentOrigin {
   path: string;
 }
 
-const GITHUB_REPO = /^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+$/;
 const HAS_SCHEME = /^[A-Za-z][A-Za-z0-9+.-]*:/;
 /** Same-origin API path (next.config rewrites /api/*), served only when CONTENT_SOURCE=local. */
 const LOCAL_IMAGE_BASE = '/api/v1/local-content/';
 
-/** True when `repo` is a real GitHub "owner/repo", not a local folder. */
-export function isGithubRepo(repo: string): boolean {
-  return GITHUB_REPO.test(repo);
-}
+/** True when `repo` is a real GitHub "owner/repo", not a local folder (rule in @hub/shared). */
+export { isGithubRepo };
 
 /** The "Sửa trên GitHub" link for this viewer (`canEditOnGitHub`, @hub/shared), or null (not staff, or not on GitHub). */
 export function editOnGitHubUrl(

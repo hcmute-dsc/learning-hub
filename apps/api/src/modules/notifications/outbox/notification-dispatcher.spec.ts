@@ -46,6 +46,23 @@ function setup() {
 }
 
 describe('NotificationDispatcher', () => {
+  it('tells only the reporter that their content report closed (#121)', async () => {
+    const { dispatcher, delivered } = setup();
+    await dispatcher.dispatch(5n, OutboxTypes.ContentReportClosed, {
+      reporterId: 'an',
+      status: 'resolved',
+      targetTitle: 'SELECT cơ bản',
+      targetLink: '/lessons/l-1',
+    });
+    expect(delivered).toEqual([
+      {
+        eventId: 5n,
+        userIds: ['an'],
+        notice: expect.objectContaining({ type: 'content_report' }),
+      },
+    ]);
+  });
+
   it('notifies only the reviewed member', async () => {
     const { dispatcher, delivered } = setup();
     await dispatcher.dispatch(1n, OutboxTypes.ReviewCompleted, {
