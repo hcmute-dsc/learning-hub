@@ -11,7 +11,7 @@ import {
   TRACK_DOC_LABEL,
   trackTabs,
 } from '@/components/track/track-docs';
-import { loadTrack, loadTrackDoc } from '@/lib/track';
+import { canSeeTrackStats, loadTrack, loadTrackDoc } from '@/lib/track';
 
 type Params = { params: Promise<{ slug: string; page: string }> };
 
@@ -30,7 +30,11 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 export default async function TrackDocPage({ params }: Params) {
   const { slug, page } = await params;
   if (!isTrackDocPage(page)) notFound();
-  const [track, doc] = await Promise.all([loadTrack(slug), loadTrackDoc(slug, page)]);
+  const [track, doc, canSeeStats] = await Promise.all([
+    loadTrack(slug),
+    loadTrackDoc(slug, page),
+    canSeeTrackStats(slug),
+  ]);
   const editUrl = githubBlobUrl(doc.source);
 
   return (
@@ -56,7 +60,7 @@ export default async function TrackDocPage({ params }: Params) {
         )}
       </header>
 
-      <TrackTabs tabs={trackTabs(track.slug, track, page)} />
+      <TrackTabs tabs={trackTabs(track.slug, { ...track, canSeeStats }, page)} />
 
       <div className="max-w-[60rem]">
         <Markdown source={doc.bodyMd} origin={doc.source} />

@@ -5,7 +5,7 @@ import { githubBlobUrl } from '@/components/markdown/content-url';
 import { GlossaryList } from '@/components/track/GlossaryList';
 import { TrackTabs } from '@/components/track/TrackTabs';
 import { GLOSSARY_LABEL, trackTabs } from '@/components/track/track-docs';
-import { loadTrack, loadTrackGlossary } from '@/lib/track';
+import { canSeeTrackStats, loadTrack, loadTrackGlossary } from '@/lib/track';
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -22,7 +22,11 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
  */
 export default async function TrackGlossaryPage({ params }: Params) {
   const { slug } = await params;
-  const [track, glossary] = await Promise.all([loadTrack(slug), loadTrackGlossary(slug)]);
+  const [track, glossary, canSeeStats] = await Promise.all([
+    loadTrack(slug),
+    loadTrackGlossary(slug),
+    canSeeTrackStats(slug),
+  ]);
   const editUrl = githubBlobUrl(glossary.source);
 
   return (
@@ -49,7 +53,7 @@ export default async function TrackGlossaryPage({ params }: Params) {
         )}
       </header>
 
-      <TrackTabs tabs={trackTabs(track.slug, track, 'glossary')} />
+      <TrackTabs tabs={trackTabs(track.slug, { ...track, canSeeStats }, 'glossary')} />
 
       <div className="max-w-[60rem]">
         <GlossaryList terms={glossary.terms} />

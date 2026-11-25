@@ -55,4 +55,19 @@ describe('trackTabs', () => {
     // a glossary alone is enough for tabs
     expect(trackTabs('git', { hasGlossary: true }, 'overview')).toHaveLength(2);
   });
+
+  it('adds Thống kê last, only when the viewer may see it (learning-hub#118)', () => {
+    expect(trackTabs('git', { hasGlossary: true }, 'overview').map((t) => t.label)).toEqual([
+      'Tổng quan',
+      'Từ vựng',
+    ]);
+    const tabs = trackTabs('git', { hasGlossary: true, canSeeStats: true }, 'stats');
+    expect(tabs.map((t) => [t.label, t.href, t.current])).toEqual([
+      ['Tổng quan', '/tracks/git', false],
+      ['Từ vựng', '/tracks/git/glossary', false],
+      ['Thống kê', '/tracks/git/stats', true],
+    ]);
+    // a track with no other page still gets the two tabs
+    expect(trackTabs('git', { canSeeStats: true }, 'overview')).toHaveLength(2);
+  });
 });

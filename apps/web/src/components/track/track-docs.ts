@@ -40,15 +40,23 @@ export interface TrackTab {
 /** "Từ vựng" (learning-hub#106): the track's glossary.yaml, at /tracks/:slug/glossary. */
 export const GLOSSARY_LABEL = 'Từ vựng';
 
+/** "Thống kê" (learning-hub#118): only for admins and the track's mentors. */
+export const STATS_LABEL = 'Thống kê';
+
+export function trackStatsHref(trackSlug: string): string {
+  return `/tracks/${trackSlug}/stats`;
+}
+
 /**
  * Tabs at the top of the track page and its sub-pages: "Tổng quan", then only the pages the
- * track has, then "Từ vựng" when it has a glossary. Empty when it has none of them, because a
- * single tab would be noise.
+ * track has, then "Từ vựng" when it has a glossary, then "Thống kê" when the viewer may see
+ * it (`canSeeStats`, asked from the API). Empty when it has none of them, because a single
+ * tab would be noise.
  */
 export function trackTabs(
   trackSlug: string,
-  track: { docs?: Partial<TrackDocFlags>; hasGlossary?: boolean },
-  current: 'overview' | 'glossary' | TrackDocPage,
+  track: { docs?: Partial<TrackDocFlags>; hasGlossary?: boolean; canSeeStats?: boolean },
+  current: 'overview' | 'glossary' | 'stats' | TrackDocPage,
 ): TrackTab[] {
   const pages = TRACK_DOC_PAGES.filter((page) => track.docs?.[page]);
   const tabs: TrackTab[] = pages.map((page) => ({
@@ -61,6 +69,12 @@ export function trackTabs(
       label: GLOSSARY_LABEL,
       href: glossaryHref(trackSlug),
       current: current === 'glossary',
+    });
+  if (track.canSeeStats)
+    tabs.push({
+      label: STATS_LABEL,
+      href: trackStatsHref(trackSlug),
+      current: current === 'stats',
     });
   if (tabs.length === 0) return [];
   return [
