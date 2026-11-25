@@ -31,6 +31,7 @@ import {
   issueClaimCutoff,
   issueContent,
   notifiesReporter,
+  staffReportsPath,
   storedCommit,
   targetLink,
   TRACK_PAGE_LABEL,
@@ -269,6 +270,7 @@ export class ContentReportsService {
       targetTitle: report.targetTitle,
       trackTitle: report.track.title,
       pageUrl: new URL(link, this.env.WEB_ORIGIN).toString(),
+      reportsUrl: new URL(staffReportsPath(report.track.slug), this.env.WEB_ORIGIN).toString(),
       commitSha: report.commitSha,
       repo: source.repo,
     });

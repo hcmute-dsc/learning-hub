@@ -11,6 +11,7 @@ import {
   issueContent,
   notifiesReporter,
   quoted,
+  staffReportsPath,
   storedCommit,
   targetLink,
 } from './content-report-rules';
@@ -121,6 +122,7 @@ describe('issueContent', () => {
     targetTitle: 'SELECT cơ bản',
     trackTitle: 'SQL 30 ngày',
     pageUrl: 'https://learn.example/lessons/l-1',
+    reportsUrl: 'https://learn.example/admin/content-reports?track=sql',
     commitSha: SHA,
     repo: 'hcmute-dsc/learning-hub-track-sql',
   };
@@ -136,9 +138,47 @@ describe('issueContent', () => {
     expect(body).toContain('HCMUTE DSC');
   });
 
-  it('fences the member text, so mentions and HTML stay plain text', () => {
+  /**
+   * The member text between the opening fence and the first line that closes it
+   * (CommonMark: up to 3 spaces, the same character, at least as long, then spaces only).
+   */
+  function fencedText(body: string, opening: RegExp): string {
+    const lines = body.split('\n');
+    const at = lines.findIndex((line) => opening.test(line));
+    const fence = /^~+/.exec(lines[at])![0];
+    const closes = new RegExp(`^ {0,3}~{${fence.length},}[ \\t]*$`);
+    const end = lines.findIndex((line, i) => i > at && closes.test(line));
+    return lines.slice(at + 1, end).join('\n');
+  }
+
+  it('fences the Markdown description so GitHub renders none of it (learning-hub#125)', () => {
+    const description = [
+      'Hỏi @user, &commat;admin, &#x40;a, &num;12, #12, GH-3, o/r#4',
+      '<img src=x onerror=alert(1)> <!-- x --> [x](javascript:alert(1))',
+      'https://github.com/hcmute-dsc/learning-hub/issues/1 www.@admin',
+      '```',
+      '~~~',
+      '   ~~~~~~   ',
+      '~~~~~~~~~ x',
+      '```',
+    ].join('\n');
+    const { body } = issueContent({ ...source, description });
+    // The fence is longer than the longest ~ run (9), so nothing inside can close it.
+    expect(body).toContain('\n~~~~~~~~~~markdown\n');
+    expect(fencedText(body, /^~+markdown$/)).toBe(description);
+  });
+
+  it('links to the staff page that shows the description rendered', () => {
     const { body } = issueContent(source);
-    expect(body).toContain('~~~text\nLệnh `SELECT *` báo lỗi @someone <script>\n~~~');
+    expect(body).toContain(
+      'Mô tả viết bằng Markdown; xem bản hiển thị trên [trang Báo lỗi của Learning Hub](https://learn.example/admin/content-reports?track=sql).',
+    );
+    expect(staffReportsPath('sql-30-days')).toBe('/admin/content-reports?track=sql-30-days');
+  });
+
+  it('keeps the quote fenced, so mentions and HTML in it stay plain text', () => {
+    const { body } = issueContent({ ...source, quote: '@someone <script>' });
+    expect(body).toContain('~~~text\n@someone <script>\n~~~');
   });
 
   it('never names the reporter, and leaves out what is missing', () => {

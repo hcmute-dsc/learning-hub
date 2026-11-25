@@ -72,7 +72,11 @@ export default async function LessonPage({ params }: Params) {
                 ✎ Sửa trên GitHub
               </a>
             )}
-            <ReportContentButton target={{ kind: 'lesson', id: lesson.id }} />
+            <ReportContentButton
+              target={{ kind: 'lesson', id: lesson.id }}
+              title={lesson.title}
+              trackTitle={lesson.track.title}
+            />
           </div>
           <details className="surface mt-5 rounded-xl p-4 lg:hidden">
             <summary className="cursor-pointer font-medium">Mục lục lộ trình</summary>

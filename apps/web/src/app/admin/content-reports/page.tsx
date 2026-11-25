@@ -10,6 +10,7 @@ import {
   type ContentReportRow,
 } from '@hub/shared';
 import { ContentReportActions } from '@/components/admin/ContentReportActions';
+import { Markdown } from '@/components/markdown/Markdown';
 import {
   reportFiltersFromParams,
   reportFiltersSearch,
@@ -129,9 +130,12 @@ function ReportCard({
         </Link>
         <span className="muted">({r.track.title})</span>
       </div>
-      <p className="text-sm break-words whitespace-pre-line">{r.description}</p>
+      {/* Member text: Markdown without raw HTML or loaded images (learning-hub#125). */}
+      <div className="text-sm break-words">
+        <Markdown source={r.description} from="member" />
+      </div>
       {r.quote && (
-        <blockquote className="muted border-l-2 border-[var(--border)] pl-3 text-sm break-words whitespace-pre-line">
+        <blockquote className="muted border-l-2 border-[var(--border)] pl-3 font-mono text-sm break-words whitespace-pre-line">
           {r.quote}
         </blockquote>
       )}

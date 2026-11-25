@@ -53,7 +53,11 @@ export default async function TrackGlossaryPage({ params }: Params) {
               ✎ Sửa trên GitHub
             </a>
           )}
-          <ReportContentButton target={{ kind: 'glossary', track: track.slug }} />
+          <ReportContentButton
+            target={{ kind: 'glossary', track: track.slug }}
+            title={GLOSSARY_LABEL}
+            trackTitle={track.title}
+          />
         </div>
       </header>
 
