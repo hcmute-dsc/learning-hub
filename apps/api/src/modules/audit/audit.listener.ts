@@ -15,6 +15,7 @@ import {
   LeaderboardPostEvents,
   type LeaderboardPostEvent,
 } from '../notifications/weekly-leaderboard/weekly-leaderboard.events';
+import { MentorshipEvents, type TrackMentorEvent } from '../mentorship/mentorship.events';
 import { ReportEvents, type ReportExportedEvent } from '../reports/reports.events';
 import { ReviewEvents, type ReviewCompletedEvent } from '../reviews/reviews.events';
 import {
@@ -137,6 +138,24 @@ export class AuditListener {
       trackSlug: e.trackSlug,
       from: e.from,
       to: e.to,
+    });
+  }
+
+  @OnEvent(MentorshipEvents.TrackMentorAssigned)
+  onTrackMentorAssigned(e: TrackMentorEvent) {
+    return this.write('mentor.track_assign', 'track_mentor', e.assignmentId, e.actorId, {
+      mentorId: e.mentorId,
+      mentorLogin: e.mentorLogin,
+      track: e.trackSlug,
+    });
+  }
+
+  @OnEvent(MentorshipEvents.TrackMentorEnded)
+  onTrackMentorEnded(e: TrackMentorEvent) {
+    return this.write('mentor.track_end', 'track_mentor', e.assignmentId, e.actorId, {
+      mentorId: e.mentorId,
+      mentorLogin: e.mentorLogin,
+      track: e.trackSlug,
     });
   }
 

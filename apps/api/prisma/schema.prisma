@@ -66,6 +66,9 @@ model User {
   revokedCertificates    Certificate[]           @relation("CertificateRevokedBy")
   contentReports         ContentReport[]         @relation("ContentReportReporter")
   handledContentReports  ContentReport[]         @relation("ContentReportHandler")
+  trackMentorships       TrackMentor[]           @relation("TrackMentor")
+  assignedTrackMentors   TrackMentor[]           @relation("TrackMentorAssignedBy")
+  endedTrackMentors      TrackMentor[]           @relation("TrackMentorEndedBy")
 
   @@index([githubLogin])
   @@map("users")
@@ -187,6 +190,7 @@ model Track {
   mentorAssignments MentorAssignment[]
   certificates      Certificate[]
   contentReports    ContentReport[]
+  trackMentors      TrackMentor[]
 
   @@index([status, position])
   @@map("tracks")
@@ -534,6 +538,27 @@ model MentorAssignment {
 
   @@index([mentorId, status])
   @@map("mentor_assignments")
+}
+
+/// Mentors in charge of a track (learning-hub#120), set by an admin on /admin/mentors.
+/// A row is never deleted: removing a mentor sets `ended_at`, so the history stays.
+/// One open row per (track, mentor): partial unique index in the SQL migration.
+model TrackMentor {
+  id         String    @id @db.Uuid
+  trackId    String    @map("track_id") @db.Uuid
+  mentorId   String    @map("mentor_id") @db.Uuid
+  assignedBy String?   @map("assigned_by") @db.Uuid
+  startedAt  DateTime  @default(now()) @map("started_at") @db.Timestamptz
+  endedAt    DateTime? @map("ended_at") @db.Timestamptz
+  endedBy    String?   @map("ended_by") @db.Uuid
+
+  track          Track @relation(fields: [trackId], references: [id])
+  mentor         User  @relation("TrackMentor", fields: [mentorId], references: [id])
+  assignedByUser User? @relation("TrackMentorAssignedBy", fields: [assignedBy], references: [id], onDelete: SetNull)
+  endedByUser    User? @relation("TrackMentorEndedBy", fields: [endedBy], references: [id], onDelete: SetNull)
+
+  @@index([mentorId])
+  @@map("track_mentors")
 }
 
 /// "Báo lỗi nội dung" (learning-hub#121): a member reports a mistake in a lesson, an exercise

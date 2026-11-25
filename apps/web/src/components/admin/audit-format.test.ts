@@ -122,3 +122,16 @@ describe('content report audit lines (learning-hub#121)', () => {
     ).toBe('sql: https://github.com/o/r/issues/1');
   });
 });
+
+describe('track mentor audit lines (learning-hub#120)', () => {
+  it('names the mentor by login and the track', () => {
+    expect(actionLabel('mentor.track_assign')).toBe('Giao mentor phụ trách track');
+    expect(actionLabel('mentor.track_end')).toBe('Thôi giao mentor phụ trách track');
+    expect(
+      describeAudit({
+        action: 'mentor.track_end',
+        metadata: { mentorId: 'x', mentorLogin: 'mentor1', track: 'git-basics' },
+      }),
+    ).toBe('@mentor1 · git-basics');
+  });
+});

@@ -6,10 +6,11 @@ import { countDone, openModuleIndex } from '@/components/learn/track-progress';
 import { ProgressPanel } from '@/components/track/ProgressPanel';
 import { StatCards } from '@/components/track/StatCards';
 import { TrackHeader } from '@/components/track/TrackHeader';
+import { TrackMentors } from '@/components/track/TrackMentors';
 import { TrackTabs } from '@/components/track/TrackTabs';
 import { trackTabs } from '@/components/track/track-docs';
 import { countByKind, listTrackItems } from '@/components/track/track-items';
-import { canSeeTrackStats, loadTrack, loadTrackProgress } from '@/lib/track';
+import { canSeeTrackStats, loadTrack, loadTrackMentors, loadTrackProgress } from '@/lib/track';
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -25,7 +26,11 @@ export default async function TrackPage({ params }: Params) {
   // Load the track first: a bad slug (422) or an archived track (404) becomes notFound()
   // there. loadTrackProgress has no such mapping, so it must not fail first.
   const track = await loadTrack(slug);
-  const [progress, canSeeStats] = await Promise.all([loadTrackProgress(slug), canSeeTrackStats()]);
+  const [progress, canSeeStats, mentors] = await Promise.all([
+    loadTrackProgress(slug),
+    canSeeTrackStats(),
+    loadTrackMentors(slug),
+  ]);
 
   const items = listTrackItems(track.modules, progress);
   const byKind = countByKind(items);
@@ -64,6 +69,8 @@ export default async function TrackPage({ params }: Params) {
           enrolled={progress.enrolled}
         />
       )}
+
+      <TrackMentors mentors={mentors} />
 
       <section aria-labelledby="track-modules-title">
         <h2 id="track-modules-title" className="text-xl font-bold sm:text-2xl">

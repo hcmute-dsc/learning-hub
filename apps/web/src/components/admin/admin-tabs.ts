@@ -15,6 +15,7 @@ export interface AdminTab {
 export const ADMIN_TABS: AdminTab[] = [
   { href: '/admin', label: 'Tổng quan', roles: [], exact: true },
   { href: '/admin/members', label: 'Thành viên', roles: ['mentor'] },
+  { href: '/admin/mentors', label: 'Mentor', roles: [] },
   { href: '/admin/content', label: 'Nội dung', roles: ['content_maintainer'] },
   { href: '/admin/content-reports', label: 'Báo lỗi', roles: ['mentor'] },
   { href: '/admin/certificates', label: 'Chứng nhận', roles: [] },
@@ -40,7 +41,7 @@ export function isTabActive(tab: AdminTab, pathname: string): boolean {
 }
 
 /**
- * On a phone the 7 tabs scroll sideways. Where to scroll so the open tab sits in the
+ * On a phone the tabs scroll sideways. Where to scroll so the open tab sits in the
  * middle of the strip (clamped by the browser), e.g. "Nhật ký" is not hidden off-screen.
  */
 export function centeredScrollLeft(tabLeft: number, tabWidth: number, stripWidth: number): number {

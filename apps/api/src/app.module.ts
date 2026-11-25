@@ -15,6 +15,7 @@ import { ContentModule } from './modules/content/content.module';
 import { ContentReportsModule } from './modules/content-reports/content-reports.module';
 import { LeaderboardModule } from './modules/leaderboard/leaderboard.module';
 import { LearningModule } from './modules/learning/learning.module';
+import { MentorshipModule } from './modules/mentorship/mentorship.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { OverviewModule } from './modules/overview/overview.module';
 import { ReportsModule } from './modules/reports/reports.module';
@@ -63,6 +64,7 @@ const env = loadEnv();
     LeaderboardModule,
     ReportsModule,
     ContentReportsModule,
+    MentorshipModule,
   ],
   controllers: [HealthController],
   providers: [

@@ -5,6 +5,7 @@ import type {
   TrackGlossaryView,
   TrackItemsProgress,
   TrackLevel,
+  PersonRef,
   TrackStats,
 } from '@hub/shared';
 import type { ModuleOutlineData } from '@/components/learn/ModuleOutline';
@@ -53,6 +54,11 @@ export async function loadTrackGlossary(slug: string): Promise<TrackGlossaryView
   return (
     await apiOrNotFound<{ data: TrackGlossaryView }>(`/tracks/${encodeURIComponent(slug)}/glossary`)
   ).data;
+}
+
+/** Mentors in charge of the track (learning-hub#120); empty when none is assigned yet. */
+export async function loadTrackMentors(slug: string): Promise<PersonRef[]> {
+  return (await api<{ data: PersonRef[] }>(`/tracks/${encodeURIComponent(slug)}/mentors`)).data;
 }
 
 /**
