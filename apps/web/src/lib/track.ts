@@ -6,10 +6,9 @@ import type {
   TrackItemsProgress,
   TrackLevel,
   TrackStats,
-  TrackStatsAccess,
 } from '@hub/shared';
 import type { ModuleOutlineData } from '@/components/learn/ModuleOutline';
-import type { TrackDocFlags } from '@/components/track/track-docs';
+import { canSeeStats, type TrackDocFlags } from '@/components/track/track-docs';
 import { api, ApiError, apiOrNotFound, getMe } from './api';
 
 /** GET /tracks/:slug (catalog module; the type is not in @hub/shared yet). */
@@ -57,25 +56,12 @@ export async function loadTrackGlossary(slug: string): Promise<TrackGlossaryView
 }
 
 /**
- * Whether the signed-in viewer may open "Thống kê" of this track (learning-hub#118): admins
- * always; mentors only for tracks they mentor, which only the API knows. Members are not
- * asked about, so their track page makes no extra call.
+ * Whether the signed-in viewer may open "Thống kê" of a track (learning-hub#118): admins and
+ * mentors, for every track (`canSeeStats`). The API checks the same rule again.
  */
-export async function canSeeTrackStats(slug: string): Promise<boolean> {
+export async function canSeeTrackStats(): Promise<boolean> {
   const me = await getMe();
-  if (!me) return false;
-  if (me.roles.includes('admin')) return true;
-  if (!me.roles.includes('mentor')) return false;
-  try {
-    const { data } = await api<{ data: TrackStatsAccess }>(
-      `/tracks/${encodeURIComponent(slug)}/stats/access`,
-    );
-    return data.allowed;
-  } catch (e) {
-    // The link is a convenience: a failed check hides it instead of breaking the track page.
-    if (e instanceof ApiError) return false;
-    throw e;
-  }
+  return me ? canSeeStats(me.roles) : false;
 }
 
 /** Statistics of a track; null when the viewer may not see them (403). 404 page for a bad slug. */

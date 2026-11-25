@@ -25,7 +25,7 @@ export default async function TrackGlossaryPage({ params }: Params) {
   const [track, glossary, canSeeStats] = await Promise.all([
     loadTrack(slug),
     loadTrackGlossary(slug),
-    canSeeTrackStats(slug),
+    canSeeTrackStats(),
   ]);
   const editUrl = githubBlobUrl(glossary.source);
 

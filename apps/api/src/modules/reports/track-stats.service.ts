@@ -1,10 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  TRACK_STATS_ACTIVE_DAYS,
-  TRACK_STATS_TOP,
-  type TrackStats,
-  type TrackStatsAccess,
-} from '@hub/shared';
+import { TRACK_STATS_ACTIVE_DAYS, TRACK_STATS_TOP, type TrackStats } from '@hub/shared';
 import type { AuthUser } from '../../common/auth.decorators';
 import { DomainError } from '../../common/errors';
 import { Clock } from '../../infrastructure/clock';
@@ -37,19 +32,13 @@ export class TrackStatsService {
     private readonly clock: Clock,
   ) {}
 
-  /** Whether the viewer may open the page; for the "Thống kê" link on the track page. */
-  async access(viewer: AuthUser, slug: string): Promise<TrackStatsAccess> {
-    const track = await this.repo.trackBySlug(slug);
-    if (!track) throw DomainError.notFound('Track');
-    return { allowed: await this.allowed(viewer, track.id) };
-  }
-
   async stats(viewer: AuthUser, slug: string): Promise<TrackStats> {
     const track = await this.repo.trackBySlug(slug);
     if (!track) throw DomainError.notFound('Track');
-    // Tracks are public in the catalog, so a 403 reveals nothing a 404 would hide.
-    if (!(await this.allowed(viewer, track.id))) {
-      throw DomainError.forbidden('Chỉ admin và mentor của track này xem được thống kê.');
+    // The controller's @Roles('mentor') already stops members; checked again here so the
+    // rule does not depend on a decorator alone.
+    if (!canViewTrackStats(viewer.roles)) {
+      throw DomainError.forbidden('Chỉ admin và mentor xem được thống kê track.');
     }
 
     const now = this.clock.now();
@@ -84,13 +73,5 @@ export class TrackStatsService {
       weekly: weekly(weeks, facts, activity),
       inactive: inactiveLearners(facts, now),
     };
-  }
-
-  private async allowed(viewer: AuthUser, trackId: string): Promise<boolean> {
-    if (viewer.roles.includes('admin')) return true;
-    const mentors = viewer.roles.includes('mentor')
-      ? await this.repo.mentorsTrack(viewer.id, trackId)
-      : false;
-    return canViewTrackStats(viewer.roles, mentors);
   }
 }

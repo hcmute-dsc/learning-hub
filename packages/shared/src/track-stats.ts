@@ -103,7 +103,7 @@ export const inactiveLearnerSchema = z.object({
   lastActiveAt: z.string().nullable(),
 });
 
-/** GET /api/v1/tracks/:slug/stats → { data: TrackStats } (admin, or a mentor of the track) */
+/** GET /api/v1/tracks/:slug/stats → { data: TrackStats } (admins and mentors, every track) */
 export const trackStatsSchema = z.object({
   track: z.object({ slug: z.string(), title: z.string() }),
   generatedAt: z.string(),
@@ -131,9 +131,3 @@ export type WaitingReview = z.infer<typeof waitingReviewSchema>;
 export type TrackStatsWeek = z.infer<typeof trackStatsWeekSchema>;
 export type InactiveLearner = z.infer<typeof inactiveLearnerSchema>;
 export type TrackStats = z.infer<typeof trackStatsSchema>;
-
-/** GET /api/v1/tracks/:slug/stats/access → { data: TrackStatsAccess } (mentors and admins) */
-export interface TrackStatsAccess {
-  /** the viewer may open /tracks/:slug/stats */
-  allowed: boolean;
-}

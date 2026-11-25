@@ -26,10 +26,6 @@ function setup() {
   };
   const repo = {
     trackBySlug: jest.fn(async (slug: string) => (slug === SQL.slug ? SQL : null)),
-    // mentor-sql has an active assignment on this track; mentor-git on another one
-    mentorsTrack: jest.fn(async (userId: string, trackId: string) => {
-      return userId === 'mentor-sql' && trackId === SQL.id;
-    }),
     outline: jest.fn(async () => []),
     doneItems: jest.fn(async () => []),
     firstAttempts: jest.fn(async () => []),
@@ -55,52 +51,34 @@ async function errorOf(promise: Promise<unknown>): Promise<DomainError> {
 }
 
 describe('TrackStatsService access', () => {
-  it('lets an admin see any track without looking at assignments', async () => {
-    const { service, repo } = setup();
+  it('lets an admin see any track', async () => {
+    const { service } = setup();
     const stats = await service.stats(user('admin-1', 'admin'), SQL.slug);
     expect(stats.track).toEqual({ slug: SQL.slug, title: SQL.title });
-    expect(repo.mentorsTrack).not.toHaveBeenCalled();
-    await expect(service.access(user('admin-1', 'admin'), SQL.slug)).resolves.toEqual({
-      allowed: true,
-    });
   });
 
-  it('lets a mentor of this track in', async () => {
-    const { service, repo } = setup();
-    await expect(service.stats(user('mentor-sql', 'mentor'), SQL.slug)).resolves.toMatchObject({
+  it('lets every mentor see every track, like the review queue (#30)', async () => {
+    const { service } = setup();
+    // a mentor who mostly reviews another track is still let in
+    await expect(service.stats(user('mentor-git', 'mentor'), SQL.slug)).resolves.toMatchObject({
       track: { slug: SQL.slug },
     });
-    expect(repo.mentorsTrack).toHaveBeenCalledWith('mentor-sql', SQL.id);
-    await expect(service.access(user('mentor-sql', 'mentor'), SQL.slug)).resolves.toEqual({
-      allowed: true,
-    });
   });
 
-  it('blocks a mentor of another track with 403, before reading any numbers', async () => {
+  it('blocks a member with 403, before reading any numbers', async () => {
+    // The controller's @Roles('mentor') already stops members (reports.module.spec.ts);
+    // the service does not rely on that alone.
     const { service, reports } = setup();
-    const err = await errorOf(service.stats(user('mentor-git', 'mentor'), SQL.slug));
+    const err = await errorOf(service.stats(user('an'), SQL.slug));
     expect(err).toBeInstanceOf(DomainError);
     expect(err.status).toBe(403);
     expect(reports.memberFacts).not.toHaveBeenCalled();
-    await expect(service.access(user('mentor-git', 'mentor'), SQL.slug)).resolves.toEqual({
-      allowed: false,
-    });
-  });
-
-  it('blocks a member even if a mentor_assignments row names them as mentor', async () => {
-    // The controller's @Roles('mentor') already stops members (reports.module.spec.ts);
-    // the service does not rely on that alone.
-    const { service, repo } = setup();
-    repo.mentorsTrack.mockResolvedValue(true);
-    const err = await errorOf(service.stats(user('mentor-sql'), SQL.slug));
-    expect(err.status).toBe(403);
   });
 
   it('answers 404 for an unknown slug', async () => {
     const { service } = setup();
-    const err = await errorOf(service.stats(user('admin-1', 'admin'), 'khong-co'));
-    expect(err.status).toBe(404);
-    expect((await errorOf(service.access(user('mentor-sql', 'mentor'), 'khong-co'))).status).toBe(
+    expect((await errorOf(service.stats(user('admin-1', 'admin'), 'khong-co'))).status).toBe(404);
+    expect((await errorOf(service.stats(user('mentor-git', 'mentor'), 'khong-co'))).status).toBe(
       404,
     );
   });

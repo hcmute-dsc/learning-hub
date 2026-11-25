@@ -25,12 +25,12 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
 
 /**
- * Who may see a track's statistics: an admin sees every track; a mentor sees the tracks
- * where they have an active `mentor_assignments` row; nobody else.
+ * Who may see a track's statistics: admins and mentors, for every track, like the review
+ * queue (#30), where any mentor reviews any track. Nothing writes `mentor_assignments` yet,
+ * so limiting mentors to "their" tracks would leave them with none.
  */
-export function canViewTrackStats(roles: Role[], mentorsThisTrack: boolean): boolean {
-  if (roles.includes('admin')) return true;
-  return roles.includes('mentor') && mentorsThisTrack;
+export function canViewTrackStats(roles: Role[]): boolean {
+  return roles.includes('admin') || roles.includes('mentor');
 }
 
 /** The totals, from the same facts and reviews as the progress report (`stats`). */

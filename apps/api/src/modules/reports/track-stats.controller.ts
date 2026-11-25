@@ -10,8 +10,8 @@ const slugSchema = z.string().max(80).regex(TRACK_SLUG_PATTERN);
 
 /**
  * "Thống kê" of one track (learning-hub#118, INFORMATION-ARCHITECTURE "Thống kê track").
- * The mentor role is checked here (admin always passes); which tracks a mentor may see is
- * checked in TrackStatsService (`canViewTrackStats`), because it depends on the track.
+ * Admins and mentors, for every track, like the review queue (#30): admin always passes
+ * `@Roles`, and TrackStatsService checks the same rule again (`canViewTrackStats`).
  */
 @ApiTags('reports')
 @Roles('mentor')
@@ -22,11 +22,5 @@ export class TrackStatsController {
   @Get()
   get(@CurrentUser() user: AuthUser, @Param('slug', new ZodPipe(slugSchema)) slug: string) {
     return this.service.stats(user, slug).then((data) => ({ data }));
-  }
-
-  /** Cheap check for the track page, so the link shows only to people who may open it. */
-  @Get('access')
-  access(@CurrentUser() user: AuthUser, @Param('slug', new ZodPipe(slugSchema)) slug: string) {
-    return this.service.access(user, slug).then((data) => ({ data }));
   }
 }

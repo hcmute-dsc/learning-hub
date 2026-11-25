@@ -21,14 +21,6 @@ export class TrackStatsRepository {
     });
   }
 
-  /** The user mentors this track: an active `mentor_assignments` row for it (E8). */
-  async mentorsTrack(userId: string, trackId: string): Promise<boolean> {
-    const n = await this.prisma.mentorAssignment.count({
-      where: { mentorId: userId, trackId, status: 'active' },
-    });
-    return n > 0;
-  }
-
   /** Active modules, lessons and exercises, in content order. */
   async outline(trackId: string): Promise<OutlineModule[]> {
     const active = { status: 'active' };

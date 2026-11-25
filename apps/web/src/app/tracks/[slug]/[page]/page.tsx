@@ -33,7 +33,7 @@ export default async function TrackDocPage({ params }: Params) {
   const [track, doc, canSeeStats] = await Promise.all([
     loadTrack(slug),
     loadTrackDoc(slug, page),
-    canSeeTrackStats(slug),
+    canSeeTrackStats(),
   ]);
   const editUrl = githubBlobUrl(doc.source);
 

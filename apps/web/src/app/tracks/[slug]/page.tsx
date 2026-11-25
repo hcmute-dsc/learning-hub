@@ -25,10 +25,7 @@ export default async function TrackPage({ params }: Params) {
   // Load the track first: a bad slug (422) or an archived track (404) becomes notFound()
   // there. loadTrackProgress has no such mapping, so it must not fail first.
   const track = await loadTrack(slug);
-  const [progress, canSeeStats] = await Promise.all([
-    loadTrackProgress(slug),
-    canSeeTrackStats(slug),
-  ]);
+  const [progress, canSeeStats] = await Promise.all([loadTrackProgress(slug), canSeeTrackStats()]);
 
   const items = listTrackItems(track.modules, progress);
   const byKind = countByKind(items);

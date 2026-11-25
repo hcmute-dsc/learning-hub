@@ -1,4 +1,4 @@
-import { TRACK_DOC_PAGES, type TrackDocPage } from '@hub/shared';
+import { TRACK_DOC_PAGES, type Role, type TrackDocPage } from '@hub/shared';
 import { glossaryHref } from './glossary';
 
 /**
@@ -40,8 +40,13 @@ export interface TrackTab {
 /** "Từ vựng" (learning-hub#106): the track's glossary.yaml, at /tracks/:slug/glossary. */
 export const GLOSSARY_LABEL = 'Từ vựng';
 
-/** "Thống kê" (learning-hub#118): only for admins and the track's mentors. */
+/** "Thống kê" (learning-hub#118): only for admins and mentors. */
 export const STATS_LABEL = 'Thống kê';
+
+/** Admins and mentors see every track's statistics, like the review queue (#30). */
+export function canSeeStats(roles: readonly Role[]): boolean {
+  return roles.includes('admin') || roles.includes('mentor');
+}
 
 export function trackStatsHref(trackSlug: string): string {
   return `/tracks/${trackSlug}/stats`;
@@ -50,7 +55,7 @@ export function trackStatsHref(trackSlug: string): string {
 /**
  * Tabs at the top of the track page and its sub-pages: "Tổng quan", then only the pages the
  * track has, then "Từ vựng" when it has a glossary, then "Thống kê" when the viewer may see
- * it (`canSeeStats`, asked from the API). Empty when it has none of them, because a single
+ * it (`canSeeStats`). Empty when it has none of them, because a single
  * tab would be noise.
  */
 export function trackTabs(

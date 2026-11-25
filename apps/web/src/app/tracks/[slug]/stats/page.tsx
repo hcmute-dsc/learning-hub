@@ -56,7 +56,7 @@ export default async function TrackStatsPage({ params }: Params) {
       <article className="space-y-6">
         {header}
         <p role="alert" className="surface rounded-xl p-5 text-sm">
-          Chỉ admin và mentor của track này xem được thống kê.
+          Chỉ admin và mentor xem được thống kê track.
         </p>
       </article>
     );

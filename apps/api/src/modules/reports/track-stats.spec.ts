@@ -62,15 +62,14 @@ function fact(over: Partial<MemberFact> = {}): MemberFact {
 }
 
 describe('canViewTrackStats', () => {
-  it('lets admins see every track, and mentors only the tracks they mentor', () => {
-    expect(canViewTrackStats(['member', 'admin'], false)).toBe(true);
-    expect(canViewTrackStats(['member', 'mentor'], true)).toBe(true);
-    expect(canViewTrackStats(['member', 'mentor'], false)).toBe(false);
+  it('lets admins and mentors see every track, like the review queue', () => {
+    expect(canViewTrackStats(['member', 'admin'])).toBe(true);
+    expect(canViewTrackStats(['member', 'mentor'])).toBe(true);
   });
 
-  it('never lets a member in, even with an assignment row', () => {
-    expect(canViewTrackStats(['member'], true)).toBe(false);
-    expect(canViewTrackStats(['member', 'content_maintainer'], true)).toBe(false);
+  it('never lets a member or a content maintainer in', () => {
+    expect(canViewTrackStats(['member'])).toBe(false);
+    expect(canViewTrackStats(['member', 'content_maintainer'])).toBe(false);
   });
 });
 

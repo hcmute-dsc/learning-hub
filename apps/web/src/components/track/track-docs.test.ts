@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isTrackDocPage, trackDocHref, trackTabs } from './track-docs';
+import { canSeeStats, isTrackDocPage, trackDocHref, trackTabs } from './track-docs';
 
 describe('isTrackDocPage', () => {
   it('accepts only the pages a track can have', () => {
@@ -13,6 +13,15 @@ describe('isTrackDocPage', () => {
 describe('trackDocHref', () => {
   it('is a sub-page of the track', () => {
     expect(trackDocHref('docker', 'setup')).toBe('/tracks/docker/setup');
+  });
+});
+
+describe('canSeeStats', () => {
+  it('shows track statistics to admins and mentors only (learning-hub#118)', () => {
+    expect(canSeeStats(['member', 'admin'])).toBe(true);
+    expect(canSeeStats(['member', 'mentor'])).toBe(true);
+    expect(canSeeStats(['member'])).toBe(false);
+    expect(canSeeStats(['member', 'content_maintainer'])).toBe(false);
   });
 });
 
