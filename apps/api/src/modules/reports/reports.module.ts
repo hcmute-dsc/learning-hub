@@ -8,8 +8,8 @@ import { TrackStatsService } from './track-stats.service';
 
 /**
  * Progress report and CSV export for admins (learning-hub#34), and the statistics of one
- * track for admins and its mentors (learning-hub#118). Reads enrollments, progress,
- * submissions, reviews and mentor assignments with counting queries and stores nothing;
+ * track for admins and mentors (learning-hub#118). Reads enrollments, progress,
+ * submissions and reviews with counting queries and stores nothing;
  * exports are audited through ReportEvents. Imports no other business module.
  */
 @Module({

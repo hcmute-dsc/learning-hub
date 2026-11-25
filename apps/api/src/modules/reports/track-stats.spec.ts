@@ -300,6 +300,18 @@ describe('inactiveLearners', () => {
     expect(result.learners[1].progress).toBe(0); // an empty track never divides by zero
   });
 
+  it('gives a learner who never started 7 days from enrolling before listing them', () => {
+    const result = inactiveLearners(
+      [
+        fact({ githubLogin: 'moi', enrolledAt: daysAgo(2), lastActiveAt: null }),
+        fact({ githubLogin: 'vua-du', enrolledAt: daysAgo(7), lastActiveAt: null }),
+      ],
+      NOW,
+    );
+    expect(result.total).toBe(1);
+    expect(result.learners.map((l) => l.githubLogin)).toEqual(['vua-du']);
+  });
+
   it('keeps the exact total when the list is cut', () => {
     const facts = ['a', 'b', 'c'].map((githubLogin) => fact({ githubLogin }));
     const result = inactiveLearners(facts, NOW, 2);

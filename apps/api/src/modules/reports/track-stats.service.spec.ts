@@ -68,10 +68,12 @@ describe('TrackStatsService access', () => {
   it('blocks a member with 403, before reading any numbers', async () => {
     // The controller's @Roles('mentor') already stops members (reports.module.spec.ts);
     // the service does not rely on that alone.
-    const { service, reports } = setup();
+    const { service, reports, repo } = setup();
     const err = await errorOf(service.stats(user('an'), SQL.slug));
     expect(err).toBeInstanceOf(DomainError);
     expect(err.status).toBe(403);
+    // not even the track lookup: a member learns nothing about the slug
+    expect(repo.trackBySlug).not.toHaveBeenCalled();
     expect(reports.memberFacts).not.toHaveBeenCalled();
   });
 

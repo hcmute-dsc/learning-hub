@@ -13,10 +13,13 @@ import type { ActivityAt, DoneItem, FirstAttempt, OutlineModule, WaitingRow } fr
 export class TrackStatsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Any track by slug, archived ones included (their numbers are still worth seeing). */
+  /**
+   * An active track by slug. Archived ones are 404, like the catalog (the track page) and the
+   * track menu of /admin/reports.
+   */
   trackBySlug(slug: string): Promise<{ id: string; slug: string; title: string } | null> {
-    return this.prisma.track.findUnique({
-      where: { slug },
+    return this.prisma.track.findFirst({
+      where: { slug, status: 'active' },
       select: { id: true, slug: true, title: true },
     });
   }
@@ -48,7 +51,11 @@ export class TrackStatsRepository {
     }));
   }
 
-  /** Every (learner, lesson or exercise) of this track the learner completed. */
+  /**
+   * Every (learner, lesson or exercise) of this track the learner completed. One row per pair
+   * is fine at club size (learners × items in the thousands); if that grows large, count per
+   * item in SQL instead and compute the per-module numbers from a smaller query.
+   */
   async doneItems(trackId: string): Promise<DoneItem[]> {
     const rows = await this.prisma.$queryRaw<{ user_id: string; item_id: string }[]>`
       WITH learners AS (${learnersOf(trackId)})
@@ -126,15 +133,16 @@ export class TrackStatsRepository {
           JOIN lessons ls ON ls.id = lp.lesson_id
           JOIN modules m ON m.id = ls.module_id
          WHERE m.track_id = ${trackId}::uuid AND ls.status = 'active' AND m.status = 'active'
+           AND lp.updated_at >= ${since}
         UNION ALL
         SELECT s.user_id, s.submitted_at
           FROM submissions s
           JOIN exercises x ON x.id = s.exercise_id
           JOIN modules m ON m.id = x.module_id
-         WHERE m.track_id = ${trackId}::uuid AND x.status = 'active' AND m.status = 'active')
+         WHERE m.track_id = ${trackId}::uuid AND x.status = 'active' AND m.status = 'active'
+           AND s.submitted_at >= ${since})
       SELECT mo.user_id, MIN(mo.at) AS at
         FROM moments mo JOIN learners l ON l.user_id = mo.user_id
-       WHERE mo.at >= ${since}
        GROUP BY mo.user_id, (mo.at AT TIME ZONE 'Asia/Ho_Chi_Minh')::date`;
     return rows.map((r) => ({ userId: r.user_id, at: r.at }));
   }

@@ -221,9 +221,10 @@ export function weekly(
 }
 
 /**
- * Learners a mentor may want to check on: not completed, and no lesson mark or submission
- * for TRACK_STATS_INACTIVE_DAYS days or more. Never active first, then the longest quiet,
- * then by login.
+ * Learners a mentor may want to check on: not completed, and quiet for
+ * TRACK_STATS_INACTIVE_DAYS days or more, counted from the last lesson mark or submission,
+ * or from enrolling for someone who never started (so a learner who enrolled today is not
+ * listed yet). Never active first, then the longest quiet, then by login.
  */
 export function inactiveLearners(
   facts: MemberFact[],
@@ -232,7 +233,7 @@ export function inactiveLearners(
 ): { total: number; learners: InactiveLearner[] } {
   const cutoff = now.getTime() - TRACK_STATS_INACTIVE_DAYS * DAY_MS;
   const quiet = facts
-    .filter((f) => !f.completedAt && (!f.lastActiveAt || f.lastActiveAt.getTime() <= cutoff))
+    .filter((f) => !f.completedAt && (f.lastActiveAt ?? f.enrolledAt).getTime() <= cutoff)
     .sort(
       (a, b) =>
         // never active = 0, older than any real moment

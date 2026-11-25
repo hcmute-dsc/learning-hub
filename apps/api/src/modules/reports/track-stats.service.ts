@@ -20,7 +20,7 @@ import { TrackStatsRepository } from './track-stats.repository';
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
- * Statistics of one track (learning-hub#118) for admins and the track's mentors. The totals
+ * Statistics of one track (learning-hub#118) for admins and mentors, every track. The totals
  * reuse the progress report's facts for the last 14 Vietnam days, so they equal
  * `/admin/reports?track=<slug>&from=<period.from>&to=<period.to>`.
  */
@@ -33,13 +33,13 @@ export class TrackStatsService {
   ) {}
 
   async stats(viewer: AuthUser, slug: string): Promise<TrackStats> {
-    const track = await this.repo.trackBySlug(slug);
-    if (!track) throw DomainError.notFound('Track');
     // The controller's @Roles('mentor') already stops members; checked again here so the
-    // rule does not depend on a decorator alone.
+    // rule does not depend on a decorator alone. Before the lookup: members learn nothing.
     if (!canViewTrackStats(viewer.roles)) {
       throw DomainError.forbidden('Chỉ admin và mentor xem được thống kê track.');
     }
+    const track = await this.repo.trackBySlug(slug);
+    if (!track) throw DomainError.notFound('Track');
 
     const now = this.clock.now();
     const today = vietnamDay(now);

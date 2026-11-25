@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 /**
- * Statistics of one track for admins and the track's mentors (learning-hub#118,
+ * Statistics of one track for admins and mentors (learning-hub#118,
  * INFORMATION-ARCHITECTURE "Thống kê track"). Counted on the fly, nothing is stored.
  * Learners and "done" follow the progress report (`/admin/reports`, learning-hub#34), so
  * the totals match that report for the same track and the same 14 days.
@@ -10,7 +10,10 @@ import { z } from 'zod';
 /** "Đang học": marked a lesson or submitted in the last this many days (Vietnam days). */
 export const TRACK_STATS_ACTIVE_DAYS = 14;
 
-/** "Lâu không hoạt động": no lesson mark or submission for at least this many days. */
+/**
+ * "Lâu không hoạt động": no lesson mark or submission for at least this many days, counted
+ * from enrolling for a learner who never started.
+ */
 export const TRACK_STATS_INACTIVE_DAYS = 7;
 
 /** Weeks (Monday → Sunday, Vietnam time) in the weekly chart, this week included. */
@@ -119,7 +122,10 @@ export const trackStatsSchema = z.object({
   }),
   /** oldest week first, TRACK_STATS_WEEKS of them */
   weekly: z.array(trackStatsWeekSchema),
-  /** not completed and quiet for TRACK_STATS_INACTIVE_DAYS days or more (never active first) */
+  /**
+   * not completed and quiet for TRACK_STATS_INACTIVE_DAYS days or more, since the last
+   * activity or, for someone who never started, since enrolling (never active first)
+   */
   inactive: z.object({ total: count, learners: z.array(inactiveLearnerSchema) }),
 });
 
