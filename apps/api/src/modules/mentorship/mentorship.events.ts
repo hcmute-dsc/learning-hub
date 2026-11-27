@@ -18,7 +18,8 @@ export interface TrackMentorEvent {
 
 /**
  * An admin gave a mentee a mentor in one track, changed it, or removed it (US-11).
- * `mentorId: null` = removed. Logins are carried so audit never reads `users`.
+ * `mentorId: null` = removed. Names and logins are carried so audit and the bell (#131)
+ * never read `users`.
  */
 export interface MenteeMentorChangedEvent {
   actorId: string;
@@ -26,8 +27,14 @@ export interface MenteeMentorChangedEvent {
   assignmentId: string;
   menteeId: string;
   menteeLogin: string;
+  menteeName: string;
   trackSlug: string;
+  trackTitle: string;
   mentorId: string | null;
   mentorLogin: string | null;
+  mentorName: string | null;
+  /** the mentor before this change (null when there was none) */
+  previousMentorId: string | null;
   previousMentorLogin: string | null;
+  previousMentorName: string | null;
 }

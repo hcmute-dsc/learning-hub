@@ -18,6 +18,8 @@ export const OutboxTypes = {
   ReviewThanks: 'inbox.review_thanks',
   /** payload: ContentReportClosedPayload → one bell row for the reporter (#121) */
   ContentReportClosed: 'inbox.content_report_closed',
+  /** payload: MentorAssignmentPayload → bell rows for the mentee and both mentors (#131) */
+  MentorAssignment: 'inbox.mentor_assignment',
   /** payload: EmailDigestPayload → one email */
   EmailDigest: 'email.digest',
   /** payload: WeeklyPost (weekly-post.ts) → one embed on the club channel (learning-hub#76) */
@@ -57,6 +59,22 @@ export interface ContentReportClosedPayload {
   targetTitle: string;
   /** path inside the web app */
   targetLink: string;
+}
+
+/**
+ * An admin gave a mentee a mentor in one track, changed it or removed it (#131, US-11).
+ * Names are copied in because the bell text needs them and they rarely change.
+ */
+export interface MentorAssignmentPayload {
+  /** the admin who did it: never notified about their own action */
+  actorId: string;
+  trackSlug: string;
+  trackTitle: string;
+  mentee: { id: string; login: string; name: string };
+  /** null when the mentor was removed */
+  mentor: { id: string; login: string; name: string } | null;
+  /** null when the mentee had no mentor before */
+  previousMentor: { id: string; login: string; name: string } | null;
 }
 
 export interface TrackPublishedPayload {

@@ -6,6 +6,7 @@ import { UsersService } from '../../users/users.service';
 import { DigestService } from '../digest/digest.service';
 import {
   contentReportClosedNotice,
+  mentorAssignmentNotices,
   reviewCompletedNotice,
   reviewMessageNotice,
   reviewRequestedNotice,
@@ -19,6 +20,7 @@ import type { WeeklyPost } from '../weekly-leaderboard/weekly-post';
 import {
   OutboxTypes,
   type ContentReportClosedPayload,
+  type MentorAssignmentPayload,
   type EmailDigestPayload,
   type ReviewCompletedPayload,
   type ReviewRequestedPayload,
@@ -119,6 +121,15 @@ export class NotificationDispatcher {
       case OutboxTypes.ContentReportClosed: {
         const p = payload as ContentReportClosedPayload;
         await this.inbox.deliver(eventId, [p.reporterId], contentReportClosedNotice(p));
+        return;
+      }
+      case OutboxTypes.MentorAssignment: {
+        // One deliver per text; a retry skips rows already written (event id + user).
+        for (const { userId, notice } of mentorAssignmentNotices(
+          payload as MentorAssignmentPayload,
+        )) {
+          await this.inbox.deliver(eventId, [userId], notice);
+        }
         return;
       }
       case OutboxTypes.EmailDigest:

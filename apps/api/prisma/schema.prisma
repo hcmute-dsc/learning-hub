@@ -672,7 +672,7 @@ model LeaderboardWeekPost {
 model Notification {
   id            String    @id @db.Uuid
   userId        String    @map("user_id") @db.Uuid
-  /// review_completed | review_requested | track_published | review_message | review_thanks | content_report (CHECK in SQL migration)
+  /// review_completed | review_requested | track_published | review_message | review_thanks | content_report | mentor_assignment (CHECK in SQL migration)
   type          String
   /// { title, body?, link } — text is built when the row is written, so the bell needs no joins
   payload       Json

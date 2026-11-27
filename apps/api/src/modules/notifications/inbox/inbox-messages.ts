@@ -152,6 +152,66 @@ export function contentReportClosedNotice(info: {
   };
 }
 
+/** One bell text and who receives it. */
+export interface AddressedNotice {
+  userId: string;
+  notice: InboxNotice;
+}
+
+/**
+ * Bell rows when an admin gives, changes or removes a mentee's mentor (#131):
+ * the mentee, the new mentor and the previous mentor each get their own text. The admin
+ * who did it gets nothing, even if they are one of them.
+ */
+export function mentorAssignmentNotices(p: {
+  actorId: string;
+  trackSlug: string;
+  trackTitle: string;
+  mentee: { id: string; login: string; name: string };
+  mentor: { id: string; login: string; name: string } | null;
+  previousMentor: { id: string; login: string; name: string } | null;
+}): AddressedNotice[] {
+  const track = oneLine(p.trackTitle);
+  const trackLink = `/tracks/${encodeURIComponent(p.trackSlug)}`;
+  const queueLink = `/review?${new URLSearchParams({ track: p.trackSlug, mentee: p.mentee.login })}`;
+  const out: AddressedNotice[] = [];
+  const add = (userId: string, title: string, body: string, link: string) =>
+    out.push({ userId, notice: { type: 'mentor_assignment', payload: { title, body, link } } });
+
+  if (p.mentor) {
+    add(
+      p.mentee.id,
+      p.previousMentor
+        ? `Mentor của bạn ở "${track}" đổi thành ${oneLine(p.mentor.name)}`
+        : `Bạn có mentor ở "${track}": ${oneLine(p.mentor.name)}`,
+      'Mentor sẽ theo dõi tiến độ và hỗ trợ bạn trong lộ trình này. Bấm để xem hồ sơ mentor.',
+      `/u/${encodeURIComponent(p.mentor.login)}`,
+    );
+    add(
+      p.mentor.id,
+      `Bạn kèm thêm ${oneLine(p.mentee.name)} ở "${track}"`,
+      'Bài nộp của mentee này có trong bộ lọc "Mentee của tôi" ở hàng đợi review.',
+      queueLink,
+    );
+  } else {
+    add(
+      p.mentee.id,
+      `Bạn tạm chưa có mentor ở "${track}"`,
+      'Admin đã bỏ phân công mentor. Cần hỗ trợ thì hỏi trên Discord của CLB nhé.',
+      trackLink,
+    );
+  }
+  if (p.previousMentor && p.previousMentor.id !== p.mentor?.id) {
+    add(
+      p.previousMentor.id,
+      `${oneLine(p.mentee.name)} không còn là mentee của bạn ở "${track}"`,
+      'Admin đã đổi phân công mentor. Cảm ơn bạn đã kèm bạn ấy.',
+      trackLink,
+    );
+  }
+  return out.filter((n) => n.userId !== p.actorId);
+}
+
 /** Read a stored payload back; tolerant of rows written by an older version. */
 export function readPayload(value: unknown): InboxPayload {
   const v = (value ?? {}) as Partial<Record<keyof InboxPayload, unknown>>;

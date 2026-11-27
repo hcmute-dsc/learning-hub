@@ -1,5 +1,6 @@
 import {
   contentReportClosedNotice,
+  mentorAssignmentNotices,
   oneLine,
   readPayload,
   reviewCompletedNotice,
@@ -85,5 +86,74 @@ describe('readPayload', () => {
     expect(readPayload({ title: 't', link: 'https://evil.example' }).link).toBe('/dashboard');
     expect(readPayload({ title: 't', link: '//evil.example/x' }).link).toBe('/dashboard');
     expect(readPayload(null)).toEqual({ title: 'Thông báo', body: null, link: '/dashboard' });
+  });
+});
+
+describe('mentorAssignmentNotices (#131)', () => {
+  const an = { id: 'an', login: 'an-dev', name: 'Nguyễn An' };
+  const binh = { id: 'binh', login: 'binh', name: 'Trần Bình' };
+  const chau = { id: 'chau', login: 'chau', name: 'Lê Châu' };
+  const base = { actorId: 'admin', trackSlug: 'sql-30-days', trackTitle: '30 ngày học SQL' };
+  const to = (list: { userId: string }[]) => list.map((n) => n.userId);
+
+  it('tells the mentee and the new mentor about a first mentor', () => {
+    const list = mentorAssignmentNotices({
+      ...base,
+      mentee: an,
+      mentor: binh,
+      previousMentor: null,
+    });
+    expect(to(list)).toEqual(['an', 'binh']);
+    expect(list[0].notice).toEqual({
+      type: 'mentor_assignment',
+      payload: {
+        title: 'Bạn có mentor ở "30 ngày học SQL": Trần Bình',
+        body: expect.stringContaining('theo dõi tiến độ'),
+        link: '/u/binh',
+      },
+    });
+    expect(list[1].notice.payload).toMatchObject({
+      title: 'Bạn kèm thêm Nguyễn An ở "30 ngày học SQL"',
+      link: '/review?track=sql-30-days&mentee=an-dev',
+    });
+  });
+
+  it('also tells the previous mentor when the mentor changes', () => {
+    const list = mentorAssignmentNotices({
+      ...base,
+      mentee: an,
+      mentor: chau,
+      previousMentor: binh,
+    });
+    expect(to(list)).toEqual(['an', 'chau', 'binh']);
+    expect(list[0].notice.payload.title).toBe(
+      'Mentor của bạn ở "30 ngày học SQL" đổi thành Lê Châu',
+    );
+    expect(list[2].notice.payload).toMatchObject({
+      title: 'Nguyễn An không còn là mentee của bạn ở "30 ngày học SQL"',
+      link: '/tracks/sql-30-days',
+    });
+  });
+
+  it('tells the mentee and the previous mentor when the mentor is removed', () => {
+    const list = mentorAssignmentNotices({
+      ...base,
+      mentee: an,
+      mentor: null,
+      previousMentor: binh,
+    });
+    expect(to(list)).toEqual(['an', 'binh']);
+    expect(list[0].notice.payload.title).toBe('Bạn tạm chưa có mentor ở "30 ngày học SQL"');
+  });
+
+  it('never notifies the admin who made the change', () => {
+    const list = mentorAssignmentNotices({
+      ...base,
+      actorId: 'binh',
+      mentee: an,
+      mentor: binh,
+      previousMentor: null,
+    });
+    expect(to(list)).toEqual(['an']);
   });
 });

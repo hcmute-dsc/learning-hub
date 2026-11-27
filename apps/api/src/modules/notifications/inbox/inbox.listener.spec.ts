@@ -65,6 +65,38 @@ describe('InboxListener', () => {
     ]);
   });
 
+  it('queues one row for a mentor change, with names for the bell text (#131)', async () => {
+    const { listener, queued } = setup();
+    await listener.onMenteeMentorChanged({
+      actorId: 'admin',
+      assignmentId: 'ma-1',
+      menteeId: 'an',
+      menteeLogin: 'an-dev',
+      menteeName: 'Nguyễn An',
+      trackSlug: 'sql',
+      trackTitle: 'SQL',
+      mentorId: null,
+      mentorLogin: null,
+      mentorName: null,
+      previousMentorId: 'binh',
+      previousMentorLogin: 'binh',
+      previousMentorName: 'Trần Bình',
+    });
+    expect(queued()).toEqual([
+      {
+        type: OutboxTypes.MentorAssignment,
+        payload: {
+          actorId: 'admin',
+          trackSlug: 'sql',
+          trackTitle: 'SQL',
+          mentee: { id: 'an', login: 'an-dev', name: 'Nguyễn An' },
+          mentor: null,
+          previousMentor: { id: 'binh', login: 'binh', name: 'Trần Bình' },
+        },
+      },
+    ]);
+  });
+
   it('queues a review request for mentors', async () => {
     const { listener, queued } = setup();
     await listener.onAwaitingReview({

@@ -87,17 +87,19 @@ export class MenteeMentorsService {
     const track = await this.activeTrack(trackSlug);
     const mentee = await this.prisma.user.findUnique({
       where: { id: menteeId },
-      select: { githubLogin: true, deletedAt: true },
+      select: { githubLogin: true, displayName: true, deletedAt: true },
     });
     if (!mentee || mentee.deletedAt) throw DomainError.notFound('Member');
 
     let mentorLogin: string | null = null;
+    let mentorName: string | null = null;
     if (mentorId) {
       assertNotSelf(menteeId, mentorId);
       const mentor = await this.prisma.user.findUnique({
         where: { id: mentorId },
         select: {
           githubLogin: true,
+          displayName: true,
           status: true,
           deletedAt: true,
           roles: { select: { role: true } },
@@ -106,6 +108,7 @@ export class MenteeMentorsService {
       if (!mentor) throw DomainError.notFound('Mentor');
       assertCanMentorTrack({ ...mentor, roles: mentor.roles.map((r) => r.role.code) });
       mentorLogin = mentor.githubLogin;
+      mentorName = mentor.displayName;
       assertEnrolled(
         await this.prisma.enrollment.findUnique({
           where: { userId_trackId: { userId: menteeId, trackId: track.id } },
@@ -131,7 +134,7 @@ export class MenteeMentorsService {
             id: true,
             status: true,
             mentorId: true,
-            mentor: { select: { githubLogin: true } },
+            mentor: { select: { id: true, githubLogin: true, displayName: true } },
           },
         });
         const plan = planAssignment(open, mentorId);
@@ -142,15 +145,15 @@ export class MenteeMentorsService {
             this.env.MENTOR_MAX_MENTEES,
           );
         }
-        const previousMentorLogin =
-          open?.status === 'active' ? (open.mentor?.githubLogin ?? null) : null;
+        // only a running assignment had a mentor; a request (#7) had none yet
+        const previousMentor = open?.status === 'active' ? (open.mentor ?? null) : null;
 
         if (open && plan === 'activate') {
           await tx.mentorAssignment.update({
             where: { id: open.id },
             data: { status: 'active', mentorId, decidedBy: actorId, startedAt: now },
           });
-          return { assignmentId: open.id, previousMentorLogin };
+          return { assignmentId: open.id, previousMentor };
         }
         if (open && (plan === 'end' || plan === 'replace')) {
           await tx.mentorAssignment.update({
@@ -162,7 +165,7 @@ export class MenteeMentorsService {
               endedAt: now,
             },
           });
-          if (plan === 'end') return { assignmentId: open.id, previousMentorLogin };
+          if (plan === 'end') return { assignmentId: open.id, previousMentor };
         }
         const id = newId();
         await tx.mentorAssignment.create({
@@ -176,7 +179,7 @@ export class MenteeMentorsService {
             startedAt: now,
           },
         });
-        return { assignmentId: id, previousMentorLogin };
+        return { assignmentId: id, previousMentor };
       })
       .catch((err: unknown) => {
         // mentor_assignments_one_open_uq; the mentee lock should make this unreachable
@@ -192,10 +195,15 @@ export class MenteeMentorsService {
       assignmentId: done.assignmentId,
       menteeId,
       menteeLogin: mentee.githubLogin,
+      menteeName: mentee.displayName,
       trackSlug,
+      trackTitle: track.title,
       mentorId,
       mentorLogin,
-      previousMentorLogin: done.previousMentorLogin,
+      mentorName,
+      previousMentorId: done.previousMentor?.id ?? null,
+      previousMentorLogin: done.previousMentor?.githubLogin ?? null,
+      previousMentorName: done.previousMentor?.displayName ?? null,
     };
     this.events.emit(MentorshipEvents.MenteeMentorChanged, event);
   }
