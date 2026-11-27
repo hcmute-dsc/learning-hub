@@ -1,4 +1,4 @@
-import type { MentorTrackRef } from '@hub/shared';
+import type { MentorChoice, MentorTrackRef } from '@hub/shared';
 
 /** Pure helpers for /admin/mentors (tested in mentor-tracks.test.ts). */
 
@@ -11,4 +11,18 @@ export function tracksToAdd<T extends { slug: string }>(all: T[], assigned: Ment
 /** "3 mentee", "Chưa kèm mentee" */
 export function menteeCountLabel(count: number): string {
   return count > 0 ? `${count} mentee` : 'Chưa kèm mentee';
+}
+
+/** "Mai Hồng Tín · 3/5 mentee" for the mentor picker of a mentee. */
+export function mentorOptionLabel(choice: MentorChoice, maxMentees: number): string {
+  return `${choice.mentor.displayName} · ${choice.activeMentees}/${maxMentees} mentee`;
+}
+
+/** A full mentor cannot take a new mentee, but stays selectable for their own mentees. */
+export function isMentorFull(
+  choice: MentorChoice,
+  maxMentees: number,
+  currentMentorId: string | null,
+): boolean {
+  return choice.mentor.id !== currentMentorId && choice.activeMentees >= maxMentees;
 }

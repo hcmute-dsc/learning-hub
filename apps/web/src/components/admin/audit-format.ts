@@ -36,6 +36,8 @@ const ACTION_LABEL: Record<string, string> = {
   'content_report.issue': 'Tạo issue từ báo lỗi',
   'mentor.track_assign': 'Giao mentor phụ trách track',
   'mentor.track_end': 'Thôi giao mentor phụ trách track',
+  'mentor.assign': 'Gán mentor cho mentee',
+  'mentor.unassign': 'Bỏ mentor của mentee',
 };
 
 /** Mentor review outcomes (E7, written by AuditListener.onReviewCompleted). */
@@ -112,9 +114,18 @@ export function describeAudit(row: Pick<AuditLogRow, 'action' | 'metadata'>): st
     case 'mentor.track_assign':
     case 'mentor.track_end':
       return `@${str(m.mentorLogin) || '—'} · ${str(m.track) || '—'}`;
+    case 'mentor.assign':
+    case 'mentor.unassign':
+      return describeMenteeMentor(m);
     default:
       return Object.keys(m).length ? JSON.stringify(m) : '';
   }
+}
+
+/** "@mentee · git-basics: @old → @new" ("chưa có" when there was no mentor before or after) */
+function describeMenteeMentor(m: Record<string, unknown>): string {
+  const who = (v: unknown) => (str(v) ? `@${str(v)}` : 'chưa có');
+  return `@${str(m.menteeLogin) || '—'} · ${str(m.track) || '—'}: ${who(m.previousMentorLogin)} → ${who(m.mentorLogin)}`;
 }
 
 const reportStatus = (v: unknown) =>

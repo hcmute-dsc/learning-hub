@@ -59,6 +59,8 @@ export const envSchema = z.object({
     .transform((v) => v?.trim() || undefined),
   /** Target time for a mentor review, shown in the queue (E7; per semester, BACKEND-DESIGN). */
   REVIEW_TARGET_HOURS: z.coerce.number().int().min(1).max(720).default(72),
+  /** Most active mentees one mentor has, all tracks together (US-11; per semester, BACKEND-DESIGN). */
+  MENTOR_MAX_MENTEES: z.coerce.number().int().min(1).max(100).default(5),
   /**
    * Leaderboard score of one completed exercise (E14, ADR-08): graded = passed
    * automatically or approved by a mentor; self_check counts less. Set per term.

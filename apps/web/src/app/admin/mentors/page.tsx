@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import type { AdminMentorsView } from '@hub/shared';
+import { TRACK_SLUG_PATTERN, type AdminMentorsView, type MenteeAssignmentsView } from '@hub/shared';
+import { MenteeAssignments } from '@/components/admin/MenteeAssignments';
 import { MentorTracksCell } from '@/components/admin/MentorTracksCell';
 import { menteeCountLabel } from '@/components/admin/mentor-tracks';
 import { Avatar } from '@/components/ui/Avatar';
@@ -10,14 +11,30 @@ import { api, getMe } from '@/lib/api';
 export const metadata: Metadata = { title: 'Mentor' };
 
 /**
- * Admin "Mentor" (learning-hub#120): which mentor looks after which track. Admin only; the
- * API checks the role again. A mentor is an active account with the mentor role, given on
- * "Thành viên".
+ * Admin "Mentor" (learning-hub#120): which mentor looks after which track, and each
+ * member's mentor in a track (`?track=`, US-11). Admin only; the API checks the role again.
+ * A mentor is an active account with the mentor role, given on "Thành viên".
  */
-export default async function MentorsAdminPage() {
+export default async function MentorsAdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ track?: string | string[] }>;
+}) {
   const me = await getMe();
   if (!me?.roles.includes('admin')) notFound();
   const { mentors, tracks } = (await api<{ data: AdminMentorsView }>('/admin/mentors')).data;
+  const asked = (await searchParams).track;
+  // An unknown or malformed ?track= falls back to the first track instead of an error page.
+  const slug =
+    tracks.find((t) => t.slug === asked && TRACK_SLUG_PATTERN.test(t.slug))?.slug ??
+    tracks[0]?.slug;
+  const menteeView = slug
+    ? (
+        await api<{ data: MenteeAssignmentsView }>(
+          `/admin/mentors/mentees?track=${encodeURIComponent(slug)}`,
+        )
+      ).data
+    : null;
 
   return (
     <section className="space-y-6">
@@ -82,6 +99,8 @@ export default async function MentorsAdminPage() {
           </div>
         )}
       </section>
+
+      <MenteeAssignments tracks={tracks} view={menteeView} />
     </section>
   );
 }

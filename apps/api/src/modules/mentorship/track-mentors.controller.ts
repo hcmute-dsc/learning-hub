@@ -1,13 +1,17 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import {
   TRACK_SLUG_PATTERN,
   assignTrackMentorSchema,
+  menteeAssignmentsQuerySchema,
+  setMenteeMentorSchema,
   type AssignTrackMentorInput,
+  type SetMenteeMentorInput,
 } from '@hub/shared';
 import { z } from 'zod';
 import { AuthUser, CurrentUser, Roles } from '../../common/auth.decorators';
 import { ZodPipe } from '../../common/zod';
+import { MenteeMentorsService } from './mentee-mentors.service';
 import { TrackMentorsService } from './track-mentors.service';
 
 const idPipe = new ZodPipe(z.string().uuid());
@@ -18,11 +22,31 @@ const slugPipe = new ZodPipe(z.string().max(80).regex(TRACK_SLUG_PATTERN));
 @Roles('admin')
 @Controller('admin/mentors')
 export class AdminMentorsController {
-  constructor(private readonly mentors: TrackMentorsService) {}
+  constructor(
+    private readonly mentors: TrackMentorsService,
+    private readonly menteeMentors: MenteeMentorsService,
+  ) {}
 
   @Get()
   list() {
     return this.mentors.adminView().then((data) => ({ data }));
+  }
+
+  /** Members of one track and their mentor (US-11). */
+  @Get('mentees')
+  listMentees(@Query(new ZodPipe(menteeAssignmentsQuerySchema)) query: { track: string }) {
+    return this.menteeMentors.view(query.track).then((data) => ({ data }));
+  }
+
+  /** Gives, changes or removes (`mentorId: null`) a mentee's mentor in one track. */
+  @Put('mentees/:menteeId')
+  @HttpCode(204)
+  setMenteeMentor(
+    @CurrentUser() actor: AuthUser,
+    @Param('menteeId', idPipe) menteeId: string,
+    @Body(new ZodPipe(setMenteeMentorSchema)) body: SetMenteeMentorInput,
+  ) {
+    return this.menteeMentors.set(actor.id, menteeId, body.trackSlug, body.mentorId);
   }
 
   @Post(':mentorId/tracks')
