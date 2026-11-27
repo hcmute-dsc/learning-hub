@@ -22,9 +22,10 @@ function setup({ open = null as unknown, activeCount = 0 } = {}) {
     },
   };
   const users: Record<string, unknown> = {
-    [MENTEE]: { githubLogin: 'mentee1', deletedAt: null },
+    [MENTEE]: { githubLogin: 'mentee1', displayName: 'Mentee Một', deletedAt: null },
     [MENTOR]: {
       githubLogin: 'mentor1',
+      displayName: 'Mentor Một',
       status: 'active',
       deletedAt: null,
       roles: [{ role: { code: 'mentor' } }],
@@ -80,7 +81,12 @@ describe('MenteeMentorsService.set', () => {
   });
 
   it('ends the old assignment and starts a new one when the mentor changes', async () => {
-    const open = { id: 'old', status: 'active', mentorId: OTHER, mentor: { githubLogin: 'old1' } };
+    const open = {
+      id: 'old',
+      status: 'active',
+      mentorId: OTHER,
+      mentor: { id: OTHER, githubLogin: 'old1', displayName: 'Mentor Cũ' },
+    };
     const { service, tx, events } = setup({ open });
     await service.set(ADMIN, MENTEE, 'git', MENTOR);
 
@@ -91,7 +97,14 @@ describe('MenteeMentorsService.set', () => {
     expect(tx.mentorAssignment.create).toHaveBeenCalled();
     expect(events.emit).toHaveBeenCalledWith(
       MentorshipEvents.MenteeMentorChanged,
-      expect.objectContaining({ previousMentorLogin: 'old1' }),
+      expect.objectContaining({
+        trackTitle: 'Git',
+        menteeName: 'Mentee Một',
+        mentorName: 'Mentor Một',
+        previousMentorId: OTHER,
+        previousMentorLogin: 'old1',
+        previousMentorName: 'Mentor Cũ',
+      }),
     );
   });
 

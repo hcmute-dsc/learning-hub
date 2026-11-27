@@ -63,6 +63,23 @@ describe('NotificationDispatcher', () => {
     ]);
   });
 
+  it('delivers a separate text to the mentee and each mentor (#131)', async () => {
+    const { dispatcher, delivered } = setup();
+    await dispatcher.dispatch(7n, OutboxTypes.MentorAssignment, {
+      actorId: 'admin',
+      trackSlug: 'sql',
+      trackTitle: 'SQL',
+      mentee: { id: 'an', login: 'an-dev', name: 'An' },
+      mentor: { id: 'chau', login: 'chau', name: 'Châu' },
+      previousMentor: { id: 'binh', login: 'binh', name: 'Bình' },
+    });
+    expect(delivered.map((d) => [d.eventId, d.userIds, d.notice.type])).toEqual([
+      [7n, ['an'], 'mentor_assignment'],
+      [7n, ['chau'], 'mentor_assignment'],
+      [7n, ['binh'], 'mentor_assignment'],
+    ]);
+  });
+
   it('notifies only the reviewed member', async () => {
     const { dispatcher, delivered } = setup();
     await dispatcher.dispatch(1n, OutboxTypes.ReviewCompleted, {

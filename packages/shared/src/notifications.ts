@@ -12,6 +12,8 @@ export const NOTIFICATION_TYPES = [
   'review_thanks',
   /** a content report the member sent was resolved or dismissed (learning-hub#121) */
   'content_report',
+  /** an admin gave, changed or removed a mentee's mentor in a track (learning-hub#131) */
+  'mentor_assignment',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

@@ -11,10 +11,15 @@ import {
   type ReviewCompletedEvent,
   type ReviewThreadEvent,
 } from '../../reviews/reviews.events';
+import {
+  MentorshipEvents,
+  type MenteeMentorChangedEvent,
+} from '../../mentorship/mentorship.events';
 import { SubmissionEvents, type SubmissionEvent } from '../../submissions/submissions.events';
 import {
   OutboxTypes,
   type ContentReportClosedPayload,
+  type MentorAssignmentPayload,
   type OutboxType,
   type ReviewCompletedPayload,
   type ReviewRequestedPayload,
@@ -78,6 +83,22 @@ export class InboxListener {
       targetLink: e.targetLink,
     };
     return this.enqueue(OutboxTypes.ContentReportClosed, payload);
+  }
+
+  /** The mentee and both mentors hear about a mentor change (#131). */
+  @OnEvent(MentorshipEvents.MenteeMentorChanged)
+  onMenteeMentorChanged(e: MenteeMentorChangedEvent) {
+    const person = (id: string | null, login: string | null, name: string | null) =>
+      id && login && name ? { id, login, name } : null;
+    const payload: MentorAssignmentPayload = {
+      actorId: e.actorId,
+      trackSlug: e.trackSlug,
+      trackTitle: e.trackTitle,
+      mentee: { id: e.menteeId, login: e.menteeLogin, name: e.menteeName },
+      mentor: person(e.mentorId, e.mentorLogin, e.mentorName),
+      previousMentor: person(e.previousMentorId, e.previousMentorLogin, e.previousMentorName),
+    };
+    return this.enqueue(OutboxTypes.MentorAssignment, payload);
   }
 
   /** Only whole new tracks reach everyone's bell; lesson edits stay on Discord. */
