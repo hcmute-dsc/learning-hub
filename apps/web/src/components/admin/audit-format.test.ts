@@ -135,3 +135,31 @@ describe('track mentor audit lines (learning-hub#120)', () => {
     ).toBe('@mentor1 · git-basics');
   });
 });
+
+describe('mentee mentor audit lines (US-11, learning-hub#120)', () => {
+  it('shows the mentee, the track and the change of mentor', () => {
+    expect(actionLabel('mentor.assign')).toBe('Gán mentor cho mentee');
+    expect(
+      describeAudit({
+        action: 'mentor.assign',
+        metadata: {
+          menteeLogin: 'an',
+          track: 'git',
+          previousMentorLogin: 'old',
+          mentorLogin: 'new',
+        },
+      }),
+    ).toBe('@an · git: @old → @new');
+    expect(
+      describeAudit({
+        action: 'mentor.unassign',
+        metadata: {
+          menteeLogin: 'an',
+          track: 'git',
+          previousMentorLogin: 'old',
+          mentorLogin: null,
+        },
+      }),
+    ).toBe('@an · git: @old → chưa có');
+  });
+});

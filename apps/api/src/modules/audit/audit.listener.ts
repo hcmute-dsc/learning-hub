@@ -15,7 +15,11 @@ import {
   LeaderboardPostEvents,
   type LeaderboardPostEvent,
 } from '../notifications/weekly-leaderboard/weekly-leaderboard.events';
-import { MentorshipEvents, type TrackMentorEvent } from '../mentorship/mentorship.events';
+import {
+  MentorshipEvents,
+  type MenteeMentorChangedEvent,
+  type TrackMentorEvent,
+} from '../mentorship/mentorship.events';
 import { ReportEvents, type ReportExportedEvent } from '../reports/reports.events';
 import { ReviewEvents, type ReviewCompletedEvent } from '../reviews/reviews.events';
 import {
@@ -147,6 +151,18 @@ export class AuditListener {
       mentorId: e.mentorId,
       mentorLogin: e.mentorLogin,
       track: e.trackSlug,
+    });
+  }
+
+  @OnEvent(MentorshipEvents.MenteeMentorChanged)
+  onMenteeMentorChanged(e: MenteeMentorChangedEvent) {
+    const action = e.mentorId ? 'mentor.assign' : 'mentor.unassign';
+    return this.write(action, 'mentor_assignment', e.assignmentId, e.actorId, {
+      menteeId: e.menteeId,
+      menteeLogin: e.menteeLogin,
+      track: e.trackSlug,
+      mentorLogin: e.mentorLogin,
+      previousMentorLogin: e.previousMentorLogin,
     });
   }
 

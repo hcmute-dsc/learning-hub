@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { menteeCountLabel, tracksToAdd } from './mentor-tracks';
+import { isMentorFull, menteeCountLabel, mentorOptionLabel, tracksToAdd } from './mentor-tracks';
 
 describe('tracksToAdd', () => {
   const all = [
@@ -23,5 +23,23 @@ describe('menteeCountLabel', () => {
   it('says when a mentor has no mentee yet', () => {
     expect(menteeCountLabel(0)).toBe('Chưa kèm mentee');
     expect(menteeCountLabel(3)).toBe('3 mentee');
+  });
+});
+
+describe('mentor picker for a mentee', () => {
+  const choice = (id: string, activeMentees: number) => ({
+    mentor: { id, githubLogin: id, displayName: `Mentor ${id}`, avatarUrl: null },
+    activeMentees,
+    inTrack: false,
+  });
+
+  it('shows how full each mentor is', () => {
+    expect(mentorOptionLabel(choice('a', 3), 5)).toBe('Mentor a · 3/5 mentee');
+  });
+
+  it('blocks a full mentor for new mentees but not for their own', () => {
+    expect(isMentorFull(choice('a', 5), 5, null)).toBe(true);
+    expect(isMentorFull(choice('a', 5), 5, 'a')).toBe(false);
+    expect(isMentorFull(choice('a', 4), 5, null)).toBe(false);
   });
 });

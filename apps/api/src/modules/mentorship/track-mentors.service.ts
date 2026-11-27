@@ -6,17 +6,9 @@ import { Clock } from '../../infrastructure/clock';
 import { newId } from '../../infrastructure/ids';
 import { isUniqueViolation } from '../../infrastructure/prisma/errors';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { CURRENT_MENTOR, PERSON } from './mentor-queries';
 import { MentorshipEvents, type TrackMentorEvent } from './mentorship.events';
 import { assertCanMentorTrack, toAdminMentorRows } from './track-mentor-rules';
-
-const PERSON = { id: true, githubLogin: true, displayName: true, avatarUrl: true } as const;
-
-/** Who counts as a mentor today: active, not deleted, still holding the mentor role. */
-const CURRENT_MENTOR = {
-  status: 'active',
-  deletedAt: null,
-  roles: { some: { role: { code: 'mentor' } } },
-};
 
 /**
  * "Mentor phụ trách track" (learning-hub#120, table `track_mentors`). Admins assign and
